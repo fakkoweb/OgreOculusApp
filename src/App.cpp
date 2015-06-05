@@ -48,9 +48,6 @@ App::App()
 	//Rift Setup (creates Oculus rendering window and Oculus inner scene - user shouldn't care about it)
 	initRift();
 
-	//Stereo camera rig setup ()
-	initCameras();
-
 	//Input/Output setup (associate I/O to Oculus window)
 	initOIS();
 
@@ -58,7 +55,7 @@ App::App()
 	// This class implements App logic!!
 	mScene = new Scene(mRoot, mMouse, mKeyboard);
 	mScene->setIPD(mRift->getIPD());
-	if (mOverlaySystem)	mScene->getSceneMgr()->addRenderQueueListener(mOverlaySystem);	//Only Ogre main scene will render overlays!
+	//if (mOverlaySystem)	mScene->getSceneMgr()->addRenderQueueListener(mOverlaySystem);	//Only Ogre main scene will render overlays!
 	try
 	{
 		// try first to load HFOV/VFOV values (higher priority)
@@ -110,7 +107,6 @@ App::~App()
 {
 	std::cout << "Deleting Ogre application." << std::endl;
 
-	quitCameras();
 	quitRift();
 
 	std::cout << "Deleting Scene:" << std::endl;
@@ -320,7 +316,7 @@ void App::initOgre()
 
 
 	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
-	mOverlaySystem = new Ogre::OverlaySystem();
+//	mOverlaySystem = new Ogre::OverlaySystem();
 
 }
 
@@ -329,6 +325,7 @@ void App::initTray()
 	// Register as a Window listener
 	//Ogre::WindowEventUtilities::addWindowEventListener(mWindow, this);
 
+	/*/
 	if (mWindow)
 	{
 		mInputContext.mKeyboard = mKeyboard;
@@ -358,7 +355,7 @@ void App::initTray()
 		mDetailsPanel->setParamValue(10, "Solid");
 		mDetailsPanel->hide();
 	}
-
+	*/
 	
 }
 
@@ -412,10 +409,12 @@ void App::createViewports()
 
 void App::quitTray()
 {
+	/*
 	delete mTrayMgr;
 	mTrayMgr = nullptr;
 	delete mOverlaySystem;
 	mOverlaySystem = nullptr;
+	*/
 }
 
 void App::quitOgre()
@@ -492,30 +491,6 @@ void App::quitRift()
 	//Rift::shutdown();
 }
 
-////////////////////////////////////////////////////////////////
-// Init Cameras (Device and API initialization, setup and close):
-////////////////////////////////////////////////////////////////
-
-void App::initCameras()
-{
-	mCameraLeft = new FrameCaptureHandler(0, mRift);
-	//mCameraRight = new FrameCaptureHandler(1, mRift);
-
-	mCameraLeft->startCapture();
-	//mCameraRight->startCapture();
-
-	cv::namedWindow("CameraDebug", cv::WINDOW_NORMAL);
-	cv::resizeWindow("CameraDebug", 1920 / 4, 1080 / 4);
-}
-
-void App::quitCameras()
-{
-	mCameraLeft->stopCapture();
-	//mCameraRight->stopCapture();
-	if (mCameraLeft) delete mCameraLeft;
-	//if (mCameraRight) delete mCameraRight;
-}
-
 ////////////////////////////////////////////////////////////
 // Handle Rendering (Ogre::FrameListener)
 ////////////////////////////////////////////////////////////
@@ -542,27 +517,6 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 			delete mRift;
 			mRift = NULL;
 		}
-	}
-
-	// [CAMERA] UPDATE
-	// update cameras information and sends it to Scene (Texture of pictures planes/shapes)
-	FrameCaptureData uno;
-	if (mCameraLeft && mCameraLeft->get(uno))	// if camera is initialized AND there is a new frame
-	{
-		std::cout << "Drawing the frame in debug window..." << std::endl;
-
-		//cv::imshow("sideleft", left);
-		//cv::waitKey(1);
-		cv::imshow("CameraDebug", uno.image);
-		cv::waitKey(1);
-		
-		
-		std::cout << "converting from cv::Mat to Ogre::PixelBox..." << std::endl;
-		mOgrePixelBoxLeft = Ogre::PixelBox(1920, 1080, 1, Ogre::PF_R8G8B8, uno.image.ptr<uchar>(0));
-		std::cout << "sending new image to the scene..." << std::endl;
-		mScene->setVideoImagePoseLeft(mOgrePixelBoxLeft,uno.pose);
-		std::cout << "image sent!\nImage plane updated!" << std::endl;
-
 	}
 
 	// [OIS] UPDATE

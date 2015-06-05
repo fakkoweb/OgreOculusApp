@@ -1,6 +1,5 @@
 
 #include "Scene.h"
-#include <chrono>
 #include <cmath>
 #define _USE_MATH_DEFINES
 #include <math.h>
@@ -416,8 +415,8 @@ void Scene::cameraPostRenderScene(Ogre::Camera* cam)
 		//calculate delay from last frame and show
 		if (camera_frame_updated)
 		{
-			camera_last_frame_display_delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - camera_last_frame_request_time);
-			std::cout << "Camera milliseconds delay: " << camera_last_frame_display_delay.count() << " ms"<< std::endl;
+			//camera_last_frame_display_delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - camera_last_frame_request_time);
+			//std::cout << "Camera milliseconds delay: " << camera_last_frame_display_delay.count() << " ms"<< std::endl;
 			camera_frame_updated = false;
 		}
 		mVideoLeft->setVisible(false, false);

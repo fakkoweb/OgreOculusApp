@@ -3,7 +3,6 @@
 
 #include "OGRE/Ogre.h"
 #include "OIS/OIS.h"
-#include <opencv2\opencv.hpp>
 #include "Globals.h"
 
 class Scene : public Ogre::Camera::Listener
