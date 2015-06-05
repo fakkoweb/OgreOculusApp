@@ -1,0 +1,4 @@
+[submodule "libs/OculusSDK"]
+	path = libs/OculusSDK
+	url = https://github.com/fakkoweb/OculusSDK.git
+	branch = master
