@@ -16,7 +16,7 @@ class Scene : public Ogre::Camera::Listener
 		Ogre::Camera* getRightCamera() { return mCamRight; }
 		Ogre::Camera* getGodCamera() { return mCamGod; }
 
-		// One-call functions for the SeeThrough rig setup
+		// One-call functions for SeeThrough rig setup
 		void setupVideo(const float HFov, const float VFov);
 		void setupVideo(const float WSensor, const float HSensor, const float FL);
 		void enableVideo();
