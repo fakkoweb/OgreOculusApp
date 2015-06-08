@@ -30,6 +30,7 @@ class Scene : public Ogre::Camera::Listener
 		void update( float dt );
 		void setRiftPose( Ogre::Quaternion orientation, Ogre::Vector3 pos );
 		void setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion pose);
+		void setVideoImagePoseRight(const Ogre::PixelBox &image, Ogre::Quaternion pose);
 		//void setCameraTextureRight();
 	
 		// Keyboard and mouse events (forwarded by App)
@@ -60,15 +61,21 @@ class Scene : public Ogre::Camera::Listener
 		Ogre::SceneManager* mSceneMgr;
 
 		Ogre::Camera* mCamLeft;
-		
+		Ogre::Camera* mCamRight;
+
 		Ogre::Image mLeftCameraRenderImage;
+		Ogre::Image mRightCameraRenderImage;
 
 		Ogre::TexturePtr mLeftCameraRenderTexture;
+		Ogre::TexturePtr mRightCameraRenderTexture;
+
 		Ogre::MaterialPtr mLeftCameraRenderMaterial;
-		Ogre::Camera* mCamRight;
+		Ogre::MaterialPtr mRightCameraRenderMaterial;
+		
 		Ogre::Camera* mCamGod;
 
 		Ogre::SceneNode* mVideoLeft = nullptr;
+		Ogre::SceneNode* mVideoRight = nullptr;
 		Ogre::SceneNode* mHeadNode;
 		Ogre::SceneNode* mBodyNode;
 		Ogre::SceneNode* mBodyTiltNode;

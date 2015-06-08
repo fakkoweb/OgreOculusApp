@@ -144,11 +144,11 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 {
 	// CREATE SHAPES
 	// -------------
-
 	//Create an Plane class instance that describes our plane (no position or orientation, just mathematical description)
 	Ogre::Plane videoPlane(Ogre::Vector3::UNIT_Z, 0);
 
 	//Create a static mesh out of the plane (as a REUSABLE "resource")
+	//It would be AWESOME if this mesh could be automatically made with a calibration to compensate optical distortion of the lenses!
 	Ogre::MeshManager::getSingleton().createPlane(
 		"videoMesh",										// this is the name that our resource will have for the whole application!
 		Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
@@ -159,54 +159,74 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 		Ogre::Vector3::UNIT_Y);								// this is the vector that will be used as mesh UP direction
 
 	//Create an ogre Entity out of the resource we created (more Entities can be created out of a resource!)
-	Ogre::Entity* videoPlaneEntity = mSceneMgr->createEntity("videoMesh");
+	Ogre::Entity* videoPlaneEntityLeft = mSceneMgr->createEntity("videoMesh");
+	Ogre::Entity* videoPlaneEntityRight = mSceneMgr->createEntity("videoMesh");
 
 	//Prepare an Ogre SceneNode where we will attach the newly created Entity (as child of mHeadNode)
 	mVideoLeft = mHeadNode->createChildSceneNode("LeftVideo");
+	mVideoRight = mHeadNode->createChildSceneNode("RightVideo");
 
-	//Attach videoPlaneEntity to mVideoLeft SceneNode (now it will have a Position/Scale/Orientation)
-	mVideoLeft->attachObject(videoPlaneEntity);
+	//Attach videoPlaneEntity to mVideoLeft/mVideoRight SceneNode (now it will have a Position/Scale/Orientation)
+	mVideoLeft->attachObject(videoPlaneEntityLeft);
+	mVideoRight->attachObject(videoPlaneEntityRight);
 
 	//Last two operations could have also been done in one step, but we would not get the SceneNode pointer to save in mVideoLeft
 	// mSceneMgr->getRootSceneNode()->createChildSceneNode()->attachObject(videoPlaneEntity);
 	
 	//Setup videoPlaneEntity rendering proprieties (INDEPENDENT FROM mVideoLeft SceneNode!!)
-	videoPlaneEntity->setCastShadows(false);
-	//videoPlaneEntity->setMaterialName("CubeMaterialWhite");
+	videoPlaneEntityLeft->setCastShadows(false);
+	videoPlaneEntityRight->setCastShadows(false);
 	
 	//Setup mVideoLeft SceneNode position/scale/orientation
-	// X-axis:	we assume real cameras distance (ICD) is the same as IPD, so X is solidal to virtual cameras X value -> see setIPD()
+	// X-axis:	we assume real cameras distance (ICD) is the same as IPD, so X will be set to be the same as virtual cameras X value -> see setIPD()
 	// Y-axis:	0 = always solidal to mHeadNode
 	// Z-axis:	this MAY VARY depending on how far the objects can be seen in front of the plane
 	//			To obtain this without varying the FOV, z will always be proportional to plane's scale factor
 	mVideoLeft->setPosition(0, 0, -videoScale);
 	mVideoLeft->setScale(videoScale, videoScale, videoScale);
 	mVideoLeft->roll(Ogre::Degree(CAMERA_ROTATION));
+	mVideoRight->setPosition(0, 0, -videoScale);
+	mVideoRight->setScale(videoScale, videoScale, videoScale);
+	mVideoRight->roll(Ogre::Degree(CAMERA_ROTATION));
 
 	//Set camera listeners to this class (so that I can do stuff before and after each renders)
-	//mCamLeft->addListener(this);			// THIS IS DONE WHEN SEETHROUGH FEATURE IS ENABLED
+	//mCamLeft->addListener(this);			// THIS IS CALLED WHEN SEETHROUGH FEATURE IS ENABLED -> see enableVideo()
 
 	//mVideoLeft is disabled by default: enableVideo() and disableVideo() methods are provided
-	mVideoLeft->setVisible(false, false);	
+	mVideoLeft->setVisible(false, false);
+	mVideoRight->setVisible(false, false);
+
 	// CREATE TEXTURES
 	// ---------------
-
-
-	//Create two special textures (TU_RENDERTARGET) that will be applied to the two videoPlaneEntities
+	//Create two special textures (TU_DYNAMIC_WRITE_ONLY_DISCARDABLE) that will be applied to the two videoPlaneEntities
+	// TU_DYNAMIC_WRITE_ONLY_DISCARDABLE = optimized to be rewritten lots of times
 	mLeftCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
 		"RenderTextureCameraLeft", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
 		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8,
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);
+	mRightCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
+		"RenderTextureCameraRight", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8,
+		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);
 
 	// Creare new materials and assign the two textures that can be used on the shapes created
+	// This could actually be avoided if we write a .material script (possibly I will do it in the future, but this way is maybe less hidden stuff)
 	mLeftCameraRenderMaterial = Ogre::MaterialManager::getSingleton().create("Scene/LeftCamera", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
-	Ogre::Technique *technique = mLeftCameraRenderMaterial->createTechnique();
-	technique->createPass();
-	mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->createTextureUnitState("RenderTextureCameraLeft");
+	Ogre::Technique* technique = mLeftCameraRenderMaterial->createTechnique();
+	Ogre::Pass* pass = technique->createPass();
+	pass->createTextureUnitState("RenderTextureCameraLeft");
+	//All this could be done also in one line, but to me it was less clear:
 	//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
-	
+	mRightCameraRenderMaterial = Ogre::MaterialManager::getSingleton().create("Scene/RightCamera", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+	technique = mRightCameraRenderMaterial->createTechnique();
+	pass = technique->createPass();
+	pass->createTextureUnitState("RenderTextureCameraRight");
+
+	// ASSIGN TEXTURES/MATERIALS TO THE SHAPES
+	// ---------------
 	// Assign materials to videoPlaneEntities
-	videoPlaneEntity->setMaterialName("Scene/LeftCamera");
+	videoPlaneEntityLeft->setMaterialName("Scene/LeftCamera");
+	videoPlaneEntityRight->setMaterialName("Scene/RightCamera");
 
 	// Retrieve the "render target pointer" from the two textures (so we can use it as a standard render target as a window)
 	//Ogre::RenderTexture* mLeftCameraRenderTextureA = mLeftCameraRenderTexture->getBuffer()->getRenderTarget();
@@ -250,8 +270,8 @@ void Scene::setIPD( float IPD )
 	mCamLeft->setPosition( -IPD/2.0f, 0.0f, 0.0f );
 	mCamRight->setPosition( IPD/2.0f, 0.0f, 0.0f );
 
-	//mVideoLeft->setPosition(-IPD / 2.0f, mVideoLeft->getPosition().y, mVideoLeft->getPosition().z);
-	//mVideoRight->setPosition(IPD / 2.0f, mVideoLeft->getPosition().y, mVideoLeft->getPosition().z);
+	mVideoLeft->setPosition(-IPD / 2.0f, mVideoLeft->getPosition().y, mVideoLeft->getPosition().z);
+	mVideoRight->setPosition(IPD / 2.0f, mVideoLeft->getPosition().y, mVideoLeft->getPosition().z);
 }
 
 //////////////////////////////////////////////////////////////
@@ -278,6 +298,16 @@ void Scene::setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion 
 		//mLeftCameraRenderImage.loadDynamicImage(image.data, image.getWidth(), image.getHeight(), 1, Ogre::PF_BYTE_RGB);
 		//mLeftCameraRenderTexture->loadImage(mLeftCameraRenderImage);
 		//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
+	}
+
+}
+
+void Scene::setVideoImagePoseRight(const Ogre::PixelBox &image, Ogre::Quaternion pose)
+{
+	if (videoIsEnabled)
+	{
+		// update image pixels
+		mRightCameraRenderTexture->getBuffer()->blitFromMemory(image);
 	}
 
 }
@@ -335,6 +365,7 @@ void Scene::setupVideo(const float WSensor, const float HSensor, const float FL)
 		throw Ogre::Exception(Ogre::Exception::ERR_INTERNAL_ERROR, "Video has already been setup and created into Scene. setupVideo() must be called only once for Scene instance", "Scene::setupVideo");
 	}
 }
+
 void Scene::enableVideo()
 {
 	if (!videoIsEnabled)
@@ -342,6 +373,7 @@ void Scene::enableVideo()
 		if (mVideoLeft)
 		{
 			mCamLeft->addListener(this);
+			mCamRight->addListener(this);
 			videoIsEnabled = true;
 		}
 		else
@@ -350,6 +382,7 @@ void Scene::enableVideo()
 		}
 	}
 }
+
 void Scene::disableVideo()
 {
 	if (videoIsEnabled)
@@ -357,7 +390,9 @@ void Scene::disableVideo()
 		if (mVideoLeft)
 		{
 			mCamLeft->removeListener(this);
+			mCamRight->removeListener(this);
 			mVideoLeft->setVisible(false, false);
+			mVideoRight->setVisible(false, false);
 			videoIsEnabled = false;
 		}
 		else
@@ -406,6 +441,10 @@ void Scene::cameraPreRenderScene(Ogre::Camera* cam)
 	{
 		mVideoLeft->setVisible(true, false);
 	}
+	if (cam == mCamRight)
+	{
+		mVideoRight->setVisible(true, false);
+	}
 }
 
 void Scene::cameraPostRenderScene(Ogre::Camera* cam)
@@ -421,5 +460,9 @@ void Scene::cameraPostRenderScene(Ogre::Camera* cam)
 			camera_frame_updated = false;
 		}
 		mVideoLeft->setVisible(false, false);
+	}
+	if (cam == mCamRight)
+	{
+		mVideoRight->setVisible(false, false);
 	}
 }

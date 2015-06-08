@@ -21,6 +21,7 @@ void frames_per_second(int delay)
 std::chrono::steady_clock::time_point ogre_last_frame_displayed_time = std::chrono::system_clock::now();
 std::chrono::duration< int, std::milli > ogre_last_frame_delay;
 
+bool seethroughEnabled = false;
 
 ////////////////////////////////////////////////////////////
 // Init application
@@ -57,7 +58,6 @@ App::App(const std::string& configurationFilePath = "/cfg/parameters.cfg")
 	// Create Ogre main scene (setup and populate main scene)
 	// This class implements App logic!!
 	mScene = new Scene(mRoot, mMouse, mKeyboard);
-	mScene->setIPD(mRift->getIPD());
 	//if (mOverlaySystem)	mScene->getSceneMgr()->addRenderQueueListener(mOverlaySystem);	//Only Ogre main scene will render overlays!
 	try
 	{
@@ -86,6 +86,7 @@ App::App(const std::string& configurationFilePath = "/cfg/parameters.cfg")
 			throw e;
 		}
 	}
+	mScene->setIPD(mRift->getIPD());
 	// when setup has finished successfully, enable Video into scene
 	// mScene->enableVideo();	USER CAN ACTIVATE IT, SEE INPUT KEYS LISTENERS!
 
@@ -481,21 +482,23 @@ void App::quitRift()
 void App::initCameras()
 {
 	mCameraLeft = new FrameCaptureHandler(0, mRift);
-	//mCameraRight = new FrameCaptureHandler(1, mRift);
+	mCameraRight = new FrameCaptureHandler(1, mRift);
 
 	mCameraLeft->startCapture();
-	//mCameraRight->startCapture();
+	mCameraRight->startCapture();
 
-	cv::namedWindow("CameraDebug", cv::WINDOW_NORMAL);
-	cv::resizeWindow("CameraDebug", 1920 / 4, 1080 / 4);
+	cv::namedWindow("CameraDebugLeft", cv::WINDOW_NORMAL);
+	cv::resizeWindow("CameraDebugLeft", 1920 / 4, 1080 / 4);
+	cv::namedWindow("CameraDebugRight", cv::WINDOW_NORMAL);
+	cv::resizeWindow("CameraDebugRight", 1920 / 4, 1080 / 4);
 }
 
 void App::quitCameras()
 {
 	mCameraLeft->stopCapture();
-	//mCameraRight->stopCapture();
+	mCameraRight->stopCapture();
 	if (mCameraLeft) delete mCameraLeft;
-	//if (mCameraRight) delete mCameraRight;
+	if (mCameraRight) delete mCameraRight;
 }
 
 ////////////////////////////////////////////////////////////
@@ -528,23 +531,34 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 
 	// [CAMERA] UPDATE
 	// update cameras information and sends it to Scene (Texture of pictures planes/shapes)
-	FrameCaptureData uno;
-	if (mCameraLeft && mCameraLeft->get(uno))	// if camera is initialized AND there is a new frame
+	FrameCaptureData nextframe1;
+	FrameCaptureData nextframe2;
+	if (mCameraLeft && mCameraLeft->get(nextframe1))		// if camera is initialized AND there is a new frame
 	{
 		//std::cout << "Drawing the frame in debug window..." << std::endl;
 
-		//cv::imshow("sideleft", left);
-		//cv::waitKey(1);
-		cv::imshow("CameraDebug", uno.image);
+		cv::imshow("CameraDebugLeft", nextframe1.image);
 		cv::waitKey(1);
-		
-		
+			
 		//std::cout << "converting from cv::Mat to Ogre::PixelBox..." << std::endl;
-		mOgrePixelBoxLeft = Ogre::PixelBox(1920, 1080, 1, Ogre::PF_R8G8B8, uno.image.ptr<uchar>(0));
+		mOgrePixelBoxLeft = Ogre::PixelBox(1920, 1080, 1, Ogre::PF_R8G8B8, nextframe1.image.ptr<uchar>(0));
 		//std::cout << "sending new image to the scene..." << std::endl;
-		mScene->setVideoImagePoseLeft(mOgrePixelBoxLeft,uno.pose);
+		mScene->setVideoImagePoseLeft(mOgrePixelBoxLeft,nextframe1.pose);
 		//std::cout << "image sent!\nImage plane updated!" << std::endl;
 
+	}
+	if (mCameraRight && mCameraRight->get(nextframe2))	// if camera is initialized AND there is a new frame
+	{
+
+		cv::imshow("CameraDebugRight", nextframe2.image);
+		cv::waitKey(1);
+
+		//std::cout << "converting from cv::Mat to Ogre::PixelBox..." << std::endl;
+		mOgrePixelBoxRight = Ogre::PixelBox(1920, 1080, 1, Ogre::PF_R8G8B8, nextframe2.image.ptr<uchar>(0));
+		//std::cout << "sending new image to the scene..." << std::endl;
+		mScene->setVideoImagePoseRight(mOgrePixelBoxRight, nextframe2.pose);
+		//std::cout << "image sent!\nImage plane updated!" << std::endl;
+			
 	}
 
 	// [OIS] UPDATE
@@ -599,7 +613,7 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		mScene->setVideoDistance(distance);
 	}
 
-	static bool seethroughEnabled = false;
+	//static bool seethroughEnabled = false;
 	if (e.key == OIS::KC_C)
 	{
 		// toggle VIDEO in the scene with "c"
