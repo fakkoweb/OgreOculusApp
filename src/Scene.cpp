@@ -172,7 +172,7 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 	
 	//Setup videoPlaneEntity rendering proprieties (INDEPENDENT FROM mVideoLeft SceneNode!!)
 	videoPlaneEntity->setCastShadows(false);
-	videoPlaneEntity->setMaterialName("CubeMaterialWhite");
+	//videoPlaneEntity->setMaterialName("CubeMaterialWhite");
 	
 	//Setup mVideoLeft SceneNode position/scale/orientation
 	// X-axis:	we assume real cameras distance (ICD) is the same as IPD, so X is solidal to virtual cameras X value -> see setIPD()
