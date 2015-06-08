@@ -164,7 +164,7 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 	//Prepare an Ogre SceneNode where we will attach the newly created Entity (as child of mHeadNode)
 	mVideoLeft = mHeadNode->createChildSceneNode("LeftVideo");
 
-	//Attach videoPlaneEntity to mVideoLeft SceneNode (now it will have a Position/Scale/Orientation
+	//Attach videoPlaneEntity to mVideoLeft SceneNode (now it will have a Position/Scale/Orientation)
 	mVideoLeft->attachObject(videoPlaneEntity);
 
 	//Last two operations could have also been done in one step, but we would not get the SceneNode pointer to save in mVideoLeft
@@ -181,6 +181,7 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 	//			To obtain this without varying the FOV, z will always be proportional to plane's scale factor
 	mVideoLeft->setPosition(0, 0, -videoScale);
 	mVideoLeft->setScale(videoScale, videoScale, videoScale);
+	mVideoLeft->roll(Ogre::Degree(CAMERA_ROTATION));
 
 	//Set camera listeners to this class (so that I can do stuff before and after each renders)
 	//mCamLeft->addListener(this);			// THIS IS DONE WHEN SEETHROUGH FEATURE IS ENABLED
@@ -265,8 +266,8 @@ void Scene::setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion 
 		camera_frame_updated = true;
 
 		// update image position/orientation
-		Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
-		mVideoLeft->setOrientation(delta);
+		//Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
+		//mVideoLeft->setOrientation(delta);
 
 		// fake pose when Oculus Rift is simulated (NOT DONE)
 		//Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;

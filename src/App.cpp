@@ -134,6 +134,9 @@ void App::loadConfig(const std::string& configurationFilePath)
 	// Overwrite default parameters values
 	CAMERA_BUFFERING_DELAY = mConfig->getValueAsInt("Camera/BufferingDelay");
 	ROTATE_VIEW = mConfig->getValueAsBool("Oculus/RotateView");
+	CAMERA_ROTATION = mConfig->getValueAsInt("Camera/Rotation");
+	if (CAMERA_ROTATION <= -180 || CAMERA_ROTATION > 180)
+		CAMERA_ROTATION = 180;
 
 }
 
