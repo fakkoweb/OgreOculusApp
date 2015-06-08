@@ -9,7 +9,6 @@
 
 #include <iostream>
 #include "Globals.h"
-
 #include "App.h"
 
 extern "C" {
