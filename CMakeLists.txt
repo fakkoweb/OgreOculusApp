@@ -1,9 +1,3 @@
-cmake_minimum_required(VERSION 2.6)
-set(cmake_test_VERSION_MAJOR 0)
-set(cmake_test_VERSION_MINOR 1)
-set(cmake_test_VERSION_PATCH 0)
-
-
 # Cmake template for generic projects by Dario Facchini
 # Current implementation: OculusSDK 0.5 (static linking), OgreSDK 1.9 (dynamic linking)
 # - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -23,7 +17,33 @@ set(cmake_test_VERSION_PATCH 0)
 #	- all needed resources (defined in resources.cfg, both from Ogre folder and from media folder) are copied to media distribution subdir
 #	- all release configuration files are copied in config distribution subdir and updated to reference the copied files
 # A PostInstall.cmake script template is used to parse configuration files and copy all contents.
+# ------------------------------------------------------
+# THIS IS REALLY HELPFUL TO UNDERSTAND HOW CMAKE WORKS MORE OR LESS: http://www.kaizou.org/2014/11/typical-cmake-project/
+#
 
+cmake_minimum_required(VERSION 2.8.11)
+cmake_policy(VERSION 2.8.11)
+cmake_policy(SET CMP0048 OLD)			# how to set project version (retrocompatibility with OLD rule)
+
+# useful boolean variable to understand fast if this project is used as subproject or main project
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
+	set(IS_SUBPROJECT false)
+else()
+	set(IS_SUBPROJECT true)
+endif()
+
+# MACRO to set value of a variable if not already set
+# useful when we don't know if this project is used as a subproject or not
+# (therefore some variable could have been already set from top-level cmakefile)
+macro(setifnotdef var_name var_value)
+	if(NOT DEFINED ${var_name})
+		if(IS_SUBPROJECT)
+			set(${var_name} ${var_value} PARENT_SCOPE)
+		else()
+			set(${var_name} ${var_value})
+		endif()
+	endif()
+endmacro()
 
 
 ################################################################
@@ -32,34 +52,49 @@ set(cmake_test_VERSION_PATCH 0)
 # Please refer to the README before modifying!!
 
 # project name
-project (OgreOculusSample)
+project (OgreOculusApp)
+set(OgreOculusApp_VERSION_MAJOR 0)
+set(OgreOculusApp_VERSION_MINOR 2)
+set(OgreOculusApp_VERSION_PATCH 2)
 
-# all directories names relative to CMAKE_SOURCE_DIR
-set (libs_dir_name	 "libs")		# name of the dir containing ALL subprojects/libs to be compiled toghether with this project
-set (source_dir_name "src")			# name of the dir containing ALL implementations
-set (header_dir_name "include")		# name of the dir containing ALL declarations
-set (binary_dir_name "build")		# name of the dir that will contain build results (Release, Debug, ..)
-set (media_dir_name  "media")		# name of the dir containing LOCAL media (not Ogre's or any other 3rd party app)
-									# ALSO the name of the dir where both LOCAL and GLOBAL media will be INSTALLED in /dist
-									# WARNING: SET REFERENCES IN PROGRAM OR ANY CONFIGURATION FILES ACCORDINGLY!!
-set (config_dir_name "cfg")			# name of the dir containing CONFIGURATION FILES (Ogre's or any other)
-									# ALSO the name of the dir where .cfg files will be INSTALLED in /dist
-									# WARNING: SET REFERENCES IN PROGRAM ACCORDINGLY!!
-set (plugins_dir_name "plugins")	# name of the subdir that will contain plugins on INSTALL
-set (distribution_dir_name "dist")	# name of the dir that contains final distribution files, such as:
-									#	- final release executable files and .dlls (in root)
-									#	- data/media files (in /media_dir_name)
-									#	- runtime plugins (in /plugin_dir_name)
-									#	- configuration files (in /config_dir_name)
-set (cmake_dir_name "cmake")		# name of the dir containing cmake files for this project
-									# N.B.	cmake will search in the standard cmake directory,
-									#		then in this directory,
-									#		then will search into sdk own cmake directories (if they have any)
-set (exe_name "OgreOculusSample")		# mame of executable
-set (install_script_name "PostInstall")	# name of the TEMPLATE cmake file for generating install script
+# directories names relative to CMAKE_CURRENT_SOURCE_DIR
+set (libs_dir_name	 "libs")			# name of the dir containing (ALL or SOME) subprojects required to this project
+set (source_dir_name "src")				# name of the dir containing ALL implementations
+set (header_dir_name "include")			# name of the dir containing ALL declarations
+set (exe_name "OgreOculusDemo")			# name of executable, IF built separately
+set (sample_media_dir_name  "media")	# name of the dir containing SAMPLE/STANDARD media files for this project
+set (sample_config_dir_name "cfg")		# name of the dir containing SAMPLE/STANDARD configuration files for this project
+set (cmake_dir_name "cmake")			# name of the dir containing cmake files needed to this project
+										# N.B.	cmake will search in the standard cmake directory,
+										#		then in this directory,
+										#		then in any cmake folder of any project including this project,
+										#		then will search into sdk own cmake directories (if they have any)
+set (install_script_name "PostInstall")	# name of the TEMPLATE cmake file for generating install script of this project
 										# all @VARS@ in this file will be replaced with current specific values
 										# at the end of this script with configure_file() and then used at install time.
 										# This is done using local variable values in an install script!
+
+# DEFAULT directory names relative to CMAKE_SOURCE_DIR
+# these folder names will be used if:
+#	- this is the main project
+#	- this is not the main project and any parent project defined them
+# simply SET these variables IN YOUR PARENT PROJECT to override standard names
+setifnotdef (binary_dir_name "build")					# name of the dir containing build results (Release, Debug, ..), IF built separately
+setifnotdef (distribution_dir_name "dist")				# name of the dir that will contain final distribution files on INSTALL, such as:
+														#	- final release executable files and .dlls (in root)
+														#	- data/media files (in /media_dir_name)
+														#	- configuration files (in /config_dir_name)
+														#	- runtime plugins (in /plugin_dir_name)
+setifnotdef (media_dir_name "${sample_media_dir_name}")	# name of the dir containing final project's LOCAL media
+														# (LOCAL = media included with the project, GLOBAL = media referenced from any other system directory)
+														# this is ALSO the name of the subdir where both LOCAL and GLOBAL media will be INSTALLED in /distribution_dir_name
+														# WARNING: BE SURE TO REFERENCE THESE FILES CORRECTLY IN ANY CONFIGURATION FILE!!
+setifnotdef (config_dir_name "${sample_config_dir_name}")# name of the dir containing final project's CONFIGURATION FILES
+														# this is ALSO the name of the subdir where .cfg files will be INSTALLED in /distribution_dir_name
+														# WARNING: BE SURE TO REFERENCE THESE FILES CORRECTLY IN THE PROGRAM!!
+setifnotdef (plugins_dir_name "plugins")				# name of the subdir in /distribution_dir_name that will contain plugins on INSTALL
+
+
 
 
 ################################################################
@@ -68,14 +103,9 @@ set (install_script_name "PostInstall")	# name of the TEMPLATE cmake file for ge
 
 # cmake project variables
 set(CMAKE_MODULE_PATH
-	${CMAKE_MODULE_PATH}						# (this is the standard cmake directory)
-	"${CMAKE_SOURCE_DIR}/${cmake_dir_name}" 	# append: where personal project cmake files are stored
+	${CMAKE_MODULE_PATH}							# (this is the standard cmake directory)
+	"${CMAKE_CURRENT_SOURCE_DIR}/${cmake_dir_name}" # append: where personal project cmake files are stored
 	)
-include_directories("${PROJECT_BINARY_DIR}")
-set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/${binary_dir_name})
-set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
-set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
-unset(LIBS_TO_LINK)
 
 # cmake build variables
 if (CMAKE_BUILD_TYPE STREQUAL "")
@@ -83,14 +113,32 @@ if (CMAKE_BUILD_TYPE STREQUAL "")
   # differentiation between debug and release builds.
   set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build, options are: None (CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif ()
+unset(LIBRARIES_TO_LINK)
+unset(HEADERS_TO_INCLUDE_PUBLIC)
+unset(HEADERS_TO_INCLUDE_PRIVATE)
 
-# cmake install variables
-if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set (CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/${distribution_dir_name}" CACHE PATH "${exe_name} default install path" FORCE )
+# cmake binary/build location
+set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/${binary_dir_name})
+set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
+set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR})
+if(IS_SUBPROJECT)
+	set (OUTPUT_FILE_NAME ${PROJECT_NAME})
+else()
+	set (OUTPUT_FILE_NAME ${exe_name})
 endif()
-set(CMAKE_INSTALL_SCRIPT "${CMAKE_SOURCE_DIR}/${cmake_dir_name}/${install_script_name}.cmake")	# this is cmake template for generating CMAKE_INSTALL_SCRIPT_SPECIFIC
-set(CMAKE_INSTALL_SCRIPT_SPECIFIC "${CMAKE_SOURCE_DIR}/${cmake_dir_name}/${install_script_name}.specific.cmake") # result script with hardcoded variable values
 
+# cmake install/distribution variables
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT OR NOT DEFINED CMAKE_INSTALL_PREFIX)
+    set (CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/${distribution_dir_name}" CACHE PATH "Default install path" FORCE )
+    message(STATUS "${PROJECT_NAME}: CMAKE_INSTALL_PREFIX was not defined. Setting install directory to: '${CMAKE_INSTALL_PREFIX}'")
+    set(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT false)
+endif()
+set(CMAKE_INSTALL_SCRIPT "${CMAKE_CURRENT_SOURCE_DIR}/${cmake_dir_name}/${install_script_name}.cmake")	# this is cmake template for generating CMAKE_INSTALL_SCRIPT_SPECIFIC
+set(CMAKE_INSTALL_SCRIPT_SPECIFIC "${CMAKE_CURRENT_SOURCE_DIR}/${cmake_dir_name}/${install_script_name}.specific.cmake") # result script with hardcoded variable values
+
+# project configuration files location
+set(PROJECT_CONFIG_DIR ${CMAKE_SOURCE_DIR}/${config_dir_name})
+set(PROJECT_MEDIA_DIR ${CMAKE_SOURCE_DIR}/${media_dir_name})
 
 ################################################################
 #                   OGRE SETUP	                               #
@@ -223,7 +271,6 @@ endif(UNIX)
 #set(OCULUS_SDK_ROOT_DIR "${OCULUS_HOME}" CACHE PATH "Location of your OculusSDK libraries" FORCE)
 	
 
-
 ################################################################
 #                   EXTERNAL DEPENDENCIES                      #
 ################################################################
@@ -231,72 +278,62 @@ endif(UNIX)
 # OIS + OGRE lib
 find_package(OIS REQUIRED)							# OIS lib config
 find_package(OGRE REQUIRED)							# OGRE lib config
-list(APPEND LIBS_TO_LINK							# OGRE + OIS lib link
+list(APPEND LIBRARIES_TO_LINK							# OGRE + OIS lib link
 	${OGRE_LIBRARIES}								
 	${OGRE_Overlay_LIBRARIES}						
 	${OIS_LIBRARIES}								
 	)
-include_directories(								# OGRE + OIS lib include
+list(APPEND HEADERS_TO_INCLUDE_PUBLIC						# OGRE + OIS lib include
 	"${OIS_INCLUDE_DIRS}"
 	"${OGRE_INCLUDE_DIRS}"
 	"${OGRE_Overlay_INCLUDE_DIRS}"
 	"${OGRE_SAMPLES_INCLUDEPATH}"
 	)
 
-# OculusSDK lib
+# OculusSDK lib (add it as a precompiled library if user does not want to recompile it or source is not available)
 unset(OCULUSSDK_FOUND CACHE)
 set(OCULUSSDK_FOUND false)
 if(USE_BUNDLED_OculusSDK)
-	find_package(OculusSDK QUIET)					# OculusSDK lib config
+	find_package(OculusSDK QUIET)					# OculusSDK lib config (if bundled)
 	#message(${OCULUSSDK_FOUND})
 	if(NOT OCULUSSDK_FOUND)
 		if(OculusSDK_SOURCE_FOUND)
 			message("Failed to find bundled OculusSDK precompiled libraries. Source code available. Will force to compile it.")
 			set (COMPILE_OculusSDK true CACHE BOOL "[FORCED] Compile the source of OculusSDK toghether with the project" FORCE)
 		else()
-			message(SEND_ERROR "Failed to find bundled OculusSDK libraries/source.")
+			message(SEND_ERROR "Failed to find valid libraries/source in bundled OculusSDK folder. Uncheck the 'USE_BUNDLED_OculusSDK' flag and retry.")
 		endif()
 	endif()	
 else()
-	find_package(OculusSDK REQUIRED)
+	find_package(OculusSDK REQUIRED)				# OculusSDK lib config (if not bundled)
 endif()
 
 if(NOT COMPILE_OculusSDK)					
-	list(APPEND LIBS_TO_LINK ${OCULUS_SDK_LIBRARIES})# OculusSDK lib link
-	include_directories(							# OculusSDK lib include
-	"${OCULUS_SDK_INCLUDE_DIRS}"
-	)
+	list(APPEND LIBRARIES_TO_LINK ${OCULUS_SDK_LIBRARIES})		# OculusSDK lib link
+	list(APPEND HEADERS_TO_INCLUDE_PUBLIC "${OCULUS_SDK_INCLUDE_DIRS}")# OculusSDK lib include
 endif()
 
-							
-# OPENCV lib
-find_package(OpenCV REQUIRED)						# OpenCV lib config
-list(APPEND LIBS_TO_LINK ${OpenCV_LIBS})			# OpenCV lib link
-include_directories(								# OpenCV lib include
-	"${OpenCV_INCLUDE_DIRS}"
-	)
-
-
-
-################################################################
-#                   MAIN PROJECT SOURCE DIR                    #
-################################################################
-set (PROJECT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${source_dir_name})
-include_directories("${PROJECT_SOURCE_DIR}")
-
-################################################################
-#                   MAIN PROJECT INCLUDE DIR 				   #
-################################################################
-set (PROJECT_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${header_dir_name})
-include_directories("${PROJECT_INCLUDE_DIR}")
 
 ################################################################
 #                   ADD MAIN PROJECT FILES 					   #
 ################################################################
-file(GLOB_RECURSE source_files "${source_dir_name}/*.cpp")
+
+# main directories
+set (PROJECT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${source_dir_name})
+set (PROJECT_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/${header_dir_name})
+
+# add files and group them
+file(GLOB source_files "${source_dir_name}/*.cpp")
+if(NOT IS_SUBPROJECT)
+	list(APPEND source_files "${source_dir_name}/demo/main.cpp")	# main file to run the demo
+endif()
 source_group("${source_dir_name}" FILES ${source_files})
 file(GLOB_RECURSE header_files "${header_dir_name}/*.hpp" "${header_dir_name}/*.h")
 source_group("${header_dir_name}" FILES ${header_files})
+
+# add header files to included directories
+list(APPEND HEADERS_TO_INCLUDE_PUBLIC "${PROJECT_INCLUDE_DIR}")
+
 
 ################################################################
 #                   ADD SUBPROJECTS (RECURSIVE)				   #
@@ -306,46 +343,72 @@ source_group("${header_dir_name}" FILES ${header_files})
 if(USE_BUNDLED_OculusSDK AND COMPILE_OculusSDK)
 	add_subdirectory(${OCULUS_HOME}/LibOVR)				# OculusSDK subproject source
 	set_target_properties(ovr PROPERTIES FOLDER "3rdParty")
-	list(APPEND LIBS_TO_LINK ovr)						# OculusSDK subproject lib link4
-	include_directories(								# OculusSDK subproject include
+	list(APPEND LIBRARIES_TO_LINK ovr)					# OculusSDK subproject lib link4
+	list(APPEND HEADERS_TO_INCLUDE_PUBLIC						# OculusSDK subproject include
 		"${OCULUS_HOME}/LibOVR/Include"
 		"${OCULUS_HOME}/LibOVRKernel/Src"
 	)
 endif()
 
 
-
 ################################################################
 #                   EXE OUTPUT                                 #
 ################################################################
-ADD_EXECUTABLE("${exe_name}" ${source_files} ${header_files})
+if(IS_SUBPROJECT)
+	add_library(${OUTPUT_FILE_NAME} STATIC
+		${source_files}
+		${header_files}
+	)
+else()
+	ADD_EXECUTABLE("${OUTPUT_FILE_NAME}" ${source_files} ${header_files})
+endif()
+
+
+################################################################
+#                   INCLUDING HEADERS                          #
+################################################################
+
+if(DEFINED HEADERS_TO_INCLUDE_PUBLIC)
+	target_include_directories(${OUTPUT_FILE_NAME} PUBLIC ${HEADERS_TO_INCLUDE_PUBLIC})		# these headers will be accessible from parent projects and can be
+endif()																							# included automatically by including:
+																								# $<TARGET_PROPERTY:OgreOculusApp,INTERFACE_INCLUDE_DIRECTORIES>
+																								# as PRIVATE or PUBLIC to your target.
+
+if(DEFINED HEADERS_TO_INCLUDE_PRIVATE)
+	target_include_directories(${OUTPUT_FILE_NAME} PRIVATE ${HEADERS_TO_INCLUDE_PRIVATE})		# these headers cannot be accessed from parent projects, unless
+endif()																							# you include them manually by hardcoding their path.
+																								# By the way, these are only the headers that are not meant to be
+																								# used by parent project (hidden dependencies)
 
 ################################################################
 #                   LINKING LIBRARIES                          #
 ################################################################
 
 # All platforms
-target_link_libraries("${exe_name}"
-	${LIBS_TO_LINK}
-	#${Boost_LIBRARY_DIRS}							# Boost libraries (if your Ogre needs it)
-)					
+if(DEFINED LIBRARIES_TO_LINK)
+	target_link_libraries("${OUTPUT_FILE_NAME}"
+		${LIBRARIES_TO_LINK}
+		#${Boost_LIBRARY_DIRS}							# Boost libraries (if your Ogre needs it)
+	)
+endif()			
 
 # Win32 specific
 if( WIN32 )
-	target_link_libraries("${exe_name}"
+	target_link_libraries("${OUTPUT_FILE_NAME}"
 		winmm.lib
 		ws2_32.lib
 	)
+	
 # Unix specific
 elseif( UNIX )
 
-		# Where to find UDEV:
-		find_package(UDEV REQUIRED)
-		# Where to find XINERAMA:
-		find_package(Xinerama REQUIRED)
-		find_package(X11 REQUIRED)
+	# Where to find UDEV:
+	find_package(UDEV REQUIRED)
+	# Where to find XINERAMA:
+	find_package(Xinerama REQUIRED)
+	find_package(X11 REQUIRED)
 
-	target_link_libraries("${exe_name}"
+	target_link_libraries("${OUTPUT_FILE_NAME}"
 		librt.so
 		libXrandr.so
 		libGL.so
@@ -356,8 +419,14 @@ elseif( UNIX )
 	)
 endif()
 
+
+
+################################################################
+#           TARGET PROPRIETIES AND COMPILER OPTIONS            #
+################################################################
+
 # set "_d" postfix for debug configurations
-set_target_properties(${PROJECT_NAME} PROPERTIES DEBUG_POSTFIX _d)
+set_target_properties(${OUTPUT_FILE_NAME} PROPERTIES DEBUG_POSTFIX _d)
 
 # /MP for multiple thread compiling
 # WIN32_LEAN_AND_MEAN to avoid conflicts between boost and Leap motion, which both seem to include winsock.h
@@ -372,19 +441,50 @@ endif()
 message(STATUS "Ogre Debug plugin dir found: ${OGRE_PLUGIN_DIR_DBG}")
 message(STATUS "Ogre Release plugin dir found: ${OGRE_PLUGIN_DIR_REL}")
 
+# If is a subproject and a needed configuration/media file is missing from top-level directory, make a copy from samples
+# -------------------------
+if(IS_SUBPROJECT)
+	# config files
+	# note: only .cfg files from config directory (and no subdirectories) are compared and copied
+	file(GLOB config_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/${sample_config_dir_name}" "${CMAKE_CURRENT_SOURCE_DIR}/${sample_config_dir_name}/*.cfg")
+	foreach(config_file ${config_files})
+		if(NOT EXISTS ${PROJECT_CONFIG_DIR}/${config_file})
+			message(STATUS "No ${config_file} found in '${PROJECT_CONFIG_DIR}'. Copying default file from '${CMAKE_CURRENT_SOURCE_DIR}/${config_dir_name}' ..")
+			file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/${config_dir_name}/${config_file}"
+				DESTINATION "${PROJECT_CONFIG_DIR}"
+			)
+		endif()
+	endforeach()
+	# media files
+	# note: any content found in any subfolder will be copied to the main folder PRESERVING directory structure
+	# (this means that also media used for demo/sample will be copied for simplicity)
+	file(GLOB_RECURSE media_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/${sample_media_dir_name}" "${CMAKE_CURRENT_SOURCE_DIR}/${sample_media_dir_name}/*")
+	foreach(media_file ${media_files})
+		string(REGEX MATCH "(.*/?)([^/]+)$" media_file_relative_path ${media_file})
+		set(media_file_relative_path ${CMAKE_MATCH_1})		# if file is in main folder, this is an empty string
+		set(media_file_name ${CMAKE_MATCH_2}) 				# this will only contain filename.extension
+		if(NOT EXISTS ${PROJECT_MEDIA_DIR}/${media_file})
+			message(STATUS "No ${CMAKE_MATCH_2} found in '${PROJECT_MEDIA_DIR}'. Copying file from '${CMAKE_CURRENT_SOURCE_DIR}/${media_dir_name}' ..")
+			file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/${media_dir_name}/${media_file}"
+				DESTINATION "${PROJECT_MEDIA_DIR}/${media_file_relative_path}"
+			)
+		endif()
+	endforeach()	
+endif()
+
 # Set path to Ogre plugins in plugins.cfg/plugins_d.cfg according to your system:
 # -------------------------
-file(READ ${CMAKE_SOURCE_DIR}/${config_dir_name}/plugins.cfg PLUGINS_FILE)
-file(READ ${CMAKE_SOURCE_DIR}/${config_dir_name}/plugins_d.cfg PLUGINS_D_FILE)
+file(READ ${PROJECT_CONFIG_DIR}/plugins.cfg PLUGINS_FILE)
+file(READ ${PROJECT_CONFIG_DIR}/plugins_d.cfg PLUGINS_D_FILE)
 string(REGEX REPLACE "PluginFolder=[^\n]*"
 	"PluginFolder=${OGRE_PLUGIN_DIR_REL}" PLUGINS_FILE_MODIFIED
 	${PLUGINS_FILE})
 string(REGEX REPLACE "PluginFolder=[^\n]*"
 	"PluginFolder=${OGRE_PLUGIN_DIR_DBG}" PLUGINS_D_FILE_MODIFIED
 	${PLUGINS_D_FILE})
-file(WRITE ${CMAKE_SOURCE_DIR}/${config_dir_name}/plugins.cfg ${PLUGINS_FILE_MODIFIED})
-file(WRITE ${CMAKE_SOURCE_DIR}/${config_dir_name}/plugins_d.cfg ${PLUGINS_D_FILE_MODIFIED})
-message(STATUS "plugins.cfg and plugins.cfg updated according to your setup.")
+file(WRITE ${PROJECT_CONFIG_DIR}/plugins.cfg ${PLUGINS_FILE_MODIFIED})
+file(WRITE ${PROJECT_CONFIG_DIR}/plugins_d.cfg ${PLUGINS_D_FILE_MODIFIED})
+message(STATUS "plugins_d.cfg and plugins.cfg updated according to your setup.")
 
 # Set absolute paths to Ogre media in resources.cfg according to your system:
 # ---------------------------
@@ -393,7 +493,7 @@ string(REGEX REPLACE	# regex does not like escapes :)
 	"\\\\"				# for regex this means "\"
 	"/"
 	OGRE_HOME_BACKSLASHES ${OGRE_HOME})
-file(READ ${CMAKE_SOURCE_DIR}/${config_dir_name}/resources.cfg RESOURCES_FILE)
+file(READ ${PROJECT_CONFIG_DIR}/resources.cfg RESOURCES_FILE)
 # Set the variable "Esc" to some ASCII value - basically something
 # which is unlikely to conflict with anything in the file contents.
 string(ASCII 27 Esc)
@@ -419,7 +519,7 @@ foreach(Line ${ContentsAsList})
   # Append modified line to output file
   set(RESOURCES_FILE_MODIFIED "${RESOURCES_FILE_MODIFIED}${Line}")
 endforeach()
-file(WRITE ${CMAKE_SOURCE_DIR}/${config_dir_name}/resources.cfg ${RESOURCES_FILE_MODIFIED})
+file(WRITE ${PROJECT_CONFIG_DIR}/resources.cfg ${RESOURCES_FILE_MODIFIED})
 message(STATUS "resources.cfg updated according to your setup.")
 
 # ok.. but now what is the name of YOUR Ogre media folder?
@@ -439,39 +539,40 @@ set(OGRE_MEDIA_FOLDER_NAME ${CMAKE_MATCH_2})
 
 # define "dist" directory where finished project should be installed for final distribution
 #if(WIN32 AND NOT MINGW)
-#	add_custom_command( TARGET ${PROJECT_NAME} PRE_BUILD
+#	add_custom_command( TARGET ${OUTPUT_FILE_NAME} PRE_BUILD
 #		COMMAND if not exist ..\\${distribution_dir_name} mkdir ..\\${distribution_dir_name} )
-	#add_custom_command( TARGET ${PROJECT_NAME} POST_BUILD
+	#add_custom_command( TARGET ${OUTPUT_FILE_NAME} POST_BUILD
 	#	COMMAND copy \"$(TargetPath)\" ..\\${distribution_dir_name} )
 #endif(WIN32 AND NOT MINGW)
  
 #if(MINGW OR UNIX)
-	#set(EXECUTABLE_OUTPUT_PATH ${CMAKE_SOURCE_DIR}/${distribution_dir_name})
+	#set(EXECUTABLE_OUTPUT_PATH ${CMAKE_INSTALL_PREFIX})
 #endif(MINGW OR UNIX)
 
 # 
 #install (SCRIPT "${CMAKE_SOURCE_DIR}/cmake/PreInstall.cmake")
 
 # copy release executable
-install(TARGETS ${PROJECT_NAME}
-	RUNTIME DESTINATION ${CMAKE_SOURCE_DIR}/${distribution_dir_name}
-	CONFIGURATIONS Release RelWithDebInfo
-)
+if(NOT IS_SUBPROJECT)
+	install(TARGETS ${OUTPUT_FILE_NAME}
+		RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}
+		CONFIGURATIONS Release RelWithDebInfo
+	)
+endif()
 
 # copy LOCAL /media folder AS IS into /dist (IF ANY!)
-if(EXISTS "${CMAKE_SOURCE_DIR}/${media_dir_name}" AND IS_DIRECTORY "${CMAKE_SOURCE_DIR}/${media_dir_name}")
-	install(DIRECTORY ${CMAKE_SOURCE_DIR}/${media_dir_name}
-		DESTINATION ${CMAKE_SOURCE_DIR}/${distribution_dir_name}
+if(EXISTS "${PROJECT_MEDIA_DIR}" AND IS_DIRECTORY "${PROJECT_MEDIA_DIR}")
+	install(DIRECTORY ${PROJECT_MEDIA_DIR}
+		DESTINATION ${CMAKE_INSTALL_PREFIX}
 		CONFIGURATIONS Release RelWithDebInfo Debug
 	)
 endif()
 
-# [OGRE] copy needed cfg files from /cfg(MUST BE DONE BEFORE RUNNING PostInstall SCRIPT)
-if(EXISTS "${CMAKE_SOURCE_DIR}/${config_dir_name}/plugins.cfg" AND EXISTS "${CMAKE_SOURCE_DIR}/${config_dir_name}/resources.cfg")
-	install(FILES
-		${CMAKE_SOURCE_DIR}/${config_dir_name}/plugins.cfg
-		${CMAKE_SOURCE_DIR}/${config_dir_name}/resources.cfg
-		DESTINATION ${CMAKE_SOURCE_DIR}/${distribution_dir_name}/${config_dir_name}
+# [OGRE] copy needed cfg files from /cfg (MUST BE DONE BEFORE RUNNING PostInstall SCRIPT)
+file(GLOB config_files "${CMAKE_SOURCE_DIR}/${sample_config_dir_name}/*.cfg")
+if(DEFINED config_files)
+	install(FILES ${config_files}
+		DESTINATION ${CMAKE_INSTALL_PREFIX}/${config_dir_name}
 		CONFIGURATIONS Release RelWithDebInfo Debug
 	)
 endif()
@@ -485,7 +586,7 @@ install(FILES
 	${OGRE_PLUGIN_DIR_REL}/OIS.dll
 	${OGRE_PLUGIN_DIR_REL}/cg.dll
 	${OGRE_PLUGIN_DIR_REL}/OgreOverlay.dll
-	DESTINATION ${CMAKE_SOURCE_DIR}/${distribution_dir_name}
+	DESTINATION ${CMAKE_INSTALL_PREFIX}
 	CONFIGURATIONS Release RelWithDebInfo Debug
 )
 
@@ -498,12 +599,12 @@ if(Boost_FOUND)
 		# because they're not linked statically (it worked with 1.7.1 though)
 		install(FILES ${Boost_DATE_TIME_LIBRARY_RELEASE}
 			${Boost_THREAD_LIBRARY_RELEASE}
-			DESTINATION ${CMAKE_SOURCE_DIR}/${distribution_dir_name}
+			DESTINATION ${CMAKE_INSTALL_PREFIX}
 			CONFIGURATIONS Release RelWithDebInfo
 		)
 		install(FILES ${Boost_DATE_TIME_LIBRARY_DEBUG}
 			${Boost_THREAD_LIBRARY_DEBUG}
-			DESTINATION ${CMAKE_SOURCE_DIR}/${distribution_dir_name}
+			DESTINATION ${CMAKE_INSTALL_PREFIX}
 			CONFIGURATIONS Debug
 		)	
 	 

@@ -1,0 +1,7 @@
+.cfg files in this folder are used ONLY when OgreOculusApp is Configured as the Main Project.
+
+Otherwise, cmake will detect if you don't have any .cfg file named after them in your top-level /cfg folder,
+and will make a COPY for you on Configure phase for each missing file.
+
+BUT THESE FILES ARE NOT USED if OgreOculusApp is Configured as a subproject.
+

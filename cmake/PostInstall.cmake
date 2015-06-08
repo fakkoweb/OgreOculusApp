@@ -4,6 +4,7 @@
 # 	- ${CMAKE_INSTALL_PREFIX} 			(globally configured by cmake)
 set (OGRE_PLUGIN_DIR_REL "@OGRE_PLUGIN_DIR_REL@")		# values mirrored by configure_file()
 set (OGRE_MEDIA_FOLDER_NAME "@OGRE_MEDIA_FOLDER_NAME@")	# values mirrored by configure_file()
+set (media_dir_name "@media_dir_name@")					# values mirrored by configure_file()
 set (config_dir_name "@config_dir_name@")				# values mirrored by configure_file()
 set (plugins_dir_name "@plugins_dir_name@")				# values mirrored by configure_file()
 
@@ -81,10 +82,14 @@ foreach(Line ${ContentsAsList})
 			DESTINATION "${CMAKE_INSTALL_PREFIX}/${resource_destination_folder}"
 		)
 		message(STATUS "Resources installed in subfolder '/${resource_path_suffix}'.")
+		# update ABSOLUTE path so that it points to media_dir_name (relative path)
+		#message(STATUS "Updating reference in resources.cfg ...")
+		string(REGEX REPLACE "=.*/${OGRE_MEDIA_FOLDER_NAME}" "=${media_dir_name}" Line ${Line})
+	else()
+		# update RELATIVE path so that it points to media_dir_name (relative path)
+		#message(STATUS "Updating reference in resources.cfg ...")
+		string(REGEX REPLACE "=.*/${media_dir_name}" "=${media_dir_name}" Line ${Line})	
 	endif()
-	# update line so that they start with "media" (relative path)
-	#message(STATUS "Updating reference in resources.cfg ...")
-	string(REGEX REPLACE "=.*/media" "=media" Line ${Line})
 	# Swap the appended Esc character back out in favour of a line feed
 	string(REGEX REPLACE "${Esc}" "\n" Line ${Line})
 	# Append modified line to output file

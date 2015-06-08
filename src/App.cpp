@@ -10,14 +10,17 @@ void frames_per_second(int delay)
 	time += delay;
 	if (time >= 1000)
 	{
-		std::cout << "fps:" << num_frame << std::endl;
+		std::cout << "\tFPS:" << num_frame << std::endl;
 		num_frame = 0;
 		time = 0;
 	}
 
 }
-std::chrono::steady_clock::time_point last_request;
-std::chrono::duration< int, std::milli > delay;
+
+//Globals used only in App.cpp
+std::chrono::steady_clock::time_point ogre_last_frame_displayed_time = std::chrono::system_clock::now();
+std::chrono::duration< int, std::milli > ogre_last_frame_delay;
+
 
 ////////////////////////////////////////////////////////////
 // Init application
@@ -36,7 +39,10 @@ App::App()
 	mSmallWindow = NULL;
 	mRift = NULL;
 
-	//Ogre engine setup (creates Ogre main rendering window)
+	//Load custom configuration for the App (parameters.cfg)
+	loadConfig();
+
+	//Ogre engine setup (loads plugins.cfg/resources.cfg and creates Ogre main rendering window NOT THE SCENE)
 	initOgre();
 
 	//Rift Setup (creates Oculus rendering window and Oculus inner scene - user shouldn't care about it)
@@ -49,9 +55,47 @@ App::App()
 	// This class implements App logic!!
 	mScene = new Scene(mRoot, mMouse, mKeyboard);
 	mScene->setIPD(mRift->getIPD());
+	//if (mOverlaySystem)	mScene->getSceneMgr()->addRenderQueueListener(mOverlaySystem);	//Only Ogre main scene will render overlays!
+	try
+	{
+		// try first to load HFOV/VFOV values (higher priority)
+		mScene->setupVideo(mConfig->getValueAsReal("Camera/HFOV"), mConfig->getValueAsReal("Camera/VFOV"));
+	}
+	catch (Ogre::Exception &e)
+	{
+		// in case one of these parameters is not found in configuration file or is invalid...
+		if (e.getNumber() == Ogre::Exception::ERR_ITEM_NOT_FOUND || e.getNumber() == Ogre::Exception::ERR_INVALIDPARAMS)
+		{
+			try
+			{
+				// ..try to load other parameters (these are preferred, but lower priority since not everyone know these)
+				mScene->setupVideo(mConfig->getValueAsReal("Camera/SensorWidth"), mConfig->getValueAsReal("Camera/SensorHeight"), mConfig->getValueAsReal("Camera/FocalLenght"));
+			}
+			catch (Ogre::Exception &e)
+			{
+				// if another exception is thrown (any), forward
+				throw e;
+			}
+		}
+		// if another exception is thrown, forward
+		else
+		{
+			throw e;
+		}
+	}
+	// when setup has finished successfully, enable Video into scene
+	// mScene->enableVideo();	USER CAN ACTIVATE IT, SEE INPUT KEYS LISTENERS!
+
+	//Start info display interface
+	//initTray();
 
 	//Viewport setup (link scene cameras to Ogre/Oculus windows)
 	createViewports();
+
+	// Then setup THIS CLASS INSTANCE as a frame listener
+	// This means that Ogre will call frameStarted(), frameRenderingQueued() and frameEnded()
+	// automatically and periodically if defined in this class
+	mRoot->addFrameListener(this);
 
 	//Ogre::WindowEventUtilities::messagePump();
 
@@ -67,7 +111,7 @@ App::~App()
 
 	std::cout << "Deleting Scene:" << std::endl;
 	if( mScene ) delete mScene;
-
+	//quitTray();
 	std::cout << "Closing OIS:" << std::endl;
 	quitOIS();
 	std::cout << "Closing Ogre:" << std::endl;
@@ -75,11 +119,52 @@ App::~App()
 }
 
 /////////////////////////////////////////////////////////////////
+// Load User parameters and App configuration
+/////////////////////////////////////////////////////////////////
+void App::loadConfig()
+{
+	std::string configFilePathPrefix = "cfg/";			// configuration files default location when app is installed
+	std::string paramsFileName = "parameters.cfg";		// parameters config file name
+
+	// LOAD APP CONFIGURATION VALUES
+	// Try to load load up a valid config file (start the program with default values if none is found)
+	try
+	{
+		//This will work ONLY when application is installed (only Release application)!
+		mConfig = new ConfigDB(configFilePathPrefix + paramsFileName);
+	}
+	catch (Ogre::FileNotFoundException& e)
+	{
+		try
+		{
+			// if no existing config, or could not restore it, try to load from a different location
+			configFilePathPrefix = "../cfg/";
+
+			// This will work ONLY when application is in development (Debug/Release configuration)
+			mConfig = new ConfigDB(configFilePathPrefix + paramsFileName);
+		}
+		catch (Ogre::FileNotFoundException& e)
+		{
+			// return silently from loadConfig() -- hardcoded default values or main arguments will be used
+			return;
+		}
+	}
+
+	// Overwrite parameters values
+	CAMERA_BUFFERING_DELAY = mConfig->getValueAsInt("Camera/BufferingDelay");
+	ROTATE_VIEW = mConfig->getValueAsBool("Oculus/RotateView");
+
+
+}
+
+
+/////////////////////////////////////////////////////////////////
 // Init Ogre (construction, setup and destruction of ogre root):
 /////////////////////////////////////////////////////////////////
 
 void App::initOgre()
 {
+
 	// Config file class is an utility that parses and stores values from a .cfg file
 	Ogre::ConfigFile cf;
 	std::string configFilePathPrefix = "cfg/";			// configuration files default location when app is installed
@@ -89,6 +174,7 @@ void App::initOgre()
 	std::string pluginsFileName = "plugins.cfg";		// plugins config file name (Release mode)
 #endif
 	std::string resourcesFileName = "resources.cfg";	// resources config file name (Debug/Release mode)
+
 
 
 	// LOAD OGRE PLUGINS
@@ -123,6 +209,7 @@ void App::initOgre()
 	mRoot = new Ogre::Root(configFilePathPrefix + pluginsFileName, configFilePathPrefix + "ogre.cfg", "ogre.log");
 	// No Ogre::FileNotFoundException is thrown by this, that's why we tried to open it first with ConfigFile::load()
 
+
 	
 	// LOAD OGRE RESOURCES
 	// Load up resources according to resources.cfg ("cf" variable is reused)
@@ -145,12 +232,13 @@ void App::initOgre()
 		}
 	}
 
-    // Go through all sections & settings in the file
+    // Go through all sections & settings in the file and ADD them to Resource Manager
     Ogre::ConfigFile::SectionIterator seci = cf.getSectionIterator();
     Ogre::String secName, typeName, archName;
     while (seci.hasMoreElements())
     {
-        secName = seci.peekNextKey(); Ogre::ConfigFile::SettingsMultiMap *settings = seci.getNext();
+        secName = seci.peekNextKey();
+		Ogre::ConfigFile::SettingsMultiMap *settings = seci.getNext();
         Ogre::ConfigFile::SettingsMultiMap::iterator i;
         for (i = settings->begin(); i != settings->end(); ++i)
         {
@@ -161,12 +249,6 @@ void App::initOgre()
                 archName, typeName, secName);
         }
 	}
-
-
-	// Then setup THIS CLASS INSTANCE as a frame listener
-	// This means that Ogre will call frameStarted(), frameRenderingQueued() and frameEnded()
-	// automatically and periodically if defined in this class
-	mRoot->addFrameListener(this);
 
 
 	// SELECT AND CUSTOMIZE OGRE RENDERING (OpenGL)
@@ -211,6 +293,7 @@ void App::initOgre()
 	mWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1080, 1920, true, &miscParams);
 	*/
 
+#ifdef _DEBUG
 	// Options for Window 2 (debug window)
 	// This window will simply show what the two cameras see in two different viewports
 	Ogre::NameValuePairList miscParamsSmall;
@@ -220,7 +303,60 @@ void App::initOgre()
 	if( DEBUG_WINDOW )
 		mSmallWindow = mRoot->createRenderWindow("DEBUG Oculus Rift Liver Visualization", 1920*debugWindowSize, 1080*debugWindowSize, false, &miscParamsSmall);   
 
+	// Options for Window 3 (god window)
+	// This debug window will show the whole scene from a top view perspective
+	Ogre::NameValuePairList miscParamsGod;
+	miscParamsSmall["monitorIndex"] = Ogre::StringConverter::toString(0);
+	
+	// Create Window 3
+	if (DEBUG_WINDOW)
+		mGodWindow = mRoot->createRenderWindow("DEBUG God Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParamsSmall);
+#endif
+
+
+
 	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
+//	mOverlaySystem = new Ogre::OverlaySystem();
+
+}
+
+void App::initTray()
+{
+	// Register as a Window listener
+	//Ogre::WindowEventUtilities::addWindowEventListener(mWindow, this);
+
+	/*/
+	if (mWindow)
+	{
+		mInputContext.mKeyboard = mKeyboard;
+		mInputContext.mMouse = mMouse;
+
+		mTrayMgr = new OgreBites::SdkTrayManager("InterfaceName", mWindow, mInputContext, this);
+		mTrayMgr->showFrameStats(OgreBites::TL_BOTTOMLEFT);
+		//mTrayMgr->showLogo(OgreBites::TL_BOTTOMRIGHT);
+		mTrayMgr->hideCursor();
+
+		// Create a params panel for displaying sample details
+		Ogre::StringVector items;
+		items.push_back("cam.pX");
+		items.push_back("cam.pY");
+		items.push_back("cam.pZ");
+		items.push_back("");
+		items.push_back("cam.oW");
+		items.push_back("cam.oX");
+		items.push_back("cam.oY");
+		items.push_back("cam.oZ");
+		items.push_back("");
+		items.push_back("Filtering");
+		items.push_back("Poly Mode");
+
+		mDetailsPanel = mTrayMgr->createParamsPanel(OgreBites::TL_NONE, "DetailsPanel", 200, items);
+		mDetailsPanel->setParamValue(9, "Bilinear");
+		mDetailsPanel->setParamValue(10, "Solid");
+		mDetailsPanel->hide();
+	}
+	*/
+	
 }
 
 void App::createViewports()
@@ -263,6 +399,22 @@ void App::createViewports()
 		Ogre::Viewport* debugR = mSmallWindow->addViewport(mScene->getRightCamera(), 1, 0.5, 0.0, 0.5, 1.0);
 		debugR->setBackgroundColour(Ogre::ColourValue(0.15, 0.15, 0.15));
 	}
+
+	// Create a God view window from a third view camera
+	if (mGodWindow)
+	{
+		Ogre::Viewport* god = mGodWindow->addViewport(mScene->getGodCamera(), 0, 0.0, 0.0, 1.0, 1.0);
+	}
+}
+
+void App::quitTray()
+{
+	/*
+	delete mTrayMgr;
+	mTrayMgr = nullptr;
+	delete mOverlaySystem;
+	mOverlaySystem = nullptr;
+	*/
 }
 
 void App::quitOgre()
@@ -347,32 +499,39 @@ void App::quitRift()
 // Good time to update measurements and physics before rendering next frame!
 bool App::frameRenderingQueued(const Ogre::FrameEvent& evt) 
 {
-	//calculate delay and show
-	delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - last_request);
-	frames_per_second(delay.count());
+	// [TIME] FRAME RATE DISPLAY
+	//calculate delay from last frame and show
+	ogre_last_frame_delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ogre_last_frame_displayed_time);
+	frames_per_second(ogre_last_frame_delay.count());
 
 	if (mShutdown) return false;
 
+	// [RIFT] UPDATE
+	// update Oculus information and sends it to Scene (Position/Orientation of character's head)
 	if(mRift)
 	{
-		if ( mRift->update( evt.timeSinceLastFrame ) )
+		if ( mRift->update( evt.timeSinceLastFrame ) )		// saves new orientation/position information
 		{
-			mScene->setRiftPose( mRift->getOrientation(), mRift->getPosition() );
+			mScene->setRiftPose( mRift->getOrientation(), mRift->getPosition() );	// sets orientation/position to a SceneNode
 		} else {
 			delete mRift;
 			mRift = NULL;
 		}
 	}
 
-	//update the standard input devices
+	// [OIS] UPDATE
+	// update standard input devices state
 	mKeyboard->capture();
 	mMouse->capture();
 
-	//call updates on scene elements
+	// [OGRE] UPDATE
+	// perform any other update that regards the Scene only (ex. Physics calculations)
 	mScene->update( evt.timeSinceLastFrame );
+	//mTrayMgr->frameRenderingQueued(evt);
 
-	//get now time
-	last_request = std::chrono::system_clock::now();
+	// [TIME] UPDATE
+	// save time point for this frame (for frame rate calculation)
+	ogre_last_frame_displayed_time = std::chrono::system_clock::now();
 
 	//exit if key ESCAPE pressed 
 	if(mKeyboard->isKeyDown(OIS::KC_ESCAPE)) 
@@ -397,6 +556,37 @@ bool App::keyPressed( const OIS::KeyEvent& e )
 bool App::keyReleased( const OIS::KeyEvent& e )
 {
 	mScene->keyReleased( e );
+
+	static float distance = 1;
+	if (e.key == OIS::KC_ADD)
+	{
+		//CAMERA_BUFFERING_DELAY += 5;
+		distance += 0.1f;
+		mScene->setVideoDistance(distance);
+	}
+	if (e.key == OIS::KC_SUBTRACT)
+	{
+		//CAMERA_BUFFERING_DELAY -= 5;
+		distance -= 0.1f;
+		mScene->setVideoDistance(distance);
+	}
+
+	static bool seethroughEnabled = false;
+	if (e.key == OIS::KC_C)
+	{
+		// toggle VIDEO in the scene with "c"
+		if (seethroughEnabled)
+		{
+			mScene->disableVideo();
+			seethroughEnabled = false;
+		}
+		else
+		{
+			mScene->enableVideo();
+			seethroughEnabled = true;
+		}
+	}
+		
 	return true;
 }
 bool App::mouseMoved( const OIS::MouseEvent& e )

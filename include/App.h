@@ -7,6 +7,7 @@
 
 //class Rift;
 
+#include "ConfigDB.h"
 #include "Rift.h"
 #include <sstream>
 #include <string.h>
@@ -27,10 +28,13 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		App();
 		~App();
 
+		void loadConfig();
 		void initOgre();
 		void quitOgre();
 		void initOIS();
 		void quitOIS();
+		void initTray();
+		void quitTray();
 		//TODO: separate Ogre initialization from windows creation (Oculus NEEDS a window or to create a window to start!)
 		//void createWindows();
 		void createViewports();
@@ -51,14 +55,21 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		bool update();
 
 	private:
+		ConfigDB* mConfig;
 
 		OIS::Keyboard* mKeyboard;
 		OIS::Mouse* mMouse;
 
 		Ogre::Root* mRoot;
 
-		Ogre::RenderWindow* mWindow;
-		Ogre::RenderWindow* mSmallWindow;
+		Ogre::RenderWindow* mWindow = nullptr;
+		
+		// interface display
+		bool                        mCursorWasVisible;	// Was cursor visible before dialog appeared?
+		bool                        mShutDown;
+
+		Ogre::RenderWindow* mSmallWindow = nullptr;
+		Ogre::RenderWindow* mGodWindow = nullptr;
 		Ogre::Viewport* mViewportL;
 		Ogre::Viewport* mViewportR;
 
@@ -68,6 +79,7 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		Scene* mScene;
 
 		Rift* mRift;
+
 };
 
 #endif
