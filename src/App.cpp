@@ -26,7 +26,7 @@ std::chrono::duration< int, std::milli > ogre_last_frame_delay;
 // Init application
 ////////////////////////////////////////////////////////////
 
-App::App()
+App::App(const std::string& configurationFilePath = "/cfg/parameters.cfg")
 {
 	std::cout << "Creating Ogre application:" << std::endl;
 
@@ -40,13 +40,16 @@ App::App()
 	mRift = NULL;
 
 	//Load custom configuration for the App (parameters.cfg)
-	loadConfig();
+	loadConfig(configurationFilePath);
 
 	//Ogre engine setup (loads plugins.cfg/resources.cfg and creates Ogre main rendering window NOT THE SCENE)
 	initOgre();
 
 	//Rift Setup (creates Oculus rendering window and Oculus inner scene - user shouldn't care about it)
 	initRift();
+
+	//Stereo camera rig setup ()
+	initCameras();
 
 	//Input/Output setup (associate I/O to Oculus window)
 	initOIS();
@@ -100,6 +103,7 @@ App::App()
 	//Ogre::WindowEventUtilities::messagePump();
 
 	// START RENDERING!
+	// WHO CREATES AN INSTANCE OF THIS CLASS WILL WAIT INDEFINITELY UNTIL THIS CALL RETURNS
 	mRoot->startRendering();
 }
 
@@ -107,6 +111,7 @@ App::~App()
 {
 	std::cout << "Deleting Ogre application." << std::endl;
 
+	quitCameras();
 	quitRift();
 
 	std::cout << "Deleting Scene:" << std::endl;
@@ -121,39 +126,14 @@ App::~App()
 /////////////////////////////////////////////////////////////////
 // Load User parameters and App configuration
 /////////////////////////////////////////////////////////////////
-void App::loadConfig()
+void App::loadConfig(const std::string& configurationFilePath)
 {
-	std::string configFilePathPrefix = "cfg/";			// configuration files default location when app is installed
-	std::string paramsFileName = "parameters.cfg";		// parameters config file name
 
-	// LOAD APP CONFIGURATION VALUES
-	// Try to load load up a valid config file (start the program with default values if none is found)
-	try
-	{
-		//This will work ONLY when application is installed (only Release application)!
-		mConfig = new ConfigDB(configFilePathPrefix + paramsFileName);
-	}
-	catch (Ogre::FileNotFoundException& e)
-	{
-		try
-		{
-			// if no existing config, or could not restore it, try to load from a different location
-			configFilePathPrefix = "../cfg/";
+	mConfig = new ConfigDB(configurationFilePath);
 
-			// This will work ONLY when application is in development (Debug/Release configuration)
-			mConfig = new ConfigDB(configFilePathPrefix + paramsFileName);
-		}
-		catch (Ogre::FileNotFoundException& e)
-		{
-			// return silently from loadConfig() -- hardcoded default values or main arguments will be used
-			return;
-		}
-	}
-
-	// Overwrite parameters values
+	// Overwrite default parameters values
 	CAMERA_BUFFERING_DELAY = mConfig->getValueAsInt("Camera/BufferingDelay");
 	ROTATE_VIEW = mConfig->getValueAsBool("Oculus/RotateView");
-
 
 }
 
@@ -316,7 +296,7 @@ void App::initOgre()
 
 
 	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
-//	mOverlaySystem = new Ogre::OverlaySystem();
+	//mOverlaySystem = new Ogre::OverlaySystem();
 
 }
 
@@ -325,7 +305,7 @@ void App::initTray()
 	// Register as a Window listener
 	//Ogre::WindowEventUtilities::addWindowEventListener(mWindow, this);
 
-	/*/
+	/*
 	if (mWindow)
 	{
 		mInputContext.mKeyboard = mKeyboard;
@@ -491,6 +471,30 @@ void App::quitRift()
 	//Rift::shutdown();
 }
 
+////////////////////////////////////////////////////////////////
+// Init Cameras (Device and API initialization, setup and close):
+////////////////////////////////////////////////////////////////
+
+void App::initCameras()
+{
+	mCameraLeft = new FrameCaptureHandler(0, mRift);
+	//mCameraRight = new FrameCaptureHandler(1, mRift);
+
+	mCameraLeft->startCapture();
+	//mCameraRight->startCapture();
+
+	cv::namedWindow("CameraDebug", cv::WINDOW_NORMAL);
+	cv::resizeWindow("CameraDebug", 1920 / 4, 1080 / 4);
+}
+
+void App::quitCameras()
+{
+	mCameraLeft->stopCapture();
+	//mCameraRight->stopCapture();
+	if (mCameraLeft) delete mCameraLeft;
+	//if (mCameraRight) delete mCameraRight;
+}
+
 ////////////////////////////////////////////////////////////
 // Handle Rendering (Ogre::FrameListener)
 ////////////////////////////////////////////////////////////
@@ -517,6 +521,27 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 			delete mRift;
 			mRift = NULL;
 		}
+	}
+
+	// [CAMERA] UPDATE
+	// update cameras information and sends it to Scene (Texture of pictures planes/shapes)
+	FrameCaptureData uno;
+	if (mCameraLeft && mCameraLeft->get(uno))	// if camera is initialized AND there is a new frame
+	{
+		//std::cout << "Drawing the frame in debug window..." << std::endl;
+
+		//cv::imshow("sideleft", left);
+		//cv::waitKey(1);
+		cv::imshow("CameraDebug", uno.image);
+		cv::waitKey(1);
+		
+		
+		//std::cout << "converting from cv::Mat to Ogre::PixelBox..." << std::endl;
+		mOgrePixelBoxLeft = Ogre::PixelBox(1920, 1080, 1, Ogre::PF_R8G8B8, uno.image.ptr<uchar>(0));
+		//std::cout << "sending new image to the scene..." << std::endl;
+		mScene->setVideoImagePoseLeft(mOgrePixelBoxLeft,uno.pose);
+		//std::cout << "image sent!\nImage plane updated!" << std::endl;
+
 	}
 
 	// [OIS] UPDATE

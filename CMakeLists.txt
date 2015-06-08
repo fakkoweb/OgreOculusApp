@@ -314,6 +314,13 @@ if(NOT COMPILE_OculusSDK)
 endif()
 
 
+# OPENCV lib
+find_package(OpenCV REQUIRED)						# OpenCV lib config
+list(APPEND LIBRARIES_TO_LINK ${OpenCV_LIBS})		# OpenCV lib link
+list(APPEND HEADERS_TO_INCLUDE_PUBLIC				# OpenCV lib include
+	"${OpenCV_INCLUDE_DIRS}"
+	)
+
 ################################################################
 #                   ADD MAIN PROJECT FILES 					   #
 ################################################################
