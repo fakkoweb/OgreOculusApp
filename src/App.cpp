@@ -57,7 +57,6 @@ App::App(const std::string& configurationFilePath = "/cfg/parameters.cfg")
 	// Create Ogre main scene (setup and populate main scene)
 	// This class implements App logic!!
 	mScene = new Scene(mRoot, mMouse, mKeyboard);
-	mScene->setIPD(mRift->getIPD());
 	//if (mOverlaySystem)	mScene->getSceneMgr()->addRenderQueueListener(mOverlaySystem);	//Only Ogre main scene will render overlays!
 	try
 	{
@@ -86,6 +85,7 @@ App::App(const std::string& configurationFilePath = "/cfg/parameters.cfg")
 			throw e;
 		}
 	}
+	mScene->setIPD(mRift->getIPD());
 	// when setup has finished successfully, enable Video into scene
 	// mScene->enableVideo();	USER CAN ACTIVATE IT, SEE INPUT KEYS LISTENERS!
 

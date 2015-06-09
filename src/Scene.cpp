@@ -250,7 +250,7 @@ void Scene::setIPD( float IPD )
 	mCamLeft->setPosition( -IPD/2.0f, 0.0f, 0.0f );
 	mCamRight->setPosition( IPD/2.0f, 0.0f, 0.0f );
 
-	//mVideoLeft->setPosition(-IPD / 2.0f, mVideoLeft->getPosition().y, mVideoLeft->getPosition().z);
+	mVideoLeft->setPosition(-IPD / 2.0f, mVideoLeft->getPosition().y, mVideoLeft->getPosition().z);
 	//mVideoRight->setPosition(IPD / 2.0f, mVideoLeft->getPosition().y, mVideoLeft->getPosition().z);
 }
 
@@ -265,9 +265,15 @@ void Scene::setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion 
 		mLeftCameraRenderTexture->getBuffer()->blitFromMemory(image);
 		camera_frame_updated = true;
 
-		// update image position/orientation
+		// update image position/orientation (THIS IS TOO COOL SO I KEEP THIS)
 		//Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
 		//mVideoLeft->setOrientation(delta);
+
+		// update image position/orientation
+		Ogre::Quaternion deltaHeadPose = pose.Inverse() * mCamLeft->getOrientation();
+		Ogre::Quaternion toapplyVideoPlane = deltaHeadPose.Inverse();
+		mVideoLeft->_setDerivedOrientation(toapplyVideoPlane);
+		mVideoLeft->setPosition(mVideoLeft->getPosition());
 
 		// fake pose when Oculus Rift is simulated (NOT DONE)
 		//Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
