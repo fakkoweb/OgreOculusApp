@@ -92,6 +92,7 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		FrameCaptureHandler* mCameraLeft;
 		FrameCaptureHandler* mCameraRight;
 		Ogre::PixelBox mOgrePixelBoxLeft;	//Ogre containers for opencv Mat image raw data
+		Ogre::PixelBox mOgrePixelBoxRight;	//Ogre containers for opencv Mat image raw data
 };
 
 #endif
