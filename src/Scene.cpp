@@ -203,17 +203,26 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 		"RenderTextureCameraLeft", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
 		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8,
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);
+	mRightCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
+		"RenderTextureCameraRight", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8,
+		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);
 
 	// Creare new materials and assign the two textures that can be used on the shapes created
+	// WARNING: apparently modifying these lines in another equivalent form will cause errors!!
 	mLeftCameraRenderMaterial = Ogre::MaterialManager::getSingleton().create("Scene/LeftCamera", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
-	Ogre::Technique *technique = mLeftCameraRenderMaterial->createTechnique();
-	technique->createPass();
+	Ogre::Technique *technique1 = mLeftCameraRenderMaterial->createTechnique();
+	technique1->createPass();
 	mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->createTextureUnitState("RenderTextureCameraLeft");
 	//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
-	
+	mRightCameraRenderMaterial = Ogre::MaterialManager::getSingleton().create("Scene/RightCamera", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
+	Ogre::Technique *technique2 = mRightCameraRenderMaterial->createTechnique();
+	technique2->createPass();
+	mRightCameraRenderMaterial->getTechnique(0)->getPass(0)->createTextureUnitState("RenderTextureCameraRight");
+
 	// Assign materials to videoPlaneEntities
 	videoPlaneEntity->setMaterialName("Scene/LeftCamera");
-	videoPlaneEntityRight->setMaterialName("Scene/LeftCamera");
+	videoPlaneEntityRight->setMaterialName("Scene/RightCamera");
 
 	// Retrieve the "render target pointer" from the two textures (so we can use it as a standard render target as a window)
 	//Ogre::RenderTexture* mLeftCameraRenderTextureA = mLeftCameraRenderTexture->getBuffer()->getRenderTarget();
@@ -294,6 +303,38 @@ void Scene::setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion 
 	}
 
 }
+
+void Scene::setVideoImagePoseRight(const Ogre::PixelBox &image, Ogre::Quaternion pose)
+{
+	if (videoIsEnabled)
+	{
+		// update image pixels
+		mRightCameraRenderTexture->getBuffer()->blitFromMemory(image);
+		//camera_frame_updated = true;
+
+		// update image position/orientation (THIS IS TOO COOL SO I KEEP THIS)
+		//Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
+		//mVideoLeft->setOrientation(delta);
+
+		// update image position/orientation
+		//Ogre::Quaternion deltaHeadPose = pose.Inverse() * mCamLeft->getOrientation();
+		//Ogre::Quaternion toapplyVideoPlane = deltaHeadPose.Inverse();
+		//mVideoLeft->_setDerivedOrientation(toapplyVideoPlane);
+		//mVideoLeft->setPosition(mVideoLeft->getPosition());
+
+		// fake pose when Oculus Rift is simulated (NOT DONE)
+		//Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
+		//std::cout << delta.getPitch();
+		//Ogre::Quaternion bob(Ogre::Degree(1), Ogre::Vector3::UNIT_Z);
+
+		//mVideoLeft->setPosition(2, 2, 2);
+		//mLeftCameraRenderImage.loadDynamicImage(image.data, image.getWidth(), image.getHeight(), 1, Ogre::PF_BYTE_RGB);
+		//mLeftCameraRenderTexture->loadImage(mLeftCameraRenderImage);
+		//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
+	}
+
+}
+
 
 //////////////////////////////////////////////////////////////
 // Handle User Runtime Settings:

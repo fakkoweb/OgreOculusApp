@@ -557,7 +557,7 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 		//std::cout << "converting from cv::Mat to Ogre::PixelBox..." << std::endl;
 		mOgrePixelBoxRight = Ogre::PixelBox(1920, 1080, 1, Ogre::PF_R8G8B8, nextframe2.image.ptr<uchar>(0));
 		//std::cout << "sending new image to the scene..." << std::endl;
-		//mScene->setVideoImagePoseRight(mOgrePixelBoxRight, nextframe2.pose);
+		mScene->setVideoImagePoseRight(mOgrePixelBoxRight, nextframe2.pose);
 		//std::cout << "image sent!\nImage plane updated!" << std::endl;
 			
 	}
