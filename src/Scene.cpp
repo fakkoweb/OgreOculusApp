@@ -160,12 +160,15 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 
 	//Create an ogre Entity out of the resource we created (more Entities can be created out of a resource!)
 	Ogre::Entity* videoPlaneEntity = mSceneMgr->createEntity("videoMesh");
+	Ogre::Entity* videoPlaneEntityRight = mSceneMgr->createEntity("videoMesh");
 
 	//Prepare an Ogre SceneNode where we will attach the newly created Entity (as child of mHeadNode)
 	mVideoLeft = mHeadNode->createChildSceneNode("LeftVideo");
+	mVideoRight = mHeadNode->createChildSceneNode("RightVideo");
 
 	//Attach videoPlaneEntity to mVideoLeft SceneNode (now it will have a Position/Scale/Orientation)
 	mVideoLeft->attachObject(videoPlaneEntity);
+	mVideoRight->attachObject(videoPlaneEntityRight);
 
 	//Last two operations could have also been done in one step, but we would not get the SceneNode pointer to save in mVideoLeft
 	// mSceneMgr->getRootSceneNode()->createChildSceneNode()->attachObject(videoPlaneEntity);
@@ -182,6 +185,9 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 	mVideoLeft->setPosition(0, 0, -videoScale);
 	mVideoLeft->setScale(videoScale, videoScale, videoScale);
 	mVideoLeft->roll(Ogre::Degree(CAMERA_ROTATION));
+	mVideoRight->setPosition(0, 0, -videoScale);
+	mVideoRight->setScale(videoScale, videoScale, videoScale);
+	mVideoRight->roll(Ogre::Degree(CAMERA_ROTATION));
 
 	//Set camera listeners to this class (so that I can do stuff before and after each renders)
 	//mCamLeft->addListener(this);			// THIS IS DONE WHEN SEETHROUGH FEATURE IS ENABLED
@@ -195,7 +201,7 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 	//Create two special textures (TU_RENDERTARGET) that will be applied to the two videoPlaneEntities
 	mLeftCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
 		"RenderTextureCameraLeft", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-		Ogre::TEX_TYPE_2D, 1920, 1080, Ogre::MIP_DEFAULT, Ogre::PF_R8G8B8,
+		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8,
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);
 
 	// Creare new materials and assign the two textures that can be used on the shapes created
@@ -207,6 +213,7 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 	
 	// Assign materials to videoPlaneEntities
 	videoPlaneEntity->setMaterialName("Scene/LeftCamera");
+	videoPlaneEntityRight->setMaterialName("Scene/LeftCamera");
 
 	// Retrieve the "render target pointer" from the two textures (so we can use it as a standard render target as a window)
 	//Ogre::RenderTexture* mLeftCameraRenderTextureA = mLeftCameraRenderTexture->getBuffer()->getRenderTarget();
@@ -270,10 +277,10 @@ void Scene::setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion 
 		//mVideoLeft->setOrientation(delta);
 
 		// update image position/orientation
-		Ogre::Quaternion deltaHeadPose = pose.Inverse() * mCamLeft->getOrientation();
-		Ogre::Quaternion toapplyVideoPlane = deltaHeadPose.Inverse();
-		mVideoLeft->_setDerivedOrientation(toapplyVideoPlane);
-		mVideoLeft->setPosition(mVideoLeft->getPosition());
+		//Ogre::Quaternion deltaHeadPose = pose.Inverse() * mCamLeft->getOrientation();
+		//Ogre::Quaternion toapplyVideoPlane = deltaHeadPose.Inverse();
+		//mVideoLeft->_setDerivedOrientation(toapplyVideoPlane);
+		//mVideoLeft->setPosition(mVideoLeft->getPosition());
 
 		// fake pose when Oculus Rift is simulated (NOT DONE)
 		//Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
@@ -349,6 +356,7 @@ void Scene::enableVideo()
 		if (mVideoLeft)
 		{
 			mCamLeft->addListener(this);
+			mCamRight->addListener(this);
 			videoIsEnabled = true;
 		}
 		else
@@ -364,7 +372,9 @@ void Scene::disableVideo()
 		if (mVideoLeft)
 		{
 			mCamLeft->removeListener(this);
+			mCamRight->removeListener(this);
 			mVideoLeft->setVisible(false, false);
+			mVideoRight->setVisible(false, false);
 			videoIsEnabled = false;
 		}
 		else
@@ -413,6 +423,10 @@ void Scene::cameraPreRenderScene(Ogre::Camera* cam)
 	{
 		mVideoLeft->setVisible(true, false);
 	}
+	if (cam == mCamRight)
+	{
+		mVideoRight->setVisible(true, false);
+	}
 }
 
 void Scene::cameraPostRenderScene(Ogre::Camera* cam)
@@ -428,5 +442,9 @@ void Scene::cameraPostRenderScene(Ogre::Camera* cam)
 			camera_frame_updated = false;
 		}
 		mVideoLeft->setVisible(false, false);
+	}
+	if (cam == mCamRight)
+	{
+		mVideoRight->setVisible(false, false);
 	}
 }
