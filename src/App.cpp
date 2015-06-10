@@ -371,6 +371,7 @@ void App::createViewports()
 	*/
 
 	// Plug the virtual stereo camera rig to Rift class (they will be rendered on Oculus screen)
+	// plus setup camera transformation matrices so that they match with what expected by Oculus
 	mRift->setCameras(mScene->getLeftCamera(), mScene->getRightCamera());
 
 	// Create similar viewports to be displayed into PC window

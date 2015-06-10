@@ -97,7 +97,7 @@ Rift::Rift(const unsigned int ID, Ogre::Root* const root, Ogre::RenderWindow* &r
 		// window already available: save it
 		mRenderWindow = renderWindow;
 	}
-	// Link mCamera (inner scene Oculus camera) to Oculus rendering window
+	// Link mCamera (orthographic inner scene Oculus camera) to Oculus rendering window
 	mViewport = mRenderWindow->addViewport(mCamera);
 	mViewport->setBackgroundColour(Ogre::ColourValue::Black);
 	mViewport->setOverlaysEnabled(true);
@@ -276,6 +276,7 @@ void Rift::createRiftDisplayScene(Ogre::Root* const root, const bool rotateView)
 
 	// Get IPD from Rift Driver and set it up (in meters)
 	mIPD = ovrHmd_GetFloat(hmd, OVR_KEY_IPD, 0.064f);
+	std::cout << mIPD << std::endl;
 	mPosition = Ogre::Vector3::ZERO;
 }
 
@@ -290,28 +291,35 @@ Rift::~Rift()
 // Takes the two cameras created in the scene and creates Viewports in the correct render textures:
 void Rift::setCameras( Ogre::Camera* camLeft, Ogre::Camera* camRight )
 {
+	// Put virtual camera rendered images on the two distortion meshes
 	Ogre::RenderTexture* renderTexture = mLeftEyeRenderTexture->getBuffer()->getRenderTarget();
-	renderTexture->addViewport(camLeft);
+	renderTexture->addViewport(camLeft);	// camLeft rendering will warp so that it covers all mLeftEyeRenderTexture surface
 	renderTexture->getViewport(0)->setClearEveryFrame(true);
 	renderTexture->getViewport(0)->setBackgroundColour(Ogre::ColourValue::Black);
 	renderTexture->getViewport(0)->setOverlaysEnabled(true);
 
 	renderTexture = mRightEyeRenderTexture->getBuffer()->getRenderTarget();
-	renderTexture->addViewport(camRight);
+	renderTexture->addViewport(camRight);	// same for camRight and mRightEyeRenderTexture
 	renderTexture->getViewport(0)->setClearEveryFrame(true);
 	renderTexture->getViewport(0)->setBackgroundColour(Ogre::ColourValue::Black);
 	renderTexture->getViewport(0)->setOverlaysEnabled(true);
 	
+	// Fix virtual camera aspect ratio by asking OculusSDK for the correct FOV/Distortion matrix
 	ovrFovPort fovLeft = hmd->DefaultEyeFov[ovrEye_Left];
 	ovrFovPort fovRight = hmd->DefaultEyeFov[ovrEye_Right];
 
 	float combinedTanHalfFovHorizontal = std::max( fovLeft.LeftTan, fovLeft.RightTan );
 	float combinedTanHalfFovVertical = std::max( fovLeft.UpTan, fovLeft.DownTan );
 
-	float aspectRatio = combinedTanHalfFovHorizontal / combinedTanHalfFovVertical;
+	//float aspectRatioLeft = std::max(fovLeft.LeftTan, fovLeft.RightTan) / std::max(fovLeft.UpTan, fovLeft.DownTan);
+	//float aspectRatioRight = std::max(fovRight.LeftTan, fovRight.RightTan) / std::max(fovRight.UpTan, fovRight.DownTan);
 	
-	camLeft->setAspectRatio( aspectRatio );
-	camRight->setAspectRatio( aspectRatio );
+	float aspectRatioLeft = std::max(fovLeft.LeftTan, fovLeft.RightTan) / std::max(fovLeft.UpTan, fovLeft.DownTan);
+	float aspectRatioRight = std::max(fovRight.LeftTan, fovRight.RightTan) / std::max(fovRight.UpTan, fovRight.DownTan);
+
+
+	//camLeft->setAspectRatio(aspectRatioLeft);
+	//camRight->setAspectRatio(aspectRatioRight);
 	
 	ovrMatrix4f projL = ovrMatrix4f_Projection ( fovLeft, 0.001, 50.0, true );
 	ovrMatrix4f projR = ovrMatrix4f_Projection ( fovRight, 0.001, 50.0, true );

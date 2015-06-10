@@ -195,7 +195,7 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 	//Create two special textures (TU_RENDERTARGET) that will be applied to the two videoPlaneEntities
 	mLeftCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
 		"RenderTextureCameraLeft", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8,
+		Ogre::TEX_TYPE_2D, 1920, 1080, Ogre::MIP_DEFAULT, Ogre::PF_R8G8B8,
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);
 
 	// Creare new materials and assign the two textures that can be used on the shapes created
@@ -296,6 +296,7 @@ void Scene::setVideoDistance(const float distance = 1)
 	videoScale = distance;
 	if (videoScale < 0.3f) videoScale = 0.3f;	// CROP to minimum of 0.3 (less would be useless and weird)
 	mVideoLeft->setPosition(0, 0, -videoScale);
+	//std::cout << distance << std::endl;
 	mVideoLeft->setScale(videoScale, videoScale, videoScale);
 }
 

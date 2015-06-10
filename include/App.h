@@ -79,8 +79,8 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 
 		Ogre::RenderWindow* mSmallWindow = nullptr;
 		Ogre::RenderWindow* mGodWindow = nullptr;
-		Ogre::Viewport* mViewportL;
-		Ogre::Viewport* mViewportR;
+		//Ogre::Viewport* mViewportL;
+		//Ogre::Viewport* mViewportR;
 
 		// If this is set to true, the app will close during the next frame:
 		bool mShutdown;
