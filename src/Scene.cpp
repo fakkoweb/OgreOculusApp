@@ -186,7 +186,7 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 	//			To obtain this without varying the FOV, z will always be proportional to plane's scale factor
 	mVideoLeft->setPosition(0, 0, -videoScale);
 	mVideoLeft->setScale(videoScale, videoScale, videoScale);
-	mVideoLeft->roll(Ogre::Degree(CAMERA_ROTATION));
+	mVideoLeft->roll(Ogre::Degree(-CAMERA_ROTATION));
 	mVideoRight->setPosition(0, 0, -videoScale);
 	mVideoRight->setScale(videoScale, videoScale, videoScale);
 	mVideoRight->roll(Ogre::Degree(CAMERA_ROTATION));
@@ -290,9 +290,9 @@ void Scene::setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion 
 		//mVideoLeft->setOrientation(delta);
 
 		// update image position/orientation
-		Ogre::Quaternion deltaHeadPose = pose.Inverse() * mCamLeft->getOrientation();
-		Ogre::Quaternion toapplyVideoPlane = deltaHeadPose.Inverse();
-		mHeadStabilizationNode->setOrientation(toapplyVideoPlane);
+		Ogre::Quaternion deltaHeadPose = mHeadNode->getOrientation() * pose.Inverse();
+		Ogre::Quaternion toapplyVideoPlane = mHeadNode->getOrientation() * deltaHeadPose.Inverse();
+		mHeadStabilizationNode->setOrientation(deltaHeadPose.Inverse());
 		//mVideoLeft->_setDerivedOrientation(toapplyVideoPlane);
 		//mVideoLeft->setPosition(mVideoLeft->getPosition());
 
