@@ -159,22 +159,27 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 		Ogre::Vector3::UNIT_Y);								// this is the vector that will be used as mesh UP direction
 
 	//Create an ogre Entity out of the resource we created (more Entities can be created out of a resource!)
-	Ogre::Entity* videoPlaneEntityRight = mSceneMgr->createEntity("videoMesh");
+	Ogre::Entity* videoPlaneEntityLeft = mSceneMgr->createEntity("videoMesh");
 	Ogre::Entity* videoPlaneEntityRight = mSceneMgr->createEntity("videoMesh");
 
-	//Prepare an Ogre SceneNode where we will attach the newly created Entity (as child of mHeadNode)
-	mVideoLeft = mHeadNode->createChildSceneNode("LeftVideo");
-	mVideoRight = mHeadNode->createChildSceneNode("RightVideo");
+	//Prepare an Ogre SceneNode (mHeadStabilizationNode) that is the exact copy of mHeadNode and will be useful for image stabilization
+	//NOTE:	since any real camera has a delay, we want to move the image shown in the head pose as it was taken, not in the current headpose.
+	//		If the feature is disabled, mHeadStabilizationNode will simply be the same as mHeadNode position/orientation
+	//mBodyNode->setFixedYawAxis(true);
+	mBodyTiltNode = mBodyNode->createChildSceneNode();
+	mHeadStabilizationNode = mBodyTiltNode->createChildSceneNode();
+	mVideoLeft = mHeadStabilizationNode->createChildSceneNode("LeftVideo");
+	mVideoRight = mHeadStabilizationNode->createChildSceneNode("RightVideo");
 
 	//Attach videoPlaneEntityRight to mVideoLeft SceneNode (now it will have a Position/Scale/Orientation)
-	mVideoLeft->attachObject(videoPlaneEntityRight);
+	mVideoLeft->attachObject(videoPlaneEntityLeft);
 	mVideoRight->attachObject(videoPlaneEntityRight);
 
 	//Last two operations could have also been done in one step, but we would not get the SceneNode pointer to save in mVideoLeft
 	// mSceneMgr->getRootSceneNode()->createChildSceneNode()->attachObject(videoPlaneEntityRight);
 	
 	//Setup videoPlaneEntityRight rendering proprieties (INDEPENDENT FROM mVideoLeft SceneNode!!)
-	videoPlaneEntityRight->setCastShadows(false);
+	videoPlaneEntityLeft->setCastShadows(false);
 	videoPlaneEntityRight->setCastShadows(false);
 	//videoPlaneEntityRight->setMaterialName("CubeMaterialWhite");
 	
@@ -248,6 +253,7 @@ void Scene::update( float dt )
 		leftRight *= 3;
 	}
 	
+	// get full body absolute orientation (in world reference)
 	Ogre::Vector3 dirX = mBodyTiltNode->_getDerivedOrientation()*Ogre::Vector3::UNIT_X;
 	Ogre::Vector3 dirZ = mBodyTiltNode->_getDerivedOrientation()*Ogre::Vector3::UNIT_Z;
 
@@ -320,10 +326,9 @@ void Scene::setVideoImagePoseRight(const Ogre::PixelBox &image, Ogre::Quaternion
 		//mVideoLeft->setOrientation(delta);
 
 		// update image position/orientation
-		//Ogre::Quaternion deltaHeadPose = pose.Inverse() * mCamLeft->getOrientation();
-		//Ogre::Quaternion toapplyVideoPlane = deltaHeadPose.Inverse();
-		//mVideoLeft->_setDerivedOrientation(toapplyVideoPlane);
-		//mVideoLeft->setPosition(mVideoLeft->getPosition());
+		Ogre::Quaternion deltaHeadPose = pose.Inverse() * mCamLeft->getOrientation();
+		Ogre::Quaternion toapplyVideoPlane = deltaHeadPose.Inverse();
+		mHeadStabilizationNode->setOrientation(toapplyVideoPlane);
 
 		// fake pose when Oculus Rift is simulated (NOT DONE)
 		//Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
