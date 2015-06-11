@@ -81,7 +81,8 @@ void Scene::createCameras()
 	// Create a scene nodes which the virtual stereo cams will be attached to:
 	mBodyNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("BodyNode");
 	mBodyTiltNode = mBodyNode->createChildSceneNode();
-	mHeadNode = mBodyTiltNode->createChildSceneNode("HeadNode"); 
+	mHeadNode = mBodyTiltNode->createChildSceneNode("HeadNode");
+	mHeadStabilizationNode = mHeadNode->createChildSceneNode("HeadStabilizationNode");
 	mBodyNode->setFixedYawAxis( true );	// don't roll!  
 
 	mHeadNode->attachObject(mCamLeft);
@@ -159,22 +160,22 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 		Ogre::Vector3::UNIT_Y);								// this is the vector that will be used as mesh UP direction
 
 	//Create an ogre Entity out of the resource we created (more Entities can be created out of a resource!)
-	Ogre::Entity* videoPlaneEntityRight = mSceneMgr->createEntity("videoMesh");
+	Ogre::Entity* videoPlaneEntityLeft = mSceneMgr->createEntity("videoMesh");
 	Ogre::Entity* videoPlaneEntityRight = mSceneMgr->createEntity("videoMesh");
 
 	//Prepare an Ogre SceneNode where we will attach the newly created Entity (as child of mHeadNode)
-	mVideoLeft = mHeadNode->createChildSceneNode("LeftVideo");
-	mVideoRight = mHeadNode->createChildSceneNode("RightVideo");
+	mVideoLeft = mHeadStabilizationNode->createChildSceneNode("LeftVideo");
+	mVideoRight = mHeadStabilizationNode->createChildSceneNode("RightVideo");
 
 	//Attach videoPlaneEntityRight to mVideoLeft SceneNode (now it will have a Position/Scale/Orientation)
-	mVideoLeft->attachObject(videoPlaneEntityRight);
+	mVideoLeft->attachObject(videoPlaneEntityLeft);
 	mVideoRight->attachObject(videoPlaneEntityRight);
 
 	//Last two operations could have also been done in one step, but we would not get the SceneNode pointer to save in mVideoLeft
 	// mSceneMgr->getRootSceneNode()->createChildSceneNode()->attachObject(videoPlaneEntityRight);
 	
 	//Setup videoPlaneEntityRight rendering proprieties (INDEPENDENT FROM mVideoLeft SceneNode!!)
-	videoPlaneEntityRight->setCastShadows(false);
+	videoPlaneEntityLeft->setCastShadows(false);
 	videoPlaneEntityRight->setCastShadows(false);
 	//videoPlaneEntityRight->setMaterialName("CubeMaterialWhite");
 	
@@ -224,7 +225,7 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 	mRightCameraRenderMaterial->getTechnique(0)->getPass(0)->createTextureUnitState("RenderTextureCameraRight");
 
 	// Assign materials to videoPlaneEntities
-	videoPlaneEntityRight->setMaterialName("Scene/LeftCamera");
+	videoPlaneEntityLeft->setMaterialName("Scene/LeftCamera");
 	videoPlaneEntityRight->setMaterialName("Scene/RightCamera");
 
 	// Retrieve the "render target pointer" from the two textures (so we can use it as a standard render target as a window)
@@ -289,8 +290,9 @@ void Scene::setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion 
 		//mVideoLeft->setOrientation(delta);
 
 		// update image position/orientation
-		//Ogre::Quaternion deltaHeadPose = pose.Inverse() * mCamLeft->getOrientation();
-		//Ogre::Quaternion toapplyVideoPlane = deltaHeadPose.Inverse();
+		Ogre::Quaternion deltaHeadPose = pose.Inverse() * mCamLeft->getOrientation();
+		Ogre::Quaternion toapplyVideoPlane = deltaHeadPose.Inverse();
+		mHeadStabilizationNode->setOrientation(toapplyVideoPlane);
 		//mVideoLeft->_setDerivedOrientation(toapplyVideoPlane);
 		//mVideoLeft->setPosition(mVideoLeft->getPosition());
 

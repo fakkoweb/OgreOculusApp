@@ -76,9 +76,10 @@ class Scene : public Ogre::Camera::Listener
 
 		Ogre::SceneNode* mVideoLeft = nullptr;
 		Ogre::SceneNode* mVideoRight = nullptr;
+		Ogre::SceneNode* mHeadStabilizationNode;
 		Ogre::SceneNode* mHeadNode;
-		Ogre::SceneNode* mBodyNode;
 		Ogre::SceneNode* mBodyTiltNode;
+		Ogre::SceneNode* mBodyNode;
 
 		Ogre::SceneNode* mRoomNode;
 };
