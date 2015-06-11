@@ -80,8 +80,8 @@ void Scene::createCameras()
 
 	// Create a scene nodes which the virtual stereo cams will be attached to:
 	mBodyNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("BodyNode");
-	mBodyTiltNode = mBodyNode->createChildSceneNode();
-	mHeadNode = mBodyTiltNode->createChildSceneNode("HeadNode"); 
+	//mBodyTiltNode = mBodyNode->createChildSceneNode();
+	mHeadNode = mBodyNode->createChildSceneNode("HeadNode"); 
 	mBodyNode->setFixedYawAxis( true );	// don't roll!  
 
 	mHeadNode->attachObject(mCamLeft);
