@@ -82,6 +82,10 @@ void Scene::createCameras()
 	mBodyNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("BodyNode");
 	mBodyTiltNode = mBodyNode->createChildSceneNode();
 	mHeadNode = mBodyTiltNode->createChildSceneNode("HeadNode");
+
+	//Prepare an Ogre SceneNode (mHeadStabilizationNode) that is the exact copy of mHeadNode and will be useful for image stabilization
+	//NOTE:	since any real camera has a delay, we want to move the image shown in the head pose as it was taken, not in the current headpose.
+	//		If the feature is disabled, mHeadStabilizationNode will simply be the same as mHeadNode position/orientation
 	mHeadStabilizationNode = mHeadNode->createChildSceneNode("HeadStabilizationNode");
 	mBodyNode->setFixedYawAxis( true );	// don't roll!  
 
@@ -163,7 +167,7 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 	Ogre::Entity* videoPlaneEntityLeft = mSceneMgr->createEntity("videoMesh");
 	Ogre::Entity* videoPlaneEntityRight = mSceneMgr->createEntity("videoMesh");
 
-	//Prepare an Ogre SceneNode where we will attach the newly created Entity (as child of mHeadNode)
+	//Add to mHeadStabilizationNode the two video shapes
 	mVideoLeft = mHeadStabilizationNode->createChildSceneNode("LeftVideo");
 	mVideoRight = mHeadStabilizationNode->createChildSceneNode("RightVideo");
 
@@ -249,6 +253,7 @@ void Scene::update( float dt )
 		leftRight *= 3;
 	}
 	
+	// get full body absolute orientation (in world reference)
 	Ogre::Vector3 dirX = mBodyTiltNode->_getDerivedOrientation()*Ogre::Vector3::UNIT_X;
 	Ogre::Vector3 dirZ = mBodyTiltNode->_getDerivedOrientation()*Ogre::Vector3::UNIT_Z;
 
@@ -271,7 +276,7 @@ void Scene::setIPD( float IPD )
 	mCamRight->setPosition( IPD/2.0f, 0.0f, 0.0f );
 
 	mVideoLeft->setPosition(-IPD / 2.0f, mVideoLeft->getPosition().y, mVideoLeft->getPosition().z);
-	//mVideoRight->setPosition(IPD / 2.0f, mVideoLeft->getPosition().y, mVideoLeft->getPosition().z);
+	mVideoRight->setPosition(IPD / 2.0f, mVideoLeft->getPosition().y, mVideoLeft->getPosition().z);
 }
 
 //////////////////////////////////////////////////////////////
@@ -290,21 +295,12 @@ void Scene::setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion 
 		//mVideoLeft->setOrientation(delta);
 
 		// update image position/orientation
-		Ogre::Quaternion deltaHeadPose = mHeadNode->getOrientation() * pose.Inverse();
-		Ogre::Quaternion toapplyVideoPlane = mHeadNode->getOrientation() * deltaHeadPose.Inverse();
-		mHeadStabilizationNode->setOrientation(deltaHeadPose.Inverse());
-		//mVideoLeft->_setDerivedOrientation(toapplyVideoPlane);
-		//mVideoLeft->setPosition(mVideoLeft->getPosition());
-
-		// fake pose when Oculus Rift is simulated (NOT DONE)
-		//Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
-		//std::cout << delta.getPitch();
-		//Ogre::Quaternion bob(Ogre::Degree(1), Ogre::Vector3::UNIT_Z);
-
-		//mVideoLeft->setPosition(2, 2, 2);
-		//mLeftCameraRenderImage.loadDynamicImage(image.data, image.getWidth(), image.getHeight(), 1, Ogre::PF_BYTE_RGB);
-		//mLeftCameraRenderTexture->loadImage(mLeftCameraRenderImage);
-		//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
+		// since:	Hpast-to-body = Hpres-to-body * Hpast-to-pres
+		// then:	Hpast-to-pres = INV(Hpres-to-body) * Hpast-to-body
+		//Ogre::Quaternion deltaHeadPose = mHeadNode->getOrientation().Inverse() * pose;
+		//Ogre::Quaternion toapplyVideoPlane = deltaHeadPose.Inverse();
+		//mHeadStabilizationNode->setOrientation(deltaHeadPose);
+		// FOR NOW ONLY RIGHT IMAGE DECIDES THE POSE. WILL CHANGE SOON!
 	}
 
 }
@@ -322,20 +318,11 @@ void Scene::setVideoImagePoseRight(const Ogre::PixelBox &image, Ogre::Quaternion
 		//mVideoLeft->setOrientation(delta);
 
 		// update image position/orientation
-		//Ogre::Quaternion deltaHeadPose = pose.Inverse() * mCamLeft->getOrientation();
-		//Ogre::Quaternion toapplyVideoPlane = deltaHeadPose.Inverse();
-		//mVideoLeft->_setDerivedOrientation(toapplyVideoPlane);
-		//mVideoLeft->setPosition(mVideoLeft->getPosition());
+		// since:	Hpast-to-body = Hpres-to-body * Hpast-to-pres
+		// then:	Hpast-to-pres = INV(Hpres-to-body) * Hpast-to-body
+		Ogre::Quaternion deltaHeadPose = mHeadNode->getOrientation().Inverse() * pose;
+		mHeadStabilizationNode->setOrientation(deltaHeadPose);
 
-		// fake pose when Oculus Rift is simulated (NOT DONE)
-		//Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
-		//std::cout << delta.getPitch();
-		//Ogre::Quaternion bob(Ogre::Degree(1), Ogre::Vector3::UNIT_Z);
-
-		//mVideoLeft->setPosition(2, 2, 2);
-		//mLeftCameraRenderImage.loadDynamicImage(image.data, image.getWidth(), image.getHeight(), 1, Ogre::PF_BYTE_RGB);
-		//mLeftCameraRenderTexture->loadImage(mLeftCameraRenderImage);
-		//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
 	}
 
 }

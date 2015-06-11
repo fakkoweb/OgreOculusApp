@@ -76,10 +76,10 @@ class Scene : public Ogre::Camera::Listener
 
 		Ogre::SceneNode* mVideoLeft = nullptr;
 		Ogre::SceneNode* mVideoRight = nullptr;
-		Ogre::SceneNode* mHeadStabilizationNode;
-		Ogre::SceneNode* mHeadNode;
-		Ogre::SceneNode* mBodyTiltNode;
-		Ogre::SceneNode* mBodyNode;
+		Ogre::SceneNode* mHeadStabilizationNode;		// on this we apply Image stabilization full Orientation delta
+		Ogre::SceneNode* mHeadNode;						// on this we apply Head full Orientation (Yaw/Pitch/Roll)
+		Ogre::SceneNode* mBodyTiltNode;					// on this we apply Body Pitch transformation (up/down turn)
+		Ogre::SceneNode* mBodyNode;						// on this we apply Body Yaw transformation (left/right turn)
 
 		Ogre::SceneNode* mRoomNode;
 };
