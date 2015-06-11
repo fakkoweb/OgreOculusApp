@@ -159,23 +159,24 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 		Ogre::Vector3::UNIT_Y);								// this is the vector that will be used as mesh UP direction
 
 	//Create an ogre Entity out of the resource we created (more Entities can be created out of a resource!)
-	Ogre::Entity* videoPlaneEntity = mSceneMgr->createEntity("videoMesh");
+	Ogre::Entity* videoPlaneEntityRight = mSceneMgr->createEntity("videoMesh");
 	Ogre::Entity* videoPlaneEntityRight = mSceneMgr->createEntity("videoMesh");
 
 	//Prepare an Ogre SceneNode where we will attach the newly created Entity (as child of mHeadNode)
 	mVideoLeft = mHeadNode->createChildSceneNode("LeftVideo");
 	mVideoRight = mHeadNode->createChildSceneNode("RightVideo");
 
-	//Attach videoPlaneEntity to mVideoLeft SceneNode (now it will have a Position/Scale/Orientation)
-	mVideoLeft->attachObject(videoPlaneEntity);
+	//Attach videoPlaneEntityRight to mVideoLeft SceneNode (now it will have a Position/Scale/Orientation)
+	mVideoLeft->attachObject(videoPlaneEntityRight);
 	mVideoRight->attachObject(videoPlaneEntityRight);
 
 	//Last two operations could have also been done in one step, but we would not get the SceneNode pointer to save in mVideoLeft
-	// mSceneMgr->getRootSceneNode()->createChildSceneNode()->attachObject(videoPlaneEntity);
+	// mSceneMgr->getRootSceneNode()->createChildSceneNode()->attachObject(videoPlaneEntityRight);
 	
-	//Setup videoPlaneEntity rendering proprieties (INDEPENDENT FROM mVideoLeft SceneNode!!)
-	videoPlaneEntity->setCastShadows(false);
-	//videoPlaneEntity->setMaterialName("CubeMaterialWhite");
+	//Setup videoPlaneEntityRight rendering proprieties (INDEPENDENT FROM mVideoLeft SceneNode!!)
+	videoPlaneEntityRight->setCastShadows(false);
+	videoPlaneEntityRight->setCastShadows(false);
+	//videoPlaneEntityRight->setMaterialName("CubeMaterialWhite");
 	
 	//Setup mVideoLeft SceneNode position/scale/orientation
 	// X-axis:	we assume real cameras distance (ICD) is the same as IPD, so X is solidal to virtual cameras X value -> see setIPD()
@@ -193,10 +194,12 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 	//mCamLeft->addListener(this);			// THIS IS DONE WHEN SEETHROUGH FEATURE IS ENABLED
 
 	//mVideoLeft is disabled by default: enableVideo() and disableVideo() methods are provided
-	mVideoLeft->setVisible(false, false);	
+	mVideoLeft->setVisible(false, false);
+	mVideoRight->setVisible(false, false);
+
+
 	// CREATE TEXTURES
 	// ---------------
-
 
 	//Create two special textures (TU_RENDERTARGET) that will be applied to the two videoPlaneEntities
 	mLeftCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
@@ -221,7 +224,7 @@ void Scene::createVideos(const float WPlane, const float HPlane)
 	mRightCameraRenderMaterial->getTechnique(0)->getPass(0)->createTextureUnitState("RenderTextureCameraRight");
 
 	// Assign materials to videoPlaneEntities
-	videoPlaneEntity->setMaterialName("Scene/LeftCamera");
+	videoPlaneEntityRight->setMaterialName("Scene/LeftCamera");
 	videoPlaneEntityRight->setMaterialName("Scene/RightCamera");
 
 	// Retrieve the "render target pointer" from the two textures (so we can use it as a standard render target as a window)
