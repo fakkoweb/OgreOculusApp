@@ -63,7 +63,7 @@ void FrameCaptureHandler::captureLoop() {
 		// grab() will ALWAYS return a frame OLDER than time of its call..
 		// a CAMERA_BUFFERING_DELAY is used to predict a PAST pose relative to this moment
 		// LOCAL OCULUSSDK HAS BEEN TWEAKED TO SUPPORT THIS (AND EXTEND THE BEHAVIOUR OF ovrHmd_GetTrackingState)
-		ovrTrackingState tracking = ovrHmd_GetTrackingState(hmd, ovr_GetTimeInSeconds() - CAMERA_BUFFERING_DELAY);	// [TODO]
+		ovrTrackingState tracking = ovrHmd_GetTrackingStateExtended(hmd, ovr_GetTimeInSeconds() - CAMERA_BUFFERING_DELAY);	// [TODO]
 		
 		// grab a new frame
 		if (videoCapture.grab())	// grabs a frame without decoding it
