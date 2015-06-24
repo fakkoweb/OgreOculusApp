@@ -164,67 +164,67 @@ endif()
 # - findOgre.cmake uses OGRE_HOME if you set it, otherwise he will try to search for it on its own.
 # --------------------------------------------------------------
 
-	# if using bundled OGRE
-	if(BUNDLED_OGRE_FOUND AND USE_BUNDLED_OGRE)
-		# set OGRE_HOME cmake variable as OGRE local path
-		if(DEFINED ENV{OGRE_HOME} OR DEFINED OGRE_HOME)
-			message("Overriding 'ENV{OGRE_HOME}'. Uncheck 'USE_BUNDLED_OGRE' flag if you wish to use your OGRE_HOME instead.")
-		endif()
-		set(OGRE_HOME "${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/OGRE")
-	# else, USE STANDARD SEARCH OculusSDK
-	else()
-		# check if OGRE_HOME is defined
-		if (NOT DEFINED ENV{OGRE_HOME} AND NOT DEFINED OGRE_HOME)
-			message(STATUS "OGRE_HOME not defined (as Environment variable or cmake variable). A valid findOgre.cmake must be found into project's directory. Then it will try to search for Ogre installation in your computer.")
-			# give the option to setup OGRE_HOME manually
-			set(OGRE_HOME "${OGRE_HOME}" CACHE PATH "Location of your Ogre libraries")
-		# if at least one of them is defined, use it
-		else()
-			if (NOT DEFINED OGRE_HOME)
-				message("Environment variable OGRE_HOME found. This will be used as OgreSDK folder.")
-				set(OGRE_HOME $ENV{OGRE_HOME})
-			endif()
-			if (NOT DEFINED OGRE_BUILD OR "${OGRE_BUILD}" STREQUAL "")
-				set(OGRE_BUILD ${OGRE_HOME})
-			endif()
-			if( NOT DEFINED OGRE_SOURCE_DIR OR "${OGRE_SOURCE_DIR}" STREQUAL "")
-				set(OGRE_SOURCE_DIR ${OGRE_HOME})
-			endif()
-
-			# add cmake directory from installation, if available
-			if(WIN32)
-				# set cmake directory for OGRE (will be used when findOgre.cmake is not found in project's local "cmake" dir)
-				set(CMAKE_MODULE_PATH "${OGRE_HOME}/CMake/;${CMAKE_MODULE_PATH}")	# append: OGRE personal cmake directory
-				set(OGRE_SAMPLES_INCLUDEPATH "${OGRE_HOME}/Samples/Common/include")
-			endif()
-
-			if(UNIX)
-				# look for cmake directory for OGRE (will be used when findOgre.cmake is not found in project's local "cmake" dir)
-				# different options assumed here since in unix cmake installation directory is often different from Ogre lib directory
-				if(EXISTS "/usr/local/lib/OGRE/cmake")
-			 
-				  set(CMAKE_MODULE_PATH "/usr/local/lib/OGRE/cmake/;${CMAKE_MODULE_PATH}")
-				  set(OGRE_SAMPLES_INCLUDEPATH "/usr/local/share/OGRE/samples/Common/include/") # We could just *assume* that developers uses this basepath : /usr/local
-			 
-				elseif(EXISTS "/usr/lib/OGRE/cmake")
-			 
-				  set(CMAKE_MODULE_PATH "/usr/lib/OGRE/cmake/;${CMAKE_MODULE_PATH}")
-				  set(OGRE_SAMPLES_INCLUDEPATH "/usr/share/OGRE/samples/Common/include/") # Otherwise, this one
-			 
-				elseif(EXISTS "/usr/share/OGRE/cmake")
-
-				  set(CMAKE_MODULE_PATH "/usr/share/OGRE/cmake/;${CMAKE_MODULE_PATH}")
-				  set(OGRE_SAMPLES_INCLUDEPATH "/usr/share/OGRE/samples/Common/include/") # Otherwise, this one
-			 
-				  message(STATUS "Failed to find Ogre cmake module path. A valid findOgre.cmake must be found into project's directory.")
-				endif()
-
-			endif(UNIX)
-		endif()
+# if using bundled OGRE
+if(BUNDLED_OGRE_FOUND AND USE_BUNDLED_OGRE)
+	# set OGRE_HOME cmake variable as OGRE local path
+	if(DEFINED ENV{OGRE_HOME} OR DEFINED OGRE_HOME)
+		message("Overriding 'ENV{OGRE_HOME}'. Uncheck 'USE_BUNDLED_OGRE' flag if you wish to use your OGRE_HOME instead.")
 	endif()
+	set(OGRE_HOME "${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/OGRE")
+# else, USE STANDARD SEARCH OculusSDK
+else()
+	# check if OGRE_HOME is defined
+	if (NOT DEFINED ENV{OGRE_HOME} AND NOT DEFINED OGRE_HOME)
+		message(STATUS "OGRE_HOME not defined (as Environment variable or cmake variable). A valid findOgre.cmake must be found into project's directory. Then it will try to search for Ogre installation in your computer.")
+		# give the option to setup OGRE_HOME manually
+		set(OGRE_HOME "${OGRE_HOME}" CACHE PATH "Location of your Ogre libraries")
+	# if at least one of them is defined, use it
+	else()
+		if (NOT DEFINED OGRE_HOME)
+			message("Environment variable OGRE_HOME found. This will be used as OgreSDK folder.")
+			set(OGRE_HOME $ENV{OGRE_HOME})
+		endif()
+		if (NOT DEFINED OGRE_BUILD OR "${OGRE_BUILD}" STREQUAL "")
+			set(OGRE_BUILD ${OGRE_HOME})
+		endif()
+		if( NOT DEFINED OGRE_SOURCE_DIR OR "${OGRE_SOURCE_DIR}" STREQUAL "")
+			set(OGRE_SOURCE_DIR ${OGRE_HOME})
+		endif()
 
-	# set always OCULUS_SDK_ROOT_DIR as OCULUS_HOME
-	set(OCULUS_SDK_ROOT_DIR ${OCULUS_HOME})
+		# add cmake directory from installation, if available
+		if(WIN32)
+			# set cmake directory for OGRE (will be used when findOgre.cmake is not found in project's local "cmake" dir)
+			set(CMAKE_MODULE_PATH "${OGRE_HOME}/CMake/;${CMAKE_MODULE_PATH}")	# append: OGRE personal cmake directory
+			set(OGRE_SAMPLES_INCLUDEPATH "${OGRE_HOME}/Samples/Common/include")
+		endif()
+
+		if(UNIX)
+			# look for cmake directory for OGRE (will be used when findOgre.cmake is not found in project's local "cmake" dir)
+			# different options assumed here since in unix cmake installation directory is often different from Ogre lib directory
+			if(EXISTS "/usr/local/lib/OGRE/cmake")
+		 
+			  set(CMAKE_MODULE_PATH "/usr/local/lib/OGRE/cmake/;${CMAKE_MODULE_PATH}")
+			  set(OGRE_SAMPLES_INCLUDEPATH "/usr/local/share/OGRE/samples/Common/include/") # We could just *assume* that developers uses this basepath : /usr/local
+		 
+			elseif(EXISTS "/usr/lib/OGRE/cmake")
+		 
+			  set(CMAKE_MODULE_PATH "/usr/lib/OGRE/cmake/;${CMAKE_MODULE_PATH}")
+			  set(OGRE_SAMPLES_INCLUDEPATH "/usr/share/OGRE/samples/Common/include/") # Otherwise, this one
+		 
+			elseif(EXISTS "/usr/share/OGRE/cmake")
+
+			  set(CMAKE_MODULE_PATH "/usr/share/OGRE/cmake/;${CMAKE_MODULE_PATH}")
+			  set(OGRE_SAMPLES_INCLUDEPATH "/usr/share/OGRE/samples/Common/include/") # Otherwise, this one
+		 
+			  message(STATUS "Failed to find Ogre cmake module path. A valid findOgre.cmake must be found into project's directory.")
+			endif()
+
+		endif(UNIX)
+	endif()
+endif()
+
+# set always OCULUS_SDK_ROOT_DIR as OCULUS_HOME
+set(OCULUS_SDK_ROOT_DIR ${OCULUS_HOME})
 
 # force OGRE_SDK_ROOT_DIR to show OGRE_HOME value
 #set(OGRE_SDK_ROOT_DIR "${OGRE_HOME}" CACHE PATH "Location of your Ogre3D libraries" FORCE)
@@ -254,57 +254,49 @@ endif()
 # - findOculusSDK.cmake NEEDS you to set OCULUS_SDK_ROOT_DIR
 # --------------------------------------------------------------
 
-if(WIN32)
-	# if using bundled OculusSDK
-	if(BUNDLED_OculusSDK_FOUND AND USE_BUNDLED_OculusSDK)
-		# set OCULUS_HOME cmake variable as OculusSDK local path
-		if(DEFINED ENV{OCULUS_HOME} OR DEFINED OCULUS_HOME)
-			message("Overriding 'ENV{OCULUS_HOME}'. Uncheck 'USE_BUNDLED_OculusSDK' flag if you wish to use your OCULUS_HOME instead.")
-		endif()
-		set(OCULUS_HOME "${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/OculusSDK")
-		# find out if source code of bundled OculusSDK is also available
-		if( EXISTS "${OCULUS_HOME}/LibOVR/Src/OVR_CAPI.cpp")
-			set (OculusSDK_SOURCE_FOUND true)
-			# give the option to compile it toghether with the project
-			set (COMPILE_OculusSDK false CACHE BOOL "Compile the source of OculusSDK toghether with the project" )
-		else()
-			# hide the option to compile
-			set (OculusSDK_SOURCE_FOUND false)
-		endif()
-	# else, USE STANDARD SEARCH OculusSDK
-	else()
-		# hide any option for compiling
-		unset(COMPILE_OculusSDK CACHE)
-		set (COMPILE_OculusSDK false)
-		# if OCULUS_HOME is NOT defined (environment or cmake variable)
-		if (NOT DEFINED ENV{OCULUS_HOME} AND NOT DEFINED OCULUS_HOME)
-			# throw ERROR
-			message(SEND_ERROR "Can't find OculusSDK. Must define OCULUS_HOME (as Environment variable or cmake variable), or put 'OculusSDK' folder into '${libs_dir_name}' directory. You can also set it manually now and run Configure again.")
-			# give the option to setup OCULUS_HOME manually
-			set(OCULUS_HOME "${OCULUS_HOME}" CACHE PATH "Location of your OculusSDK libraries")
-		# if one of them is defined, use it	
-		else()
-			if (NOT DEFINED OCULUS_HOME)
-				message(STATUS "Environment variable OCULUS_HOME found. This will be used as OculusSDK folder.")
-				# assign OCULUS_HOME the value of environment variable
-				set(OCULUS_HOME $ENV{OCULUS_HOME})
-			endif()
-			message("Using OculusSDK from '${OCULUS_HOME}'. Check 'USE_BUNDLED_OculusSDK' flag if you wish to use the version bundled in the project.")
-		endif()
+# if using bundled OculusSDK
+if(BUNDLED_OculusSDK_FOUND AND USE_BUNDLED_OculusSDK)
+	# set OCULUS_HOME cmake variable as OculusSDK local path
+	if(DEFINED ENV{OCULUS_HOME} OR DEFINED OCULUS_HOME)
+		message("Overriding 'ENV{OCULUS_HOME}'. Uncheck 'USE_BUNDLED_OculusSDK' flag if you wish to use your OCULUS_HOME instead.")
 	endif()
-
-	# add OculusSDK cmake directory to .cmake search path
-	set(CMAKE_MODULE_PATH "${OCULUS_HOME}/CMake/;${CMAKE_MODULE_PATH}")				# append: OCULUSSDK personal cmake directory
-
-	# set always OCULUS_SDK_ROOT_DIR as OCULUS_HOME
-	set(OCULUS_SDK_ROOT_DIR ${OCULUS_HOME})
-
+	set(OCULUS_HOME "${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/OculusSDK")
+	# find out if source code of bundled OculusSDK is also available
+	if( EXISTS "${OCULUS_HOME}/LibOVR/Src/OVR_CAPI.cpp")
+		set (OculusSDK_SOURCE_FOUND true)
+		# give the option to compile it toghether with the project
+		set (COMPILE_OculusSDK false CACHE BOOL "Compile the source of OculusSDK toghether with the project" )
+	else()
+		# hide the option to compile
+		set (OculusSDK_SOURCE_FOUND false)
+	endif()
+# else, USE STANDARD SEARCH OculusSDK
+else()
+	# hide any option for compiling
+	unset(COMPILE_OculusSDK CACHE)
+	set (COMPILE_OculusSDK false)
+	# if OCULUS_HOME is NOT defined (environment or cmake variable)
+	if (NOT DEFINED ENV{OCULUS_HOME} AND NOT DEFINED OCULUS_HOME)
+		# throw ERROR
+		message(SEND_ERROR "Can't find OculusSDK. Must define OCULUS_HOME (as Environment variable or cmake variable), or put 'OculusSDK' folder into '${libs_dir_name}' directory. You can also set it manually now and run Configure again.")
+		# give the option to setup OCULUS_HOME manually
+		set(OCULUS_HOME "${OCULUS_HOME}" CACHE PATH "Location of your OculusSDK libraries")
+	# if one of them is defined, use it	
+	else()
+		if (NOT DEFINED OCULUS_HOME)
+			message(STATUS "Environment variable OCULUS_HOME found. This will be used as OculusSDK folder.")
+			# assign OCULUS_HOME the value of environment variable
+			set(OCULUS_HOME $ENV{OCULUS_HOME})
+		endif()
+		message("Using OculusSDK from '${OCULUS_HOME}'. Check 'USE_BUNDLED_OculusSDK' flag if you wish to use the version bundled in the project.")
+	endif()
 endif()
 
-if(UNIX)	
-	# still experimenting on unix..
-endif(UNIX)
+# add OculusSDK cmake directory to .cmake search path
+set(CMAKE_MODULE_PATH "${OCULUS_HOME}/CMake/;${CMAKE_MODULE_PATH}")				# append: OCULUSSDK personal cmake directory
 
+# set always OCULUS_SDK_ROOT_DIR as OCULUS_HOME
+set(OCULUS_SDK_ROOT_DIR ${OCULUS_HOME})
 
 # force OCULUS_SDK_ROOT_DIR to show OCULUS_HOME value
 #set(OCULUS_SDK_ROOT_DIR "${OCULUS_HOME}" CACHE PATH "Location of your OculusSDK libraries" FORCE)
@@ -322,17 +314,17 @@ list(APPEND LIBRARIES_TO_LINK							# OGRE + OIS lib link
 	${OGRE_Overlay_LIBRARIES}						
 	${OIS_LIBRARIES}								
 	)
-list(APPEND HEADERS_TO_INCLUDE_PUBLIC						# OGRE + OIS lib include
+list(APPEND HEADERS_TO_INCLUDE_PUBLIC					# OGRE + OIS lib include
 	"${OIS_INCLUDE_DIRS}"
 	"${OGRE_INCLUDE_DIRS}"
 	"${OGRE_Overlay_INCLUDE_DIRS}"
 	"${OGRE_SAMPLES_INCLUDEPATH}"
 	)
 
-# OculusSDK lib (add it as a precompiled library if user does not want to recompile it or source is not available)
+# OculusSDK lib (if bundled version cannot be linked, compile from source)
 unset(OCULUSSDK_FOUND CACHE)
 set(OCULUSSDK_FOUND false)
-if(USE_BUNDLED_OculusSDK)
+if(USE_BUNDLED_OculusSDK AND )
 	find_package(OculusSDK QUIET)					# OculusSDK lib config (if bundled)
 	#message(${OCULUSSDK_FOUND})
 	if(NOT OCULUSSDK_FOUND)
