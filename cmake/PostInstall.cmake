@@ -7,6 +7,7 @@ set (OGRE_MEDIA_FOLDER_NAME "@OGRE_MEDIA_FOLDER_NAME@")	# values mirrored by con
 set (media_dir_name "@media_dir_name@")					# values mirrored by configure_file()
 set (config_dir_name "@config_dir_name@")				# values mirrored by configure_file()
 set (plugins_dir_name "@plugins_dir_name@")				# values mirrored by configure_file()
+set (dl "@dl")											# values mirrored by configure_file()
 
 #
 # -------------------------------
@@ -33,7 +34,7 @@ foreach(Line ${ContentsAsList})
     if(NOT ${CMAKE_MATCH_1} STREQUAL "")					# and CMAKE_MATCH_1 contains the submatch between ()
     	set (plugin_name ${CMAKE_MATCH_1})					
     	message(STATUS "Installing plugin '${plugin_name}'...")
-    	file(COPY "${OGRE_PLUGIN_DIR_REL}/${plugin_name}.dll"
+    	file(COPY "${OGRE_PLUGIN_DIR_REL}/${plugin_name}.${dl}"
 		DESTINATION ${CMAKE_INSTALL_PREFIX}/${plugins_dir_name}
 		)
 		message(STATUS "Plugin '${plugin_name}' installed.")

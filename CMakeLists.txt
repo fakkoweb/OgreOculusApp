@@ -12,8 +12,8 @@
 # DEDICATED distribution FOLDER (build, configuration and media files are automatically copied on INSTALL)
 # ON "INSTALL" - for Ogre:
 #	- release executable is copied (if existing)
-#	- all needed release .dll are copied to distribution dir
-# 	- all needed release plugins .dll (defined in plugins.cfg) are copied to plugins distribution subdir
+#	- all needed release .dll/.so are copied to distribution dir
+# 	- all needed release plugins .dll/.so (defined in plugins.cfg) are copied to plugins distribution subdir
 #	- all needed resources (defined in resources.cfg, both from Ogre folder and from media folder) are copied to media distribution subdir
 #	- all release configuration files are copied in config distribution subdir and updated to reference the copied files
 # A PostInstall.cmake script template is used to parse configuration files and copy all contents.
@@ -77,11 +77,11 @@ set (install_script_name "PostInstall")	# name of the TEMPLATE cmake file for ge
 # DEFAULT directory names relative to CMAKE_SOURCE_DIR
 # these folder names will be used if:
 #	- this is the main project
-#	- this is not the main project and any parent project defined them
+#	- this is not the main project and no parent project defined them
 # simply SET these variables IN YOUR PARENT PROJECT to override standard names
 setifnotdef (binary_dir_name "build")					# name of the dir containing build results (Release, Debug, ..), IF built separately
 setifnotdef (distribution_dir_name "dist")				# name of the dir that will contain final distribution files on INSTALL, such as:
-														#	- final release executable files and .dlls (in root)
+														#	- final release executable files and .dlls/.sos (in root)
 														#	- data/media files (in /media_dir_name)
 														#	- configuration files (in /config_dir_name)
 														#	- runtime plugins (in /plugin_dir_name)
@@ -100,6 +100,16 @@ setifnotdef (plugins_dir_name "plugins")				# name of the subdir in /distributio
 ################################################################
 #                   PROJECT/BUILD SETUP     		           #
 ################################################################
+
+# lib extensions dependent on OS (useful when in need to manually work on some lib files)
+if(WIN32)
+	set(sl "lib")
+	set(dl "dll")
+endif()
+if(UNIX)
+	set(sl "a")
+	set(dl "so")
+endif()
 
 # cmake project variables
 set(CMAKE_MODULE_PATH
@@ -573,7 +583,7 @@ set(OGRE_MEDIA_FOLDER_NAME ${CMAKE_MATCH_2})
 ################################################################
 #                   POST-BUILD AND INSTALL 					   #
 ################################################################
-# Run "INSTALL" to copy exe, dll, media and cfg files into /dist folder
+# Run "INSTALL" to copy exe, dll/so, media and cfg files into /dist folder
 
 # define "dist" directory where finished project should be installed for final distribution
 #if(WIN32 AND NOT MINGW)
@@ -620,10 +630,10 @@ endif()
 # so you'll have to change that to make it work with 1.7.1
 # DON'T INCLUDE HERE ANY PLUGIN DEFINED IN PLUGINS.CFG !!
 install(FILES
-	${OGRE_PLUGIN_DIR_REL}/OgreMain.dll
-	${OGRE_PLUGIN_DIR_REL}/OIS.dll
-	${OGRE_PLUGIN_DIR_REL}/cg.dll
-	${OGRE_PLUGIN_DIR_REL}/OgreOverlay.dll
+	${OGRE_PLUGIN_DIR_REL}/OgreMain.${dl}
+	${OGRE_PLUGIN_DIR_REL}/OIS.${dl}
+	${OGRE_PLUGIN_DIR_REL}/cg.${dl}
+	${OGRE_PLUGIN_DIR_REL}/OgreOverlay.${dl}
 	DESTINATION ${CMAKE_INSTALL_PREFIX}
 	CONFIGURATIONS Release RelWithDebInfo Debug
 )
@@ -659,7 +669,7 @@ if(Boost_FOUND)
 			
 	add_custom_command(TARGET OculusOgreSample POST_BUILD        # Adds a post-build event to MyTest
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different  # which executes "cmake - E copy_if_different..."
-			"${DIR}/${S}.dll"      # <--this is in-file
+			"${DIR}/${S}.${dl}"      # <--this is in-file
 			$<TARGET_FILE_DIR:OculusOgreSample>)                 # <--this is out-file path
 
 	get_filename_component( DIR ${Boost_SYSTEM_LIBRARY_RELEASE} DIRECTORY )
@@ -672,7 +682,7 @@ if(Boost_FOUND)
 			
 	add_custom_command(TARGET OculusOgreSample POST_BUILD        # Adds a post-build event to MyTest
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different  # which executes "cmake - E copy_if_different..."
-			"${DIR}/${S}.dll"      # <--this is in-file
+			"${DIR}/${S}.${dl}"      # <--this is in-file
 			$<TARGET_FILE_DIR:OculusOgreSample>)                 # <--this is out-file path
 
 endif()
