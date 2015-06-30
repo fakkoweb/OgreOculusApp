@@ -1,5 +1,4 @@
-sudo apt-get install build-essential automake libtool
-sudo apt-get install libfreetype6-dev nvidia-cg-toolkit libfreeimage-dev zlib1g-dev libzzip-dev libois-dev libcppunit-dev doxygen libxt-dev libxaw7-dev libxxf86vm-dev libxrandr-dev libglu-dev
+# INSTALL DEPENDENCIES FIRST!
 hg clone https://bitbucket.org/sinbad/ogre ./ogrerepo
 rm -R OGRE
 mkdir OGRE
