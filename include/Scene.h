@@ -55,13 +55,13 @@ class Scene : public Ogre::Camera::Listener
 		void createCameras();
 		void createVideos(const float WPlane, const float HPlane);
 
-		Ogre::Root* mRoot;
-		OIS::Mouse* mMouse;
-		OIS::Keyboard* mKeyboard;
-		Ogre::SceneManager* mSceneMgr;
+		Ogre::Root* mRoot = nullptr;
+		OIS::Mouse* mMouse = nullptr;
+		OIS::Keyboard* mKeyboard = nullptr;
+		Ogre::SceneManager* mSceneMgr = nullptr;
 
-		Ogre::Camera* mCamLeft;
-		Ogre::Camera* mCamRight;
+		Ogre::Camera* mCamLeft = nullptr;
+		Ogre::Camera* mCamRight = nullptr;
 
 		Ogre::Image mLeftCameraRenderImage;
 		Ogre::Image mRightCameraRenderImage;
@@ -72,16 +72,16 @@ class Scene : public Ogre::Camera::Listener
 		Ogre::MaterialPtr mLeftCameraRenderMaterial;
 		Ogre::MaterialPtr mRightCameraRenderMaterial;
 		
-		Ogre::Camera* mCamGod;
+		Ogre::Camera* mCamGod = nullptr;
 
 		Ogre::SceneNode* mVideoLeft = nullptr;
 		Ogre::SceneNode* mVideoRight = nullptr;
-		Ogre::SceneNode* mHeadStabilizationNode;		// on this we apply Image stabilization full Orientation delta
-		Ogre::SceneNode* mHeadNode;						// on this we apply Head full Orientation (Yaw/Pitch/Roll)
-		Ogre::SceneNode* mBodyTiltNode;					// on this we apply Body Pitch transformation (up/down turn)
-		Ogre::SceneNode* mBodyNode;						// on this we apply Body Yaw transformation (left/right turn)
+		Ogre::SceneNode* mHeadStabilizationNode = nullptr;			// on this we apply Image stabilization full Orientation delta
+		Ogre::SceneNode* mHeadNode = nullptr;						// on this we apply Head full Orientation (Yaw/Pitch/Roll)
+		Ogre::SceneNode* mBodyTiltNode = nullptr;					// on this we apply Body Pitch transformation (up/down turn)
+		Ogre::SceneNode* mBodyNode = nullptr;						// on this we apply Body Yaw transformation (left/right turn)
 
-		Ogre::SceneNode* mRoomNode;
+		Ogre::SceneNode* mRoomNode = nullptr;
 };
 
 #endif

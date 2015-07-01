@@ -19,13 +19,14 @@ class FrameCaptureHandler
 
 		bool hasFrame{ false };
 		bool stopped{ false };
+		bool opening_failed{ false };
 		cv::VideoCapture videoCapture;
 		std::thread captureThread;
 		std::mutex mutex;
 		FrameCaptureData frame;
-		Rift* headset;
-		ovrHmd hmd;
-		const unsigned int deviceId;
+		Rift* headset = nullptr;
+		ovrHmd hmd = nullptr;
+		const unsigned int deviceId = 0;
 
 	public:
 

@@ -60,12 +60,12 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		bool update();
 
 	private:
-		ConfigDB* mConfig;
+		ConfigDB* mConfig = nullptr;
 
-		OIS::Keyboard* mKeyboard;
-		OIS::Mouse* mMouse;
+		OIS::Keyboard* mKeyboard = nullptr;
+		OIS::Mouse* mMouse = nullptr;
 
-		Ogre::Root* mRoot;
+		Ogre::Root* mRoot = nullptr;
 
 		Ogre::RenderWindow* mWindow = nullptr;
 		
@@ -73,9 +73,8 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		// Ogre::OverlaySystem* mOverlaySystem;
 		// OgreBites::SdkTrayManager*	mTrayMgr;
 		// OgreBites::InputContext     mInputContext;
-		// OgreBites::ParamsPanel*     mDetailsPanel;   	// Sample details panel
-		bool                        mCursorWasVisible;	// Was cursor visible before dialog appeared?
-		bool                        mShutDown;
+		// OgreBites::ParamsPanel*     mDetailsPanel;   		// Sample details panel
+		bool mCursorWasVisible=false;							// Was cursor visible before dialog appeared?
 
 		Ogre::RenderWindow* mSmallWindow = nullptr;
 		Ogre::RenderWindow* mGodWindow = nullptr;
@@ -83,14 +82,14 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		//Ogre::Viewport* mViewportR;
 
 		// If this is set to true, the app will close during the next frame:
-		bool mShutdown;
+		bool mShutdown = false;
 
-		Scene* mScene;
+		Scene* mScene = nullptr;
 
-		Rift* mRift;
+		Rift* mRift = nullptr;
 
-		FrameCaptureHandler* mCameraLeft;
-		FrameCaptureHandler* mCameraRight;
+		FrameCaptureHandler* mCameraLeft = nullptr;
+		FrameCaptureHandler* mCameraRight = nullptr;
 		Ogre::PixelBox mOgrePixelBoxLeft;	//Ogre containers for opencv Mat image raw data
 		Ogre::PixelBox mOgrePixelBoxRight;	//Ogre containers for opencv Mat image raw data
 };

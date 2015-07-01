@@ -31,14 +31,14 @@ App::App(const std::string& configurationFilePath = "/cfg/parameters.cfg")
 {
 	std::cout << "Creating Ogre application:" << std::endl;
 
-	mRoot = NULL;
-	mKeyboard = NULL;
-	mMouse = NULL;	
-	mScene = NULL;
+	mRoot = nullptr;
+	mKeyboard = nullptr;
+	mMouse = nullptr;
+	mScene = nullptr;
 	mShutdown = false;
-	mWindow = NULL;
-	mSmallWindow = NULL;
-	mRift = NULL;
+	mWindow = nullptr;
+	mSmallWindow = nullptr;
+	mRift = nullptr;
 
 	//Load custom configuration for the App (parameters.cfg)
 	loadConfig(configurationFilePath);
@@ -190,7 +190,7 @@ void App::initOgre()
 	// In Ogre, the singletons are instanciated explicitly (with new) the first time,
 	// then it can be accessed with Ogre::Root::getSingleton()
 	// Plugins are passed as argument to the "Root" constructor
-	mRoot = new Ogre::Root(configFilePathPrefix + pluginsFileName, configFilePathPrefix + "ogre.cfg", "ogre.log");
+	mRoot = new Ogre::Root(configFilePathPrefix + pluginsFileName);
 	// No Ogre::FileNotFoundException is thrown by this, that's why we tried to open it first with ConfigFile::load()
 
 
@@ -296,7 +296,6 @@ void App::initOgre()
 	if (DEBUG_WINDOW)
 		mGodWindow = mRoot->createRenderWindow("DEBUG God Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParamsSmall);
 #endif
-
 
 
 	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();

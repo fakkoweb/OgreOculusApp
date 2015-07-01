@@ -59,10 +59,10 @@ class Rift
 	private:
 
 		// Rift data
-		int mRiftID;
-		ovrHmd hmd;
-		bool simulationMode;
-		float mIPD;
+		int mRiftID = 0;
+		ovrHmd hmd = nullptr;
+		bool simulationMode = false;
+		float mIPD = 0.064f;
 		ovrFrameTiming frameTiming;
 		static bool isInitialized;
 		static unsigned short int ovr_Users;
@@ -72,23 +72,24 @@ class Rift
 		// Oculus Rift Outer Scene representation (virtual stereo cameras + head + body)
 		Ogre::Vector3 mPosition;
 		Ogre::Quaternion mOrientation;
-		Ogre::Camera* mCamLeft;
-		Ogre::Camera* mCamRight;
-		Ogre::SceneNode* mHeadNode;
-		Ogre::SceneNode* mBodyNode;
-		Ogre::SceneNode* mBodyTiltNode;
+		Ogre::Camera* mCamLeft = nullptr;
+		Ogre::Camera* mCamRight = nullptr;
+		Ogre::SceneNode* mHeadNode = nullptr;
+		Ogre::SceneNode* mBodyNode = nullptr;
+		Ogre::SceneNode* mBodyTiltNode = nullptr;
 		// Oculus Rift Inner Scene representation (barrell effect for Oculus display)
-		Ogre::SceneManager* mSceneMgr;
-			Ogre::SceneNode* mCamNode;
-				Ogre::Camera* mCamera;
-			Ogre::TexturePtr mLeftEyeRenderTexture;
-			Ogre::TexturePtr mRightEyeRenderTexture;
-			Ogre::MaterialPtr mMatLeft;
-			Ogre::MaterialPtr mMatRight;
+		Ogre::SceneManager* mSceneMgr = nullptr;
+		Ogre::SceneNode* mCamNode = nullptr;
+		Ogre::Camera* mCamera = nullptr;
+		Ogre::TexturePtr mLeftEyeRenderTexture;
+		Ogre::TexturePtr mRightEyeRenderTexture;
+		Ogre::MaterialPtr mMatLeft;
+		Ogre::MaterialPtr mMatRight;
 		void createRiftDisplayScene(Ogre::Root* const root, const bool rotateView);
+		
 		// Oculus Rift Display rendering window (displayed on Oculus)
-		Ogre::RenderWindow* mRenderWindow;
-		Ogre::Viewport* mViewport;
+		Ogre::RenderWindow* mRenderWindow = nullptr;
+		Ogre::Viewport* mViewport = nullptr;
 		void createRiftDisplayWindow(Ogre::Root* const root);
 	
 };

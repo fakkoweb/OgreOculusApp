@@ -9,6 +9,7 @@ float FrameCaptureHandler::startCapture()
 	if (!videoCapture.isOpened() || !videoCapture.read(frame.image))
 	{
 		std::cout << "Could not open video source to capture first frame";
+		opening_failed = true;
 	}
 	else
 	{
@@ -27,9 +28,9 @@ float FrameCaptureHandler::startCapture()
 
 void FrameCaptureHandler::stopCapture() {
 	stopped = true;
-	captureThread.join();
-	if (videoCapture.isOpened())
+	if (!opening_failed)
 	{
+		captureThread.join();
 		videoCapture.release();
 	}
 }

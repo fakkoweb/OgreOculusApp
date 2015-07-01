@@ -55,6 +55,7 @@ Rift::Rift(const unsigned int ID, Ogre::Root* const root, Ogre::RenderWindow* &r
 			Rift::shutdown();
 			throw std::ios_base::failure("Unable to initialize Rift class.");
 		}
+		mRiftID = ovrHmd_DK2;
 		simulationMode = true;
 		std::cout<<"Simulation enabled: a window will show a dummy Oculus DK2 output." << std::endl;
 
@@ -77,6 +78,8 @@ Rift::Rift(const unsigned int ID, Ogre::Root* const root, Ogre::RenderWindow* &r
 			Rift::shutdown();
 			throw std::ios_base::failure("\tThis Rift does not support the features needed by the application.");
 		}
+		mRiftID = ID;
+
 	}
 
 
