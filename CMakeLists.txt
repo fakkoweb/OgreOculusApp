@@ -391,8 +391,8 @@ list(APPEND HEADERS_TO_INCLUDE_PUBLIC "${PROJECT_INCLUDE_DIR}")
 
 # OculusSDK lib - add as SUBPROJECT if user wants to compile it from bundled version
 if(USE_BUNDLED_OculusSDK AND COMPILE_OculusSDK)
-	add_subdirectory(${OCULUS_HOME}/LibOVR)				# OculusSDK subproject source
-	set_target_properties(ovr PROPERTIES FOLDER "3rdParty")
+	add_subdirectory(${OCULUS_HOME})					# OculusSDK subproject source
+	#set_target_properties(ovr PROPERTIES FOLDER "3rdParty")
 	list(APPEND LIBRARIES_TO_LINK ovr)					# OculusSDK subproject lib link4
 	list(APPEND HEADERS_TO_INCLUDE_PUBLIC						# OculusSDK subproject include
 		"${OCULUS_HOME}/LibOVR/Include"
