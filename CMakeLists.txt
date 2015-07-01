@@ -21,9 +21,10 @@
 # THIS IS REALLY HELPFUL TO UNDERSTAND HOW CMAKE WORKS MORE OR LESS: http://www.kaizou.org/2014/11/typical-cmake-project/
 #
 
-cmake_minimum_required(VERSION 2.8.9)
-cmake_policy(VERSION 2.8.9)
+cmake_minimum_required(VERSION 2.8.12)
+cmake_policy(VERSION 2.8.12)
 #cmake_policy(SET CMP0048 OLD)			# how to set project version (retrocompatibility with OLD rule)
+cmake_policy(SET CMP0040 OLD)
 
 # useful boolean variable to understand fast if this project is used as subproject or main project
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
@@ -643,7 +644,7 @@ install(FILES
 )
 
 # Boost management: NOT TESTED - feel free to improve it!
-if(NOT Boost_FOUND)
+if(Boost_FOUND AND OGRE_USE_BOOST)
 
 	if(WIN32)
 	 
