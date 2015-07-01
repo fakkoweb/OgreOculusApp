@@ -7,7 +7,7 @@ set (OGRE_MEDIA_FOLDER_NAME "@OGRE_MEDIA_FOLDER_NAME@")	# values mirrored by con
 set (media_dir_name "@media_dir_name@")					# values mirrored by configure_file()
 set (config_dir_name "@config_dir_name@")				# values mirrored by configure_file()
 set (plugins_dir_name "@plugins_dir_name@")				# values mirrored by configure_file()
-set (dl "@dl")											# values mirrored by configure_file()
+set (dl "@dl@")											# values mirrored by configure_file()
 
 #
 # -------------------------------

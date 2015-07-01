@@ -38,9 +38,10 @@ endif()
 macro(setifnotdef var_name var_value)
 	if(NOT DEFINED ${var_name})
 		if(IS_SUBPROJECT)
-			set(${var_name} ${var_value} PARENT_SCOPE)
+			set(${var_name}	"${var_value}" PARENT_SCOPE)
+			set(${var_name}	"${var_value}")
 		else()
-			set(${var_name} ${var_value})
+			set(${var_name} "${var_value}")
 		endif()
 	endif()
 endmacro()
@@ -163,7 +164,7 @@ if( EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/OGRE")
 	# give the option to use it (true by default)
 	set (USE_BUNDLED_OGRE true CACHE BOOL "Use the version of OGRE bundled in this project (within '/${libs_dir_name}' folder)" )
 else()
-	# message(STATUS "No bundled OculusSDK found in '/${libs_dir_name}'.")
+	# message(STATUS "No bundled Ogre found in '/${libs_dir_name}'.")
 	set (BUNDLED_OGRE_FOUND false)
 	# don't show any option (not a cache variable)
 	set (USE_BUNDLED_OGRE false)
@@ -334,12 +335,12 @@ list(APPEND HEADERS_TO_INCLUDE_PUBLIC					# OGRE + OIS lib include
 # OculusSDK lib (if bundled version cannot be linked, compile from source)
 unset(OCULUSSDK_FOUND CACHE)
 set(OCULUSSDK_FOUND false)
-if(USE_BUNDLED_OculusSDK AND )
+if(USE_BUNDLED_OculusSDK)
 	find_package(OculusSDK QUIET)					# OculusSDK lib config (if bundled)
 	#message(${OCULUSSDK_FOUND})
 	if(NOT OCULUSSDK_FOUND)
 		if(OculusSDK_SOURCE_FOUND)
-			message("Failed to find bundled OculusSDK precompiled libraries. Source code available. Will force to compile it.")
+			message(STATUS "Failed to find bundled OculusSDK precompiled libraries. Source code available. Will force to compile it.")
 			set (COMPILE_OculusSDK true CACHE BOOL "[FORCED] Compile the source of OculusSDK toghether with the project" FORCE)
 		else()
 			message(SEND_ERROR "Failed to find valid libraries/source in bundled OculusSDK folder. Uncheck the 'USE_BUNDLED_OculusSDK' flag and retry.")
@@ -451,7 +452,7 @@ if( WIN32 )
 elseif( UNIX )
 
 	# Where to find UDEV:
-	find_package(UDEV REQUIRED)
+	# find_package(UDEV REQUIRED)
 	# Where to find XINERAMA:
 	find_package(Xinerama REQUIRED)
 	find_package(X11 REQUIRED)
@@ -481,7 +482,11 @@ set_target_properties(${OUTPUT_FILE_NAME} PROPERTIES DEBUG_POSTFIX _d)
 if( WIN32 )
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /DWIN32_LEAN_AND_MEAN")
 endif()
-
+if( UNIX )
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -ansi -std=c++11")
+	message(${CMAKE_CXX_FLAGS})
+	message(${CMAKE_CXX_FLAGS_DEBUG})
+endif()
 
 ################################################################
 #                   OGRE RUNTIME FILES CONFIG                  #
@@ -632,6 +637,7 @@ endif()
 install(FILES
 	${OGRE_PLUGIN_DIR_REL}/OgreMain.${dl}
 	${OGRE_PLUGIN_DIR_REL}/OIS.${dl}
+	${OGRE_PLUGIN_DIR_REL}/libOIS.${dl}
 	${OGRE_PLUGIN_DIR_REL}/cg.${dl}
 	${OGRE_PLUGIN_DIR_REL}/OgreOverlay.${dl}
 	DESTINATION ${CMAKE_INSTALL_PREFIX}
@@ -639,7 +645,7 @@ install(FILES
 )
 
 # Boost management: NOT TESTED - feel free to improve it!
-if(Boost_FOUND)
+if(NOT Boost_FOUND)
 
 	if(WIN32)
 	 
