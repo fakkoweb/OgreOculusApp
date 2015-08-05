@@ -61,6 +61,7 @@ class Rift
 		// Rift data
 		int mRiftID = 0;
 		ovrHmd hmd = nullptr;
+		bool rotateView = false;
 		bool simulationMode = false;
 		float mIPD = 0.064f;
 		ovrFrameTiming frameTiming;

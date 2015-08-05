@@ -27,10 +27,10 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 {
 	public:
 
-		App(const std::string& configurationFilePath);
+		App(const std::string& configurationFilesPath, const std::string& settingsFileName);
 		~App();
 
-		void loadConfig(const std::string& configurationFilePath);
+		void loadConfig(const std::string& configurationFilesPath);
 		void initOgre();
 		void quitOgre();
 		void initOIS();
@@ -60,6 +60,7 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		bool update();
 
 	private:
+		const std::string configurationFilesPath;
 		ConfigDB* mConfig = nullptr;
 
 		OIS::Keyboard* mKeyboard = nullptr;

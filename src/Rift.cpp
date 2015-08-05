@@ -37,7 +37,6 @@ Rift::Rift(const unsigned int ID, Ogre::Root* const root, Ogre::RenderWindow* &r
 	// Init OVR lib (if I am the first created)
 	Rift::init();
 
-
 	// ---------------------------------
 	// Try to locate physical Rift device
 	hmd = NULL;
@@ -78,13 +77,21 @@ Rift::Rift(const unsigned int ID, Ogre::Root* const root, Ogre::RenderWindow* &r
 			Rift::shutdown();
 			throw std::ios_base::failure("\tThis Rift does not support the features needed by the application.");
 		}
+
+		// Save id
 		mRiftID = ID;
+
+		// Determine Oculus Type
+		if (hmd->Type == ovrHmd_DK1)
+			this->rotateView = false;
+		else if (hmd->Type == ovrHmd_DK2)
+			this->rotateView = true;
 
 	}
 
 
 	// -----------------------------------
-	createRiftDisplayScene(root, rotateView);
+	createRiftDisplayScene(root, this->rotateView);
 
 
 	// -----------------------------------
@@ -126,11 +133,13 @@ void Rift::createRiftDisplayWindow(Ogre::Root* const root)
 	}
 
 	// Creating Oculus rendering window
-	if (true)
+	if (hmd->Type == ovrHmd_DK1)
 		mRenderWindow = root->createRenderWindow("Oculus Rift Liver Visualization", 1280, 800, !simulationMode, &miscParams);
 		//mWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1920*0.5, 1080*0.5, false, &miscParams);
-	else
+	else if (hmd->Type == ovrHmd_DK2)
+	{
 		mRenderWindow = root->createRenderWindow("Oculus Rift Liver Visualization", 1080, 1920, !simulationMode, &miscParams);
+	}
 
 }
 
@@ -148,6 +157,7 @@ void Rift::createRiftDisplayScene(Ogre::Root* const root, const bool rotateView)
 	/*Sizei renderTargetSize;
 	renderTargetSize.w = recommendedTex0Size.w + recommendedTex1Size.w;
 	renderTargetSize.h = std::max( recommendedTex0Size.h, recommendedTex1Size.h );*/
+	std::cout << "Error?" << std::endl;
 
 	mLeftEyeRenderTexture = Ogre::TextureManager::getSingleton().createManual(
 		"RiftRenderTextureLeft", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
@@ -269,7 +279,7 @@ void Rift::createRiftDisplayScene(Ogre::Root* const root, const bool rotateView)
 	mCamera->setNearClipDistance(0.001);
 	mCamera->setProjectionType(Ogre::PT_ORTHOGRAPHIC);
 	mCamera->setOrthoWindow(2, 2);
-	if (rotateView)
+	if (this->rotateView)
 	{
 		mCamera->roll(Ogre::Degree(-90));
 	}

@@ -1,5 +1,6 @@
 #include "App.h"
 #include <chrono>
+#include <thread>
 
 void frames_per_second(int delay)
 {
@@ -27,9 +28,8 @@ bool seethroughEnabled = false;
 // Init application
 ////////////////////////////////////////////////////////////
 
-App::App(const std::string& configurationFilePath = "/cfg/parameters.cfg")
+App::App(const std::string& configurationFilesPath = "cfg/", const std::string& settingsFileName = "parameters.cfg") : configurationFilesPath(configurationFilesPath)
 {
-	std::cout << "Creating Ogre application:" << std::endl;
 
 	mRoot = nullptr;
 	mKeyboard = nullptr;
@@ -40,17 +40,23 @@ App::App(const std::string& configurationFilePath = "/cfg/parameters.cfg")
 	mSmallWindow = nullptr;
 	mRift = nullptr;
 
+
+
 	//Load custom configuration for the App (parameters.cfg)
-	loadConfig(configurationFilePath);
+	std::cout << "APP: Loading configuration file..." << std::endl;
+	loadConfig(configurationFilesPath + settingsFileName);
+	std::cout << "APP: Loaded." << std::endl;
 
 	//Ogre engine setup (loads plugins.cfg/resources.cfg and creates Ogre main rendering window NOT THE SCENE)
+	std::cout << "APP: Loading Ogre framework..." << std::endl;
 	initOgre();
+	std::cout << "APP: Loaded." << std::endl;
 
 	//Rift Setup (creates Oculus rendering window and Oculus inner scene - user shouldn't care about it)
 	initRift();
 
 	//Stereo camera rig setup ()
-	initCameras();
+	//initCameras();
 
 	//Input/Output setup (associate I/O to Oculus window)
 	initOIS();
@@ -127,10 +133,10 @@ App::~App()
 /////////////////////////////////////////////////////////////////
 // Load User parameters and App configuration
 /////////////////////////////////////////////////////////////////
-void App::loadConfig(const std::string& configurationFilePath)
+void App::loadConfig(const std::string& configurationFilesPath)
 {
 
-	mConfig = new ConfigDB(configurationFilePath);
+	mConfig = new ConfigDB(configurationFilesPath);
 
 	// Overwrite default parameters values
 	CAMERA_BUFFERING_DELAY = mConfig->getValueAsInt("Camera/BufferingDelay");
@@ -151,7 +157,6 @@ void App::initOgre()
 
 	// Config file class is an utility that parses and stores values from a .cfg file
 	Ogre::ConfigFile cf;
-	std::string configFilePathPrefix = "cfg/";			// configuration files default location when app is installed
 #ifdef _DEBUG
 	std::string pluginsFileName = "plugins_d.cfg";		// plugins config file name (Debug mode)
 #else
@@ -166,23 +171,13 @@ void App::initOgre()
 	try
 	{
 		//This will work ONLY when application is installed (only Release application)!
-		cf.load(configFilePathPrefix + pluginsFileName);
+		std::cout << "OGRE: Loading plugins file..." << std::endl;
+		cf.load(configurationFilesPath + pluginsFileName);
 	}
 	catch (Ogre::FileNotFoundException &e)
 	{
-		try
-		{
-			// if no existing config, or could not restore it, try to load from a different location
-			configFilePathPrefix = "../cfg/";
-
-			//This will work ONLY when application is in development (Debug/Release configuration)
-			cf.load(configFilePathPrefix + pluginsFileName);			
-		}
-		catch (Ogre::FileNotFoundException &e)
-		{
-			// launch exception if no valid config file is found! - PROGRAM WON'T START!
-			throw e;
-		}
+		std::cout << "OGRE: Failed." << std::endl;
+		throw e;
 	}
 
 
@@ -190,31 +185,26 @@ void App::initOgre()
 	// In Ogre, the singletons are instanciated explicitly (with new) the first time,
 	// then it can be accessed with Ogre::Root::getSingleton()
 	// Plugins are passed as argument to the "Root" constructor
-	mRoot = new Ogre::Root(configFilePathPrefix + pluginsFileName);
+	std::cout << "OGRE: Constructing Root object..." << std::endl;
+	mRoot = new Ogre::Root(configurationFilesPath + pluginsFileName);
 	// No Ogre::FileNotFoundException is thrown by this, that's why we tried to open it first with ConfigFile::load()
-
-
 	
+
+
 	// LOAD OGRE RESOURCES
 	// Load up resources according to resources.cfg ("cf" variable is reused)
 	try
 	{
 		//This will work ONLY when application is installed!
-		cf.load("cfg/resources.cfg");
+		std::cout << "OGRE: Loading resources file..." << std::endl;
+		cf.load(configurationFilesPath + resourcesFileName);
 	}
 	catch (Ogre::FileNotFoundException &e)	// It works, no need to change anything
 	{
-		try
-		{
-			//This will work ONLY when application is in development (Debug/Release configuration)
-			cf.load("../cfg/resources.cfg");
-		}
-		catch (Ogre::FileNotFoundException &e)
-		{
-			// launch exception if no valid config file is found! - PROGRAM WON'T START!
-			throw e;
-		}
+		std::cout << "OGRE: Failed." << std::endl;
+		throw e;
 	}
+
 
     // Go through all sections & settings in the file and ADD them to Resource Manager
     Ogre::ConfigFile::SectionIterator seci = cf.getSectionIterator();
@@ -235,6 +225,7 @@ void App::initOgre()
 	}
 
 
+	
 	// SELECT AND CUSTOMIZE OGRE RENDERING (OpenGL)
 	// Get a reference of the RenderSystem in Ogre that I want to customize
 	Ogre::RenderSystem* pRS = mRoot->getRenderSystemByName("OpenGL Rendering Subsystem");
@@ -255,7 +246,7 @@ void App::initOgre()
 	mRoot->setRenderSystem(pRS);
 	// Initialize it: "false" is DO NOT CREATE A WINDOW FOR ME
 	mRoot->initialise(false, "Oculus Rift Visualization");
-
+	
 
 	// CREATE WINDOWS
 	/* REMOVED: Rift class creates the window if no null is passed to its constructor
@@ -297,6 +288,8 @@ void App::initOgre()
 		mGodWindow = mRoot->createRenderWindow("DEBUG God Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParamsSmall);
 #endif
 
+
+	//std::this_thread::sleep_for(std::chrono::duration< int, std::deca >(1));
 
 	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
 	//mOverlaySystem = new Ogre::OverlaySystem();
