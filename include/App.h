@@ -31,7 +31,18 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		~App();
 
 		void loadConfig(const std::string& configurationFilesPath);
+		void initFramework();
+		void initWindows();
+		void initIO();
+		void initResources();
+		void initScenes();
+		void initViewports();
+		void start();
+
+		
 		void initOgre();
+		void loadOgreResources();
+		void loadOgreWindows();
 		void quitOgre();
 		void initOIS();
 		void quitOIS();

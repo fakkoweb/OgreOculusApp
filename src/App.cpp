@@ -30,7 +30,7 @@ bool seethroughEnabled = false;
 
 App::App(const std::string& configurationFilesPath = "cfg/", const std::string& settingsFileName = "parameters.cfg") : configurationFilesPath(configurationFilesPath)
 {
-
+	// Init variables
 	mRoot = nullptr;
 	mKeyboard = nullptr;
 	mMouse = nullptr;
@@ -41,16 +41,31 @@ App::App(const std::string& configurationFilesPath = "cfg/", const std::string& 
 	mRift = nullptr;
 
 
-
 	//Load custom configuration for the App (parameters.cfg)
 	std::cout << "APP: Loading configuration file..." << std::endl;
 	loadConfig(configurationFilesPath + settingsFileName);
 	std::cout << "APP: Loaded." << std::endl;
 
 	//Ogre engine setup (loads plugins.cfg/resources.cfg and creates Ogre main rendering window NOT THE SCENE)
-	std::cout << "APP: Loading Ogre framework..." << std::endl;
-	initOgre();
-	std::cout << "APP: Loaded." << std::endl;
+	std::cout << "APP: Initializing framework..." << std::endl;
+	initFramework();
+	std::cout << "APP: Initialized. Enumeration: (...)" << std::endl;
+
+	//The correct order should be, from inner to outer: resources - scene - viewport - window - IO
+	//Unfortunately:
+	//	- resources cannot be loaded correctly before defining at least a window
+	//	- viewport must be configured after defining a window and a scene
+	initWindows();
+
+	initIO();
+
+	initResources();
+
+	initScenes();
+
+	initViewports();
+
+	start();
 
 	//Rift Setup (creates Oculus rendering window and Oculus inner scene - user shouldn't care about it)
 	initRift();
@@ -61,38 +76,7 @@ App::App(const std::string& configurationFilesPath = "cfg/", const std::string& 
 	//Input/Output setup (associate I/O to Oculus window)
 	initOIS();
 
-	// Create Ogre main scene (setup and populate main scene)
-	// This class implements App logic!!
-	mScene = new Scene(mRoot, mMouse, mKeyboard);
-	//if (mOverlaySystem)	mScene->getSceneMgr()->addRenderQueueListener(mOverlaySystem);	//Only Ogre main scene will render overlays!
-	try
-	{
-		// try first to load HFOV/VFOV values (higher priority)
-		mScene->setupVideo(mConfig->getValueAsReal("Camera/HFOV"), mConfig->getValueAsReal("Camera/VFOV"));
-	}
-	catch (Ogre::Exception &e)
-	{
-		// in case one of these parameters is not found in configuration file or is invalid...
-		if (e.getNumber() == Ogre::Exception::ERR_ITEM_NOT_FOUND || e.getNumber() == Ogre::Exception::ERR_INVALIDPARAMS)
-		{
-			try
-			{
-				// ..try to load other parameters (these are preferred, but lower priority since not everyone know these)
-				mScene->setupVideo(mConfig->getValueAsReal("Camera/SensorWidth"), mConfig->getValueAsReal("Camera/SensorHeight"), mConfig->getValueAsReal("Camera/FocalLenght"));
-			}
-			catch (Ogre::Exception &e)
-			{
-				// if another exception is thrown (any), forward
-				throw e;
-			}
-		}
-		// if another exception is thrown, forward
-		else
-		{
-			throw e;
-		}
-	}
-	mScene->setIPD(mRift->getIPD());
+
 	// when setup has finished successfully, enable Video into scene
 	// mScene->enableVideo();	USER CAN ACTIVATE IT, SEE INPUT KEYS LISTENERS!
 
@@ -102,16 +86,11 @@ App::App(const std::string& configurationFilesPath = "cfg/", const std::string& 
 	//Viewport setup (link scene cameras to Ogre/Oculus windows)
 	createViewports();
 
-	// Then setup THIS CLASS INSTANCE as a frame listener
-	// This means that Ogre will call frameStarted(), frameRenderingQueued() and frameEnded()
-	// automatically and periodically if defined in this class
-	mRoot->addFrameListener(this);
+
 
 	//Ogre::WindowEventUtilities::messagePump();
 
-	// START RENDERING!
-	// WHO CREATES AN INSTANCE OF THIS CLASS WILL WAIT INDEFINITELY UNTIL THIS CALL RETURNS
-	mRoot->startRendering();
+
 }
 
 App::~App()
@@ -147,6 +126,116 @@ void App::loadConfig(const std::string& configurationFilesPath)
 
 }
 
+void App::initFramework()
+{
+	// Do HERE all needed Frameworks/SDKs initialization and configuration loading
+
+	initOgre();
+
+	initRift();
+
+	initCameras();
+
+}
+
+void App::initWindows()
+{
+	// Do HERE all the windows configuration (according to what initFramework() has loaded)
+
+	loadOgreWindows();
+
+	mWindow = mRift->createRiftDisplayWindow(mRoot);
+}
+
+void App::initIO()
+{
+	initOIS();
+}
+
+void App::initResources()
+{
+	// Do HERE all the resources file loading stuff
+
+	loadOgreResources();
+
+}
+
+void App::initScenes()
+{
+	// Create Rift inner scene (for stereo vision and lens distortion)
+	mRift->createRiftDisplayScene(mRoot);
+
+	// Create Ogre main scene
+	mScene = new Scene(mRoot, mMouse, mKeyboard);
+	//if (mOverlaySystem)	mScene->getSceneMgr()->addRenderQueueListener(mOverlaySystem);	//Only Ogre main scene will render overlays!
+	try
+	{
+		// try first to load HFOV/VFOV values (higher priority)
+		mScene->setupVideo(mConfig->getValueAsReal("Camera/HFOV"), mConfig->getValueAsReal("Camera/VFOV"));
+	}
+	catch (Ogre::Exception &e)
+	{
+		// in case one of these parameters is not found in configuration file or is invalid...
+		if (e.getNumber() == Ogre::Exception::ERR_ITEM_NOT_FOUND || e.getNumber() == Ogre::Exception::ERR_INVALIDPARAMS)
+		{
+			try
+			{
+				// ..try to load other parameters (these are preferred, but lower priority since not everyone know these)
+				mScene->setupVideo(mConfig->getValueAsReal("Camera/SensorWidth"), mConfig->getValueAsReal("Camera/SensorHeight"), mConfig->getValueAsReal("Camera/FocalLenght"));
+			}
+			catch (Ogre::Exception &e)
+			{
+				// if another exception is thrown (any), forward
+				throw e;
+			}
+		}
+		// if another exception is thrown, forward
+		else
+		{
+			throw e;
+		}
+	}
+	
+	// Setup Ogre main scene in respect to Oculus parameters
+	mScene->setIPD(mRift->getIPD());												// adjust IPD
+	mRift->setCameraMatrices(mScene->getLeftCamera(), mScene->getRightCamera());	// adjust matrices
+
+}
+
+void App::initViewports()
+{
+	// Link Ogre stereo cameras to Oculus distortion meshes
+	// (to be rendered into Oculus window through Oculus ortho camera)
+	mRift->attachCameras(mScene->getLeftCamera(), mScene->getRightCamera());
+
+	// Link orthographic inner scene Oculus camera to Oculus rendering window
+	Ogre::Viewport* oculusView = mWindow->addViewport(mRift->getCamera());
+	oculusView->setBackgroundColour(Ogre::ColourValue::Black);
+	oculusView->setOverlaysEnabled(true);
+
+	// Link other Ogre cameras to debug windows
+	if (mSmallWindow)
+	{
+		Ogre::Viewport* debugL = mSmallWindow->addViewport(mScene->getLeftCamera(), 0, 0.0, 0.0, 0.5, 1.0);
+		debugL->setBackgroundColour(Ogre::ColourValue(0.15, 0.15, 0.15));
+
+		Ogre::Viewport* debugR = mSmallWindow->addViewport(mScene->getRightCamera(), 1, 0.5, 0.0, 0.5, 1.0);
+		debugR->setBackgroundColour(Ogre::ColourValue(0.15, 0.15, 0.15));
+	}
+
+	// Create a God view window from a third view camera
+	if (mGodWindow)
+	{
+		Ogre::Viewport* god = mGodWindow->addViewport(mScene->getGodCamera(), 0, 0.0, 0.0, 1.0, 1.0);
+	}
+}
+
+void App::start()
+{
+	// START RENDERING!
+	// WHO CREATES AN INSTANCE OF THIS CLASS WILL WAIT INDEFINITELY UNTIL THIS CALL RETURNS
+	mRoot->startRendering();
+}
 
 /////////////////////////////////////////////////////////////////
 // Init Ogre (construction, setup and destruction of ogre root):
@@ -162,8 +251,6 @@ void App::initOgre()
 #else
 	std::string pluginsFileName = "plugins.cfg";		// plugins config file name (Release mode)
 #endif
-	std::string resourcesFileName = "resources.cfg";	// resources config file name (Debug/Release mode)
-
 
 
 	// LOAD OGRE PLUGINS
@@ -191,41 +278,6 @@ void App::initOgre()
 	
 
 
-	// LOAD OGRE RESOURCES
-	// Load up resources according to resources.cfg ("cf" variable is reused)
-	try
-	{
-		//This will work ONLY when application is installed!
-		std::cout << "OGRE: Loading resources file..." << std::endl;
-		cf.load(configurationFilesPath + resourcesFileName);
-	}
-	catch (Ogre::FileNotFoundException &e)	// It works, no need to change anything
-	{
-		std::cout << "OGRE: Failed." << std::endl;
-		throw e;
-	}
-
-
-    // Go through all sections & settings in the file and ADD them to Resource Manager
-    Ogre::ConfigFile::SectionIterator seci = cf.getSectionIterator();
-    Ogre::String secName, typeName, archName;
-    while (seci.hasMoreElements())
-    {
-        secName = seci.peekNextKey();
-		Ogre::ConfigFile::SettingsMultiMap *settings = seci.getNext();
-        Ogre::ConfigFile::SettingsMultiMap::iterator i;
-        for (i = settings->begin(); i != settings->end(); ++i)
-        {
-            typeName = i->first;
-            archName = i->second;
-			//For each section/key-value, add a resource to ResourceGroupManager
-            Ogre::ResourceGroupManager::getSingleton().addResourceLocation(
-                archName, typeName, secName);
-        }
-	}
-
-
-	
 	// SELECT AND CUSTOMIZE OGRE RENDERING (OpenGL)
 	// Get a reference of the RenderSystem in Ogre that I want to customize
 	Ogre::RenderSystem* pRS = mRoot->getRenderSystemByName("OpenGL Rendering Subsystem");
@@ -248,14 +300,75 @@ void App::initOgre()
 	mRoot->initialise(false, "Oculus Rift Visualization");
 	
 
+
+	//std::this_thread::sleep_for(std::chrono::duration< int, std::deca >(1));
+	//Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
+	//mOverlaySystem = new Ogre::OverlaySystem();
+
+
+	// Then setup THIS CLASS INSTANCE as a frame listener
+	// This means that Ogre will call frameStarted(), frameRenderingQueued() and frameEnded()
+	// automatically and periodically if defined in this class
+	mRoot->addFrameListener(this);
+
+}
+
+void App::loadOgreResources()
+{
+	// Config file class is an utility that parses and stores values from a .cfg file
+	Ogre::ConfigFile cf;
+	std::string resourcesFileName = "resources.cfg";	// resources config file name (Debug/Release mode)
+
+
+	// LOAD OGRE RESOURCES
+	// Load up resources according to resources.cfg ("cf" variable is reused)
+	try
+	{
+		//This will work ONLY when application is installed!
+		std::cout << "OGRE: Loading resources file..." << std::endl;
+		cf.load(configurationFilesPath + resourcesFileName);
+	}
+	catch (Ogre::FileNotFoundException &e)	// It works, no need to change anything
+	{
+		std::cout << "OGRE: Failed." << std::endl;
+		throw e;
+	}
+
+
+	// Go through all sections & settings in the file and ADD them to Resource Manager
+	Ogre::ConfigFile::SectionIterator seci = cf.getSectionIterator();
+	Ogre::String secName, typeName, archName;
+	while (seci.hasMoreElements())
+	{
+		secName = seci.peekNextKey();
+		Ogre::ConfigFile::SettingsMultiMap *settings = seci.getNext();
+		Ogre::ConfigFile::SettingsMultiMap::iterator i;
+		for (i = settings->begin(); i != settings->end(); ++i)
+		{
+			typeName = i->first;
+			archName = i->second;
+			//For each section/key-value, add a resource to ResourceGroupManager
+			Ogre::ResourceGroupManager::getSingleton().addResourceLocation(
+				archName, typeName, secName);
+		}
+	}
+
+
+	//Initialize all resources groups (read from file)
+	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
+
+}
+
+void App::loadOgreWindows()
+{
 	// CREATE WINDOWS
 	/* REMOVED: Rift class creates the window if no null is passed to its constructor
 	// Options for Window 1 (rendering window)
 	Ogre::NameValuePairList miscParams;
 	if( NO_RIFT )
-		miscParams["monitorIndex"] = Ogre::StringConverter::toString(0);
+	miscParams["monitorIndex"] = Ogre::StringConverter::toString(0);
 	else
-		miscParams["monitorIndex"] = Ogre::StringConverter::toString(1);
+	miscParams["monitorIndex"] = Ogre::StringConverter::toString(1);
 	miscParams["border "] = "none";
 	*/
 
@@ -275,24 +388,18 @@ void App::initOgre()
 	miscParamsSmall["monitorIndex"] = Ogre::StringConverter::toString(0);
 
 	// Create Window 2
-	if( DEBUG_WINDOW )
-		mSmallWindow = mRoot->createRenderWindow("DEBUG Oculus Rift Liver Visualization", 1920*debugWindowSize, 1080*debugWindowSize, false, &miscParamsSmall);   
+	if (DEBUG_WINDOW)
+		mSmallWindow = mRoot->createRenderWindow("DEBUG Oculus Rift Liver Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParamsSmall);
 
 	// Options for Window 3 (god window)
 	// This debug window will show the whole scene from a top view perspective
 	Ogre::NameValuePairList miscParamsGod;
 	miscParamsSmall["monitorIndex"] = Ogre::StringConverter::toString(0);
-	
+
 	// Create Window 3
 	if (DEBUG_WINDOW)
 		mGodWindow = mRoot->createRenderWindow("DEBUG God Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParamsSmall);
 #endif
-
-
-	//std::this_thread::sleep_for(std::chrono::duration< int, std::deca >(1));
-
-	Ogre::ResourceGroupManager::getSingleton().initialiseAllResourceGroups();
-	//mOverlaySystem = new Ogre::OverlaySystem();
 
 }
 
@@ -363,25 +470,9 @@ void App::createViewports()
 	}
 	*/
 
-	// Plug the virtual stereo camera rig to Rift class (they will be rendered on Oculus screen)
-	// plus setup camera transformation matrices so that they match with what expected by Oculus
-	mRift->setCameras(mScene->getLeftCamera(), mScene->getRightCamera());
 
-	// Create similar viewports to be displayed into PC window
-	if (mSmallWindow)
-	{
-		Ogre::Viewport* debugL = mSmallWindow->addViewport(mScene->getLeftCamera(), 0, 0.0, 0.0, 0.5, 1.0);
-		debugL->setBackgroundColour(Ogre::ColourValue(0.15, 0.15, 0.15));
 
-		Ogre::Viewport* debugR = mSmallWindow->addViewport(mScene->getRightCamera(), 1, 0.5, 0.0, 0.5, 1.0);
-		debugR->setBackgroundColour(Ogre::ColourValue(0.15, 0.15, 0.15));
-	}
 
-	// Create a God view window from a third view camera
-	if (mGodWindow)
-	{
-		Ogre::Viewport* god = mGodWindow->addViewport(mScene->getGodCamera(), 0, 0.0, 0.0, 1.0, 1.0);
-	}
 }
 
 void App::quitTray()

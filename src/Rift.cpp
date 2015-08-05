@@ -91,9 +91,9 @@ Rift::Rift(const unsigned int ID, Ogre::Root* const root, Ogre::RenderWindow* &r
 
 
 	// -----------------------------------
-	createRiftDisplayScene(root, this->rotateView);
+	//createRiftDisplayScene(root);
 
-
+	/*
 	// -----------------------------------
 	// Create Oculus render window, if needed
 	if (renderWindow == NULL)
@@ -111,10 +111,10 @@ Rift::Rift(const unsigned int ID, Ogre::Root* const root, Ogre::RenderWindow* &r
 	mViewport = mRenderWindow->addViewport(mCamera);
 	mViewport->setBackgroundColour(Ogre::ColourValue::Black);
 	mViewport->setOverlaysEnabled(true);
-
+	*/
 }
 
-void Rift::createRiftDisplayWindow(Ogre::Root* const root)
+Ogre::RenderWindow* Rift::createRiftDisplayWindow(Ogre::Root* const root)
 {
 
 	//Setup Oculus rendering window options
@@ -141,9 +141,11 @@ void Rift::createRiftDisplayWindow(Ogre::Root* const root)
 		mRenderWindow = root->createRenderWindow("Oculus Rift Liver Visualization", 1080, 1920, !simulationMode, &miscParams);
 	}
 
+	return mRenderWindow;
+
 }
 
-void Rift::createRiftDisplayScene(Ogre::Root* const root, const bool rotateView)
+void Rift::createRiftDisplayScene(Ogre::Root* const root)
 {
 	mSceneMgr = root->createSceneManager(Ogre::ST_GENERIC);
 	mSceneMgr->setAmbientLight(Ogre::ColourValue(0.5, 0.5, 0.5));
@@ -302,20 +304,8 @@ Rift::~Rift()
 }
 
 // Takes the two cameras created in the scene and creates Viewports in the correct render textures:
-void Rift::setCameras( Ogre::Camera* camLeft, Ogre::Camera* camRight )
+void Rift::setCameraMatrices( Ogre::Camera* camLeft, Ogre::Camera* camRight )
 {
-	// Put virtual camera rendered images on the two distortion meshes
-	Ogre::RenderTexture* renderTexture = mLeftEyeRenderTexture->getBuffer()->getRenderTarget();
-	renderTexture->addViewport(camLeft);	// camLeft rendering will warp so that it covers all mLeftEyeRenderTexture surface
-	renderTexture->getViewport(0)->setClearEveryFrame(true);
-	renderTexture->getViewport(0)->setBackgroundColour(Ogre::ColourValue::Black);
-	renderTexture->getViewport(0)->setOverlaysEnabled(true);
-
-	renderTexture = mRightEyeRenderTexture->getBuffer()->getRenderTarget();
-	renderTexture->addViewport(camRight);	// same for camRight and mRightEyeRenderTexture
-	renderTexture->getViewport(0)->setClearEveryFrame(true);
-	renderTexture->getViewport(0)->setBackgroundColour(Ogre::ColourValue::Black);
-	renderTexture->getViewport(0)->setOverlaysEnabled(true);
 	
 	// Fix virtual camera aspect ratio by asking OculusSDK for the correct FOV/Distortion matrix
 	ovrFovPort fovLeft = hmd->DefaultEyeFov[ovrEye_Left];
@@ -347,6 +337,22 @@ void Rift::setCameras( Ogre::Camera* camLeft, Ogre::Camera* camRight )
 				projR.M[1][0], projR.M[1][1], projR.M[1][2], projR.M[1][3],
 				projR.M[2][0], projR.M[2][1], projR.M[2][2], projR.M[2][3],
 				projR.M[3][0], projR.M[3][1], projR.M[3][2], projR.M[3][3] ) );
+}
+
+void Rift::attachCameras(Ogre::Camera* const camLeft, Ogre::Camera* const camRight)
+{
+	// Put virtual camera rendered images on the two distortion meshes
+	Ogre::RenderTexture* renderTexture = mLeftEyeRenderTexture->getBuffer()->getRenderTarget();
+	renderTexture->addViewport(camLeft);	// camLeft rendering will warp so that it covers all mLeftEyeRenderTexture surface
+	renderTexture->getViewport(0)->setClearEveryFrame(true);
+	renderTexture->getViewport(0)->setBackgroundColour(Ogre::ColourValue::Black);
+	renderTexture->getViewport(0)->setOverlaysEnabled(true);
+
+	renderTexture = mRightEyeRenderTexture->getBuffer()->getRenderTarget();
+	renderTexture->addViewport(camRight);	// same for camRight and mRightEyeRenderTexture
+	renderTexture->getViewport(0)->setClearEveryFrame(true);
+	renderTexture->getViewport(0)->setBackgroundColour(Ogre::ColourValue::Black);
+	renderTexture->getViewport(0)->setOverlaysEnabled(true);
 }
 
 bool Rift::update( float dt )

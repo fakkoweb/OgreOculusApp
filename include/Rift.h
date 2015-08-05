@@ -26,12 +26,12 @@ class Rift
 
 		// Call this if you want to manually associate a render window to the Rift
 		// Current used window will be replaced
-		//void setWindow(Ogre::Root* root, Ogre::RenderWindow* renderWindow, bool rotateView);
+		// void setWindow(Ogre::Root* root, Ogre::RenderWindow* renderWindow, bool rotateView);
 
-		// MUST BE CALLED to set up viewports correctly
-		// Create the cameras in your scene, then call this function
-		// The two input cameras will be rendered on the two distortion meshes
-		void setCameras( Ogre::Camera* camLeft, Ogre::Camera* camRight );
+		// Create stereo rig in your scene, then call this function to setup them the best way possible for Oculus
+		void setCameraMatrices( Ogre::Camera* camLeft, Ogre::Camera* camRight );
+		// Call this function to render the two cameras on Oculus distortion meshes
+		void attachCameras(Ogre::Camera* const camLeft, Ogre::Camera* const camRight);
 
 		// Update Rift data every frame. This should return true as long as data is read from rift.
 		bool update( float dt );
@@ -50,6 +50,11 @@ class Rift
 		// Used to reset head position and orientation to "foreward".
 		// Call this when user presses 'R', for example.
 		void recenterPose();
+
+		Ogre::RenderWindow* createRiftDisplayWindow(Ogre::Root* const root);
+		void createRiftDisplayScene(Ogre::Root* const root);
+
+		Ogre::Camera* getCamera(){ return mCamera; }
 
 		/*
 		well why be an arist if the only thing you could give is the way you express it?
@@ -86,12 +91,12 @@ class Rift
 		Ogre::TexturePtr mRightEyeRenderTexture;
 		Ogre::MaterialPtr mMatLeft;
 		Ogre::MaterialPtr mMatRight;
-		void createRiftDisplayScene(Ogre::Root* const root, const bool rotateView);
+		
 		
 		// Oculus Rift Display rendering window (displayed on Oculus)
 		Ogre::RenderWindow* mRenderWindow = nullptr;
 		Ogre::Viewport* mViewport = nullptr;
-		void createRiftDisplayWindow(Ogre::Root* const root);
+
 	
 };
 

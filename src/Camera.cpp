@@ -51,6 +51,18 @@ bool FrameCaptureHandler::get(FrameCaptureData & out) {
 	return true;
 }
 
+short int FrameCaptureHandler::adjustManualCaptureDelay(const short int adjustValue = 0)
+{
+	if (compensationMode == Precise_manual)
+	{
+		// set manual delay compensation
+		cameraCaptureManualDelayMs += adjustValue;
+		if (cameraCaptureManualDelayMs > 50) cameraCaptureManualDelayMs = 50;
+		else if (cameraCaptureManualDelayMs < 0) cameraCaptureManualDelayMs = 0;
+	}
+	return cameraCaptureManualDelayMs;
+}
+
 void FrameCaptureHandler::captureLoop() {
 	FrameCaptureData captured;
 	while (!stopped) {
@@ -62,29 +74,94 @@ void FrameCaptureHandler::captureLoop() {
 		
 		// save tracking state before grabbing a new frame
 		// grab() will ALWAYS return a frame OLDER than time of its call..
-		// a CAMERA_BUFFERING_DELAY is used to predict a PAST pose relative to this moment
-		// LOCAL OCULUSSDK HAS BEEN TWEAKED TO SUPPORT THIS (AND EXTEND THE BEHAVIOUR OF ovrHmd_GetTrackingState)
-		ovrTrackingState tracking = ovrHmd_GetTrackingStateExtended(hmd, ovr_GetTimeInSeconds() - CAMERA_BUFFERING_DELAY);	// [TODO]
-		
+		// so "cameraCaptureDelayMs" is used to predict a PAST pose relative to this moment
+		// LOCAL OCULUSSDK HAS BEEN TWEAKED TO "PREDICT IN THE PAST" (extension of: ovrHmd_GetTrackingState)
+		double ovrTimestamp = ovr_GetTimeInMilliseconds();
+		ovrTrackingState tracking;
+		switch (compensationMode)
+		{
+		case None:
+			// No orientation info is saved for the image
+			captured.pose = Ogre::Quaternion::IDENTITY;
+			break;
+		case Approximate:
+			// Just save pose for the image before grabbing a new frame
+			tracking = ovrHmd_GetTrackingState(hmd, ovrTimestamp*1000 );
+			break;
+		case Precise_manual:
+			// Save the pose keeping count of grab() call delay (manually set)
+			// Version of OCULUSSDK included in this project has been tweaked to "PREDICT IN THE PAST"
+			tracking = ovrHmd_GetTrackingStateExtended(hmd, (ovrTimestamp - cameraCaptureManualDelayMs) * 1000);	// Function wants seconds
+			break;
+		case Precise_auto:
+			// Save the pose keeping count of grab() call delay (automatically computed)
+			// Version of OCULUSSDK included in this project has been tweaked to "PREDICT IN THE PAST"
+			tracking = ovrHmd_GetTrackingStateExtended(hmd, (ovrTimestamp - cameraCaptureRealDelayMs) * 1000);	// Function wants seconds
+			break;
+		default:
+			// If something goes wrong in mode selection, disable compensation.
+			compensationMode = None;
+			break;
+		}
+
 		// grab a new frame
 		if (videoCapture.grab())	// grabs a frame without decoding it
 		{
+			if (compensationMode == Precise_auto)
+			{
+				// try to real timestamp when frame was captured by device
+				double realTimestamp = videoCapture.get(CV_CAP_PROP_POS_MSEC);
+				if (realTimestamp != -1)
+				{
+					// compute grab() call delay compensation
+					cameraCaptureRealDelayMs = ovrTimestamp - realTimestamp;
+
+					// Computed value will be used for next frame pose prediction.
+					// Explanation:
+					// We already know that the frame will be older than the grab() call, so
+					// we save ovrTimestamp before it, at a time closer to the real frame capture time.
+					// BUT
+					// Is not convenient to compute tracking now using this ovrTimestamp. This is because
+					// prediction may be too far in the past since there is a wait for the grab() call
+					// between ovrTimestamp and tracking computation.
+					// The prediction amount would be: (now - ovrTimestamp) + (ovrTimestamp - realTimestamp)
+					// Instead, we compute "tracking" before it, right when ovrTimestamp is requested.
+					// This way prediction amount is: ovrTimestamp - realTimestamp
+					//
+					// Since cameraCaptureDelayMs is almost constant in time, it is not a big deal when
+					// it is used (it could be computed just once and it would also be ok)
+
+				}
+				// else degenerate to manual mode
+				else
+				{
+					cameraCaptureRealDelayMs = 0;
+					compensationMode = Precise_manual;
+				}
+			}
+
 			// if frame is valid, decode and save it
 			videoCapture.retrieve(captured.image);
 
 			// and save pose as well
-			if (tracking.StatusFlags & (ovrStatus_OrientationTracked | ovrStatus_PositionTracked)) {
-				Posef pose = tracking.HeadPose.ThePose;		// The cpp compatibility layer is used to convert ovrPosef to Posef (see OVR_Math.h)
-				captured.pose = Ogre::Quaternion(pose.Rotation.w, pose.Rotation.x, pose.Rotation.y, pose.Rotation.z);
-			}
-			else
+			if (compensationMode != None)
 			{
-				// try to predict prosition since last pose predicted
+				if (tracking.StatusFlags & (ovrStatus_OrientationTracked | ovrStatus_PositionTracked)) {
+					Posef pose = tracking.HeadPose.ThePose;		// The cpp compatibility layer is used to convert ovrPosef to Posef (see OVR_Math.h)
+					captured.pose = Ogre::Quaternion(pose.Rotation.w, pose.Rotation.x, pose.Rotation.y, pose.Rotation.z);
+				}
+				else
+				{
+					// use last predicted/saved pose
+				}
 			}
 
 			// set new capture as available
 			set(captured);
 			//std::cout << "Frame retrieved from " << deviceId << "." << std::endl;
+
+			//std::cout.precision(20);
+			//std::cout << "ovr before grab: " << ovrTimestamp <<"\n opencv after grab: "<<opencvTimestamp<<std::endl;
 		}
 		else
 		{
