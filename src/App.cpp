@@ -22,8 +22,6 @@ void frames_per_second(int delay)
 std::chrono::steady_clock::time_point ogre_last_frame_displayed_time = std::chrono::system_clock::now();
 std::chrono::duration< int, std::milli > ogre_last_frame_delay;
 
-bool seethroughEnabled = false;
-
 ////////////////////////////////////////////////////////////
 // Init application
 ////////////////////////////////////////////////////////////
@@ -171,7 +169,7 @@ void App::initScenes()
 	try
 	{
 		// try first to load HFOV/VFOV values (higher priority)
-		mScene->setupVideo(mConfig->getValueAsReal("Camera/HFOV"), mConfig->getValueAsReal("Camera/VFOV"));
+		mScene->setupVideo(Scene::CameraModel::Fisheye, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/HFOV"), mConfig->getValueAsReal("Camera/VFOV"));
 	}
 	catch (Ogre::Exception &e)
 	{
@@ -181,7 +179,7 @@ void App::initScenes()
 			try
 			{
 				// ..try to load other parameters (these are preferred, but lower priority since not everyone know these)
-				mScene->setupVideo(mConfig->getValueAsReal("Camera/SensorWidth"), mConfig->getValueAsReal("Camera/SensorHeight"), mConfig->getValueAsReal("Camera/FocalLenght"));
+				mScene->setupVideo(Scene::CameraModel::Fisheye, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/SensorWidth"), mConfig->getValueAsReal("Camera/SensorHeight"), mConfig->getValueAsReal("Camera/FocalLenght"));
 			}
 			catch (Ogre::Exception &e)
 			{
@@ -566,10 +564,10 @@ void App::quitRift()
 void App::initCameras()
 {
 	mCameraLeft = new FrameCaptureHandler(0, mRift);
-	mCameraRight = new FrameCaptureHandler(1, mRift);
+	//mCameraRight = new FrameCaptureHandler(1, mRift);
 
 	mCameraLeft->startCapture();
-	mCameraRight->startCapture();
+	//mCameraRight->startCapture();
 
 	cv::namedWindow("CameraDebugLeft", cv::WINDOW_NORMAL);
 	cv::resizeWindow("CameraDebugLeft", 1920 / 4, 1080 / 4);
@@ -659,6 +657,13 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 	// save time point for this frame (for frame rate calculation)
 	ogre_last_frame_displayed_time = std::chrono::system_clock::now();
 
+
+	// [VALUE EXPERIMENTS]
+	//ovrTrackingState tracking = ovrHmd_GetTrackingStateExtended(mRift->getHandle(), ovr_GetTimeInSeconds());
+
+
+
+
 	//exit if key ESCAPE pressed 
 	if(mKeyboard->isKeyDown(OIS::KC_ESCAPE)) 
 		return false;
@@ -674,8 +679,22 @@ bool App::keyPressed( const OIS::KeyEvent& e )
 {
 	mScene->keyPressed( e );
 
-	if( e.key == OIS::KC_P )
-		mWindow->writeContentsToFile("Screenshot.png");
+	switch (e.key)
+	{
+	case OIS::KC_C:
+		keyLayout = ClippingAdjust;
+		break;
+	case OIS::KC_D:
+		keyLayout = FovAdjust;
+		break;
+	case OIS::KC_L:
+		keyLayout = LagAdjust;
+		break;
+	default:
+		keyLayout = Idle;
+	}
+
+	//mWindow->writeContentsToFile("Screenshot.png");
 
 	return true;
 }
@@ -683,24 +702,45 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 {
 	mScene->keyReleased( e );
 
-	static float distance = 1;
-	if (e.key == OIS::KC_ADD)
+	switch (e.key)
 	{
-		//CAMERA_BUFFERING_DELAY += 5;
-		distance += 0.1f;
-		mScene->setVideoDistance(distance);
-	}
-	if (e.key == OIS::KC_SUBTRACT)
-	{
-		//CAMERA_BUFFERING_DELAY -= 5;
-		distance -= 0.1f;
-		mScene->setVideoDistance(distance);
-	}
+	case OIS::KC_ADD:
 
-	//static bool seethroughEnabled = false;
-	if (e.key == OIS::KC_C)
-	{
-		// toggle VIDEO in the scene with "c"
+		//Add Button
+		switch (keyLayout)
+		{
+		case ClippingAdjust:
+			mScene->adjustVideoDistance(+0.1f);				// +0.1 units
+			break;
+		case FovAdjust:
+			mScene->adjustVideoFov(+0.01f);
+			break;
+		case LagAdjust:
+			mCameraLeft->adjustManualCaptureDelay(+0.005f);	// +5 msec
+			break;
+		}
+
+		break;
+	case OIS::KC_SUBTRACT:
+
+		// Minus Button
+		switch (keyLayout)
+		{
+		case ClippingAdjust:
+			mScene->adjustVideoDistance(-0.1f);			// -0.1 units
+			break;
+		case FovAdjust:
+			mScene->adjustVideoFov(-0.01f);
+			break;
+		case LagAdjust:
+			mCameraLeft->adjustManualCaptureDelay(-0.005f);	// -5 msec
+			break;
+		}
+
+		break;
+	case OIS::KC_T:
+		
+		// T Button: toggle VIDEOCAMERAS in the scene
 		if (seethroughEnabled)
 		{
 			mScene->disableVideo();
@@ -711,6 +751,11 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 			mScene->enableVideo();
 			seethroughEnabled = true;
 		}
+
+		break;
+	default:
+		// Do nothing
+		break;
 	}
 		
 	return true;

@@ -75,6 +75,15 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		ConfigDB* mConfig = nullptr;
 
 		OIS::Keyboard* mKeyboard = nullptr;
+		enum KeyboardLayout
+		{
+			Idle,
+			ClippingAdjust,
+			FovAdjust,
+			LagAdjust
+		} keyLayout = Idle;
+		bool seethroughEnabled = false;
+
 		OIS::Mouse* mMouse = nullptr;
 
 		Ogre::Root* mRoot = nullptr;
