@@ -53,7 +53,7 @@ bool FrameCaptureHandler::get(FrameCaptureData & out) {
 
 short int FrameCaptureHandler::adjustManualCaptureDelay(const short int adjustValue = 0)
 {
-	if (compensationMode == Precise_manual)
+	if (currentCompensationMode == Precise_manual)
 	{
 		// set manual delay compensation
 		cameraCaptureManualDelayMs += adjustValue;
@@ -78,7 +78,7 @@ void FrameCaptureHandler::captureLoop() {
 		// LOCAL OCULUSSDK HAS BEEN TWEAKED TO "PREDICT IN THE PAST" (extension of: ovrHmd_GetTrackingState)
 		double ovrTimestamp = ovr_GetTimeInMilliseconds();
 		ovrTrackingState tracking;
-		switch (compensationMode)
+		switch (currentCompensationMode)
 		{
 		case None:
 			// No orientation info is saved for the image
@@ -100,14 +100,14 @@ void FrameCaptureHandler::captureLoop() {
 			break;
 		default:
 			// If something goes wrong in mode selection, disable compensation.
-			compensationMode = None;
+			currentCompensationMode = None;
 			break;
 		}
 
 		// grab a new frame
 		if (videoCapture.grab())	// grabs a frame without decoding it
 		{
-			if (compensationMode == Precise_auto)
+			if (currentCompensationMode == Precise_auto)
 			{
 				// try to real timestamp when frame was captured by device
 				double realTimestamp = videoCapture.get(CV_CAP_PROP_POS_MSEC);
@@ -136,7 +136,7 @@ void FrameCaptureHandler::captureLoop() {
 				else
 				{
 					cameraCaptureRealDelayMs = 0;
-					compensationMode = Precise_manual;
+					currentCompensationMode = Precise_manual;
 				}
 			}
 
@@ -144,7 +144,7 @@ void FrameCaptureHandler::captureLoop() {
 			videoCapture.retrieve(captured.image);
 
 			// and save pose as well
-			if (compensationMode != None)
+			if (currentCompensationMode != None)
 			{
 				if (tracking.StatusFlags & (ovrStatus_OrientationTracked | ovrStatus_PositionTracked)) {
 					Posef pose = tracking.HeadPose.ThePose;		// The cpp compatibility layer is used to convert ovrPosef to Posef (see OVR_Math.h)

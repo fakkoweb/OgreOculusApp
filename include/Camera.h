@@ -48,7 +48,7 @@ class FrameCaptureHandler
 		ovrHmd hmd = nullptr;
 		const unsigned int deviceId = 0;
 
-		CompensationMode compensationMode = Precise_auto;
+		CompensationMode currentCompensationMode = Precise_auto;
 
 	public:
 
@@ -67,12 +67,12 @@ class FrameCaptureHandler
 		bool get(FrameCaptureData & out);
 
 		// Call this to change cameraCaptureManualDelay.
-		// Value is not used if compensationMode != Precise_manual
+		// Value is not used if currentCompensationMode != Precise_manual
 		// adjustValue can be negative or positive.
 		// It returns the modified value. 0 returns the current value.
 		short int adjustManualCaptureDelay(const short int adjustValue);
 
-		void setCompensationMode(const CompensationMode newMode){ compensationMode = newMode; }
+		void setCompensationMode(const CompensationMode newMode){ currentCompensationMode = newMode; }
 
 };
 
