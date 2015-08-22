@@ -563,10 +563,10 @@ void App::quitRift()
 
 void App::initCameras()
 {
-	mCameraLeft = new FrameCaptureHandler(0, mRift);
+	//mCameraLeft = new FrameCaptureHandler(0, mRift);
 	//mCameraRight = new FrameCaptureHandler(1, mRift);
 
-	mCameraLeft->startCapture();
+	//mCameraLeft->startCapture();
 	//mCameraRight->startCapture();
 
 	cv::namedWindow("CameraDebugLeft", cv::WINDOW_NORMAL);
@@ -577,9 +577,11 @@ void App::initCameras()
 
 void App::quitCameras()
 {
+	/*
 	mCameraLeft->stopCapture();
 	mCameraRight->stopCapture();
 	if (mCameraLeft) delete mCameraLeft;
+	*/
 	if (mCameraRight) delete mCameraRight;
 }
 
@@ -611,6 +613,7 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 		}
 	}
 
+	/*
 	// [CAMERA] UPDATE
 	// update cameras information and sends it to Scene (Texture of pictures planes/shapes)
 	FrameCaptureData nextframe1;
@@ -642,6 +645,7 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 		//std::cout << "image sent!\nImage plane updated!" << std::endl;
 			
 	}
+	*/
 
 	// [OIS] UPDATE
 	// update standard input devices state
@@ -684,14 +688,15 @@ bool App::keyPressed( const OIS::KeyEvent& e )
 	case OIS::KC_C:
 		keyLayout = ClippingAdjust;
 		break;
-	case OIS::KC_D:
+	case OIS::KC_F:
 		keyLayout = FovAdjust;
 		break;
 	case OIS::KC_L:
 		keyLayout = LagAdjust;
 		break;
 	default:
-		keyLayout = Idle;
+		// keep last key pressed until it is released (see keyReleased)
+		break;
 	}
 
 	//mWindow->writeContentsToFile("Screenshot.png");
@@ -702,15 +707,23 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 {
 	mScene->keyReleased( e );
 
+	// when a keyLayout key is released, restore standard behaviour
+	if (
+		e.key == OIS::KC_C ||
+		e.key == OIS::KC_F ||
+		e.key == OIS::KC_L
+		)	keyLayout = Idle;
+
 	switch (e.key)
 	{
 	case OIS::KC_ADD:
-
+		std::cout << "+ released" << std::endl;
 		//Add Button
 		switch (keyLayout)
 		{
 		case ClippingAdjust:
 			mScene->adjustVideoDistance(+0.1f);				// +0.1 units
+			std::cout << "Distance +1" << std::endl;
 			break;
 		case FovAdjust:
 			mScene->adjustVideoFov(+0.01f);

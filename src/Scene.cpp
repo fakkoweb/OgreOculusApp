@@ -356,8 +356,8 @@ void Scene::createFisheyeVideos(const Ogre::Vector3 offset = Ogre::Vector3::ZERO
 	// -------------
 
 	//Create an entity out of a loaded static mesh (a half sphere modeled/uvmapped in blender)
-	Ogre::Entity* videoSphereEntityLeft = mSceneMgr->createEntity("FisheyeUndistortionMesh.polysphere.mesh");
-	Ogre::Entity* videoSphereEntityRight = mSceneMgr->createEntity("FisheyeUndistortionMesh.polysphere.mesh");
+	Ogre::Entity* videoSphereEntityLeft = mSceneMgr->createEntity("FisheyeUndistort.polysphere.mesh");
+	Ogre::Entity* videoSphereEntityRight = mSceneMgr->createEntity("FisheyeUndistort.polysphere.mesh");
 
 	//Attach to each mHeadStabilizationNode a SceneNode that follows virtual camera position in respect to the neck
 	//so that we can deal with mVideoLeft and mVideoRight positions relatively to each camera despite stabilization node
@@ -400,18 +400,18 @@ void Scene::createFisheyeVideos(const Ogre::Vector3 offset = Ogre::Vector3::ZERO
 		"RenderTextureCameraRight", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
 		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8,
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);
-
+	
 	// Load scripted materials and assign the two dynamic textures just created
 	// (Remember: UV mapping of the mesh loaded is independent from the texture loaded)
 	mLeftCameraRenderMaterial = Ogre::MaterialManager::getSingleton().getByName("FisheyeImageMappingMaterial/LeftEye");
-	mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
+	//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
 	mRightCameraRenderMaterial = Ogre::MaterialManager::getSingleton().getByName("FisheyeImageMappingMaterial/RightEye");
-	mRightCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mRightCameraRenderTexture);
+	//mRightCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mRightCameraRenderTexture);
 
 	// Assign materials to videoPlaneEntities
 	videoSphereEntityLeft->setMaterial(mLeftCameraRenderMaterial);
 	videoSphereEntityRight->setMaterial(mRightCameraRenderMaterial);
-
+	
 	// Retrieve the "render target pointer" from the two textures (so we can use it as a standard render target as a window)
 	//Ogre::RenderTexture* mLeftCameraRenderTextureA = mLeftCameraRenderTexture->getBuffer()->getRenderTarget();
 
@@ -593,8 +593,8 @@ void Scene::updateVideos()
 	}
 
 	// Setup orientation (if needed) -- for now is constant
-	mVideoLeft->roll(Ogre::Degree(-CAMERA_ROTATION));
-	mVideoRight->roll(Ogre::Degree(CAMERA_ROTATION));
+	//mVideoLeft->roll(Ogre::Degree(-CAMERA_ROTATION));
+	//mVideoRight->roll(Ogre::Degree(CAMERA_ROTATION));
 
 }
 
