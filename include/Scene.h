@@ -33,7 +33,13 @@ class Scene : public Ogre::Camera::Listener
 		void disableVideo();
 		float adjustVideoDistance(const float distIncrement);
 		float adjustVideoFov(const float increment);
-		void setCameraOffset(const Ogre::Vector3 newCameraOffset);
+		Ogre::Vector2 adjustVideoLeftTextureCalibrationOffset(const Ogre::Vector2 offsetIncrement);
+		Ogre::Vector2 adjustVideoRightTextureCalibrationOffset(const Ogre::Vector2 offsetIncrement);
+		void setVideoLeftTextureCalibrationAspectRatio(const float ar);
+		void setVideoRightTextureCalibrationAspectRatio(const float ar);
+		float adjustVideoLeftTextureCalibrationScale(const float incrementFactor);
+		float adjustVideoRightTextureCalibrationScale(const float incrementFactor);
+		void setVideoOffset(const Ogre::Vector3 newVideoOffset);
 
 		// Update functions
 		void update( float dt );
@@ -78,10 +84,46 @@ class Scene : public Ogre::Camera::Listener
 		// Warning: this won't solve the problem, since this should vary depending on how far is the real object.
 		float videoFovScaleFactor = 1.0f;
 
-		// Default value is (0,0,0), which means:
-		// - effects on camera relative distance on the eye are ignored
+		// This value is used to alter video mesh UV coordinates and calibrate projection (Fisheye model).
+		// Adjusting Offset, fisheye texture will move right/left or up/down.
+		// This is very useful since sensor proportions and the center of fisheye circle on the sensor
+		// vary from user to user.
+		// User can find the best value (for his camera/lens setup) when the center of fisheye circle image
+		// (the part of the image with less distortion) is in front of the eye.
+		// It is suggested to adjust this with small texture scale: when image is small enough, it will show
+		// as a small circle and not as an ellipsis.
+		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO THEY ARE USED SEPARATELY.
+		Ogre::Vector2 videoLeftTextureCalibrationOffset = Ogre::Vector2::ZERO;
+		Ogre::Vector2 videoRightTextureCalibrationOffset = Ogre::Vector2::ZERO;
+
+		// This value is used to alter video mesh UV coordinates and calibrate projection (Fisheye model).
+		// Adjusting AspectRatio, fisheye texture will get wider along x.
+		// User will find the correct value (for his camera/lens setup) when image will appear as a perfect
+		// circle.
+		// This value is the exact aspect ratio of the image user is using (ex. 4:3 -> 1.333)
+		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO THEY ARE USED SEPARATELY.floa
+		float videoLeftTextureCalibrationAspectRatio = 1.0f;
+		float videoRightTextureCalibrationAspectRatio = 1.0f;
+
+
+		// This value is used to alter video mesh UV coordinates and calibrate projection (Fisheye model).
+		// Adjusting Scale, fisheye texture will get smaller or wider.
+		// User will find the correct value (for his camera/lens setup) when lines supposed to be straight
+		// will show as straight as seen in the headset.
+		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO THEY ARE USED SEPARATELY.floa
+		float videoLeftTextureCalibrationScale = 1.0f;
+		float videoRightTextureCalibrationScale = 1.0f;
+
+		// This vector is an offset added to to plane/sphere mesh relative position from the virtual
+		// camera. It was supposed to model the displacement between the real camera and the eye.
+		// Default value is (0,0,0) which means:
+		// - videoClippingScaleFactor is the only parameter influencing position
 		// - app will behave like real cameras are in the same position of the eye
-		Ogre::Vector3 cameraOffset = Ogre::Vector3::ZERO;
+		// This parameter is currently unused by the application, but is left for future use.
+		// Z value means forward/back from the nose.
+		// Y value means up/down from the nose.
+		// X value means farther/closer to the nose: applied symmetrically (right/left axis)
+		Ogre::Vector3 videoOffset = Ogre::Vector3::ZERO;
 
 		// Initialising/Loading the scene
 		void createRoom();

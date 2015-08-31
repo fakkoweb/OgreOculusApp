@@ -302,7 +302,7 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 	//videoPlaneEntityRight->setMaterialName("CubeMaterialWhite");
 
 	// Save updated camera offset (for later runtime adjustments)
-	cameraOffset = offset;
+	videoOffset = offset;
 
 	//Set camera listeners to this class (so that I can do stuff before and after each renders)
 	//mCamLeft->addListener(this);			// THIS IS DONE WHEN SEETHROUGH FEATURE IS ENABLED
@@ -379,7 +379,7 @@ void Scene::createFisheyeVideos(const Ogre::Vector3 offset = Ogre::Vector3::ZERO
 	videoSphereEntityRight->setCastShadows(false);
 
 	// Save updated camera offset (for later runtime adjustments)
-	cameraOffset = offset;
+	videoOffset = offset;
 
 	//Set camera listeners to this class (so that I can do stuff before and after each renders)
 	//mCamLeft->addListener(this);			// THIS IS DONE WHEN SEETHROUGH FEATURE IS ENABLED
@@ -481,6 +481,7 @@ void Scene::setVideoImagePoseRight(const Ogre::PixelBox &image, Ogre::Quaternion
 //////////////////////////////////////////////////////////////
 void Scene::update(float dt)
 {
+	/*
 	float forward = (mKeyboard->isKeyDown(OIS::KC_W) ? 0 : 1) + (mKeyboard->isKeyDown(OIS::KC_S) ? 0 : -1);
 	float leftRight = (mKeyboard->isKeyDown(OIS::KC_A) ? 0 : 1) + (mKeyboard->isKeyDown(OIS::KC_D) ? 0 : -1);
 
@@ -489,18 +490,22 @@ void Scene::update(float dt)
 		forward *= 3;
 		leftRight *= 3;
 	}
+	*/
 
 	// get full body absolute orientation (in world reference)
 	Ogre::Vector3 dirX = mBodyTiltNode->_getDerivedOrientation()*Ogre::Vector3::UNIT_X;
 	Ogre::Vector3 dirZ = mBodyTiltNode->_getDerivedOrientation()*Ogre::Vector3::UNIT_Z;
 
-	mBodyNode->setPosition(mBodyNode->getPosition() + dirZ*forward*dt + dirX*leftRight*dt);
+	//mBodyNode->setPosition(mBodyNode->getPosition() + dirZ*forward*dt + dirX*leftRight*dt);
 }
 void Scene::updateVideos()
 {
 	// Combine scaling factors (to use when needed)
 	float direct_scaling = videoClippingScaleFactor * videoFovScaleFactor;
 	float inverse_scaling = videoClippingScaleFactor * (1/videoFovScaleFactor);
+
+	// Pointer to pass arguments to shader
+	Ogre::GpuProgramParametersSharedPtr parametersFisheyeShader;
 
 	// Setup mVideoLeft SceneNode position/scale/orientation
 	// Position:For Pinhole model:
@@ -536,21 +541,21 @@ void Scene::updateVideos()
 		// plane z position must keep the same as its scale
 		mVideoLeft->setPosition
 			(
-			-cameraOffset.x,
-			cameraOffset.y,
-			-videoClippingScaleFactor - cameraOffset.z
+			-videoOffset.x,
+			videoOffset.y,
+			-videoClippingScaleFactor - videoOffset.z
 			);
 		mVideoLeft->setScale
 			(
-			inverse_scaling,
+			inverse_scaling,	// more fov means smaller image
 			inverse_scaling,
 			videoClippingScaleFactor
 			);
 		mVideoRight->setPosition
 			(
-			cameraOffset.x,
-			cameraOffset.y,
-			-videoClippingScaleFactor - cameraOffset.z
+			videoOffset.x,
+			videoOffset.y,
+			-videoClippingScaleFactor - videoOffset.z
 			);
 		mVideoRight->setScale
 			(
@@ -564,33 +569,44 @@ void Scene::updateVideos()
 		// Remember: camera must stay in the center of the sphere to keep projection!
 		mVideoLeft->setPosition
 			(
-			-cameraOffset.x,
-			cameraOffset.y,
-			-cameraOffset.z
+			-videoOffset.x,
+			videoOffset.y,
+			-videoOffset.z
 			);
 		mVideoLeft->setScale
 			(
 			videoClippingScaleFactor,
 			videoClippingScaleFactor,
-			direct_scaling
+			direct_scaling		// more fov means higher scale along z
 			);
 		mVideoRight->setPosition
 			(
-			-cameraOffset.x,
-			cameraOffset.y,
-			-cameraOffset.z
+			-videoOffset.x,
+			videoOffset.y,
+			-videoOffset.z
 			);
 		mVideoRight->setScale
 			(
+			direct_scaling,
 			videoClippingScaleFactor,
-			videoClippingScaleFactor,
-			direct_scaling
-			);
+			videoClippingScaleFactor
+			);		
+		parametersFisheyeShader = mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getFragmentProgramParameters();
+		parametersFisheyeShader->setNamedConstant("adjustTextureAspectRatio", videoLeftTextureCalibrationAspectRatio);
+		parametersFisheyeShader->setNamedConstant("adjustTextureScale", videoLeftTextureCalibrationScale);
+		parametersFisheyeShader->setNamedConstant("adjustTextureOffset", videoLeftTextureCalibrationOffset);
+		parametersFisheyeShader = mRightCameraRenderMaterial->getTechnique(0)->getPass(0)->getFragmentProgramParameters();
+		parametersFisheyeShader->setNamedConstant("adjustTextureAspectRatio", videoRightTextureCalibrationAspectRatio);
+		parametersFisheyeShader->setNamedConstant("adjustTextureScale", videoRightTextureCalibrationScale);
+		parametersFisheyeShader->setNamedConstant("adjustTextureOffset", videoRightTextureCalibrationOffset);
+		parametersFisheyeShader.setNull();
 		break;
 
 	default:
 		break;
 	}
+
+	std::cout << videoLeftTextureCalibrationAspectRatio << std::endl;
 
 	// Setup orientation (if needed) -- for now is constant
 	//mVideoLeft->roll(Ogre::Degree(-CAMERA_ROTATION));
@@ -657,14 +673,48 @@ float Scene::adjustVideoFov(const float increment = 0)
 
 	return videoFovScaleFactor;
 }
-void Scene::setCameraOffset(const Ogre::Vector3 newCameraOffset = Ogre::Vector3::ZERO)
+Ogre::Vector2 Scene::adjustVideoLeftTextureCalibrationOffset(const Ogre::Vector2 offsetIncrement = Ogre::Vector2::ZERO)
+{
+	videoLeftTextureCalibrationOffset += offsetIncrement;
+	updateVideos();
+	return videoLeftTextureCalibrationOffset;
+}
+Ogre::Vector2 Scene::adjustVideoRightTextureCalibrationOffset(const Ogre::Vector2 offsetIncrement = Ogre::Vector2::ZERO)
+{
+	videoRightTextureCalibrationOffset += offsetIncrement;
+	updateVideos();
+	return videoRightTextureCalibrationOffset;
+}
+void Scene::setVideoLeftTextureCalibrationAspectRatio(const float ar)
+{
+	if (ar >= 1) videoLeftTextureCalibrationAspectRatio = ar;
+	updateVideos();
+}
+void Scene::setVideoRightTextureCalibrationAspectRatio(const float ar)
+{
+	if (ar >= 1) videoRightTextureCalibrationAspectRatio = ar;
+	updateVideos();
+}
+float Scene::adjustVideoLeftTextureCalibrationScale(const float incrementFactor = 0)
+{
+	videoLeftTextureCalibrationScale += videoLeftTextureCalibrationScale * incrementFactor;
+	updateVideos();
+	return videoLeftTextureCalibrationScale;
+}
+float Scene::adjustVideoRightTextureCalibrationScale(const float incrementFactor = 0)
+{
+	videoRightTextureCalibrationScale += videoRightTextureCalibrationScale * incrementFactor;
+	updateVideos();
+	return videoRightTextureCalibrationScale;
+}
+void Scene::setVideoOffset(const Ogre::Vector3 newVideoOffset = Ogre::Vector3::ZERO)
 {
 	// Alter video mesh so that it models real camera distance from the eye
 	// It DOES affect FOV of the image percieved by the virtual camera
 	// It models real camera position relative to the eye
-	if (newCameraOffset > Ogre::Vector3::ZERO)
+	if (newVideoOffset > Ogre::Vector3::ZERO)
 	{
-		cameraOffset = newCameraOffset;
+		videoOffset = newVideoOffset;
 		updateVideos();
 	}
 
