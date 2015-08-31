@@ -25,11 +25,12 @@ class FrameCaptureHandler
 		};
 
 	private:
-
+		const unsigned int deviceId = 0;
 		cv::VideoCapture videoCapture;
 		std::thread captureThread;
 		std::mutex mutex;
 		FrameCaptureData frame;
+		float aspectRatio = 0;
 		bool hasFrame = false;
 		bool stopped = false;
 		bool opening_failed = false;
@@ -46,7 +47,6 @@ class FrameCaptureHandler
 
 		Rift* headset = nullptr;
 		ovrHmd hmd = nullptr;
-		const unsigned int deviceId = 0;
 
 		CompensationMode currentCompensationMode = Precise_auto;
 
@@ -65,6 +65,7 @@ class FrameCaptureHandler
 		//
 		void set(const FrameCaptureData & newFrame);
 		bool get(FrameCaptureData & out);
+		float getAspectRatio(){ return aspectRatio; }
 
 		// Call this to change cameraCaptureManualDelay.
 		// Value is not used if currentCompensationMode != Precise_manual

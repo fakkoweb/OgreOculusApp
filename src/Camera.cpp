@@ -4,7 +4,6 @@
 // Spawn capture thread and return webcam aspect ratio (width over height)
 float FrameCaptureHandler::startCapture()
 {
-	float aspectRatio = 0;
 	videoCapture.open(deviceId);
 	if (!videoCapture.isOpened() || !videoCapture.read(frame.image))
 	{
@@ -28,6 +27,10 @@ float FrameCaptureHandler::startCapture()
 
 void FrameCaptureHandler::stopCapture() {
 	stopped = true;
+	hasFrame = false;
+	aspectRatio = 0;
+	cameraCaptureRealDelayMs = 0;
+	cameraCaptureManualDelayMs = 0;
 	if (!opening_failed)
 	{
 		captureThread.join();
