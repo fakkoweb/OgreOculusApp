@@ -11,6 +11,7 @@ fragment_program FisheyeImageMapping_PS glsl
     {
         // Specify a default value for shader parameters
         // THESE TWO PARAMETERS ARE ADJUSTED FROM CODE AT RUNTIME!
+        param_named adjustTextureAspectRatio float 1.0
         param_named adjustTextureScale float 1.0
         param_named adjustTextureOffset float2 0.0 0.0
     }
@@ -54,7 +55,7 @@ material FisheyeImageMappingMaterial/LeftEye
 
             texture_unit 
             {
-                texture fisheye_sample.png
+                texture fisheye_realsample.png
                 tex_address_mode clamp
                 scale 1.0 1.0
                 tex_coord_set 0
