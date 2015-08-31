@@ -197,6 +197,7 @@ void App::initScenes()
 	// Setup Ogre main scene in respect to Oculus parameters
 	mScene->setIPD(mRift->getIPD());												// adjust IPD
 	mRift->setCameraMatrices(mScene->getLeftCamera(), mScene->getRightCamera());	// adjust matrices
+	mScene->setVideoLeftTextureCalibrationAspectRatio(1.77778f);
 
 }
 
@@ -685,8 +686,12 @@ bool App::keyPressed( const OIS::KeyEvent& e )
 
 	switch (e.key)
 	{
+	// keyboard mode selection
 	case OIS::KC_C:
-		keyLayout = ClippingAdjust;
+		keyLayout = CalibrationAdjust;
+		break;
+	case OIS::KC_D:
+		keyLayout = DistanceAdjust;
 		break;
 	case OIS::KC_F:
 		keyLayout = FovAdjust;
@@ -694,6 +699,15 @@ bool App::keyPressed( const OIS::KeyEvent& e )
 	case OIS::KC_L:
 		keyLayout = LagAdjust;
 		break;
+
+	// per eye setting selection
+	case OIS::KC_1:
+		eyeSelected = Left;
+		break;
+	case OIS::KC_2:
+		eyeSelected = Right;
+		break;
+
 	default:
 		// keep last key pressed until it is released (see keyReleased)
 		break;
@@ -705,25 +719,47 @@ bool App::keyPressed( const OIS::KeyEvent& e )
 }
 bool App::keyReleased( const OIS::KeyEvent& e )
 {
+	// prepare an empty vector for directional input
+	Ogre::Vector2 dirInput = Ogre::Vector2::ZERO;
+
+	// propagate keyboard input to scene
 	mScene->keyReleased( e );
 
 	// when a keyLayout key is released, restore standard behaviour
 	if (
 		e.key == OIS::KC_C ||
+		e.key == OIS::KC_D ||
 		e.key == OIS::KC_F ||
 		e.key == OIS::KC_L
-		)	keyLayout = Idle;
+		)
+	{
+		keyLayout = Idle;
+	}
 
 	switch (e.key)
 	{
 	case OIS::KC_ADD:
-		std::cout << "+ released" << std::endl;
+
 		//Add Button
 		switch (keyLayout)
 		{
-		case ClippingAdjust:
-			mScene->adjustVideoDistance(+0.1f);				// +0.1 units
-			std::cout << "Distance +1" << std::endl;
+		case CalibrationAdjust:
+
+			switch (eyeSelected)
+			{
+			case Left:
+				std::cout << mScene->adjustVideoLeftTextureCalibrationScale(+0.05f) << std::endl;
+				break;
+			case Right:
+				mScene->adjustVideoRightTextureCalibrationScale(+0.05f);
+				break;
+			default:
+				break;
+			}
+
+			break;
+		case DistanceAdjust:
+			std::cout<< mScene->adjustVideoDistance(+0.1f) << std::endl;				// +0.1 meters
 			break;
 		case FovAdjust:
 			mScene->adjustVideoFov(+0.01f);
@@ -739,7 +775,22 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		// Minus Button
 		switch (keyLayout)
 		{
-		case ClippingAdjust:
+		case CalibrationAdjust:
+
+			switch (eyeSelected)
+			{
+			case Left:
+				mScene->adjustVideoLeftTextureCalibrationScale(-0.05f);
+				break;
+			case Right:
+				mScene->adjustVideoRightTextureCalibrationScale(-0.05f);
+				break;
+			default:
+				break;
+			}
+
+			break;
+		case DistanceAdjust:
 			mScene->adjustVideoDistance(-0.1f);			// -0.1 units
 			break;
 		case FovAdjust:
@@ -751,6 +802,22 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		}
 
 		break;
+
+		// Directional toggles
+		// N.B.: Bottom-left pixel is (0,0) in UV mapping
+	case OIS::KC_UP:
+		dirInput += Ogre::Vector2(0.0, +0.02f);
+		break;
+	case OIS::KC_DOWN:
+		dirInput += Ogre::Vector2(0.0, -0.02f);
+		break;
+	case OIS::KC_LEFT:
+		dirInput += Ogre::Vector2(-0.02f, 0.0f);
+		break;
+	case OIS::KC_RIGHT:
+		dirInput += Ogre::Vector2(+0.02f, 0.0f);
+		break;
+
 	case OIS::KC_T:
 		
 		// T Button: toggle VIDEOCAMERAS in the scene
@@ -770,7 +837,24 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		// Do nothing
 		break;
 	}
-		
+	
+
+	// Apply directional input if needed
+	if (!dirInput.isZeroLength() && keyLayout==CalibrationAdjust)
+	{
+		switch (eyeSelected)
+		{
+		case Left:
+			mScene->adjustVideoLeftTextureCalibrationOffset(dirInput);
+			break;
+		case Right:
+			mScene->adjustVideoRightTextureCalibrationOffset(dirInput);
+			break;
+		default:
+			break;
+		}
+	}
+
 	return true;
 }
 bool App::mouseMoved( const OIS::MouseEvent& e )

@@ -78,10 +78,16 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		enum KeyboardLayout
 		{
 			Idle,
-			ClippingAdjust,
+			CalibrationAdjust,
+			DistanceAdjust,
 			FovAdjust,
 			LagAdjust
 		} keyLayout = Idle;
+		enum EyeCode
+		{
+			Left,
+			Right
+		} eyeSelected = Left;
 		bool seethroughEnabled = false;
 
 		OIS::Mouse* mMouse = nullptr;
