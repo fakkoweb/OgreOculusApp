@@ -138,7 +138,8 @@ Ogre::RenderWindow* Rift::createRiftDisplayWindow(Ogre::Root* const root)
 		//mWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1920*0.5, 1080*0.5, false, &miscParams);
 	else if (hmd->Type == ovrHmd_DK2)
 	{
-		mRenderWindow = root->createRenderWindow("Oculus Rift Liver Visualization", 1080, 1920, !simulationMode, &miscParams);
+		if (simulationMode) mRenderWindow = root->createRenderWindow("Oculus Rift Liver Visualization", 1920, 1080, !simulationMode, &miscParams);
+		else /* rotated */	mRenderWindow = root->createRenderWindow("Oculus Rift Liver Visualization", 1080, 1920, !simulationMode, &miscParams);
 	}
 
 	return mRenderWindow;
