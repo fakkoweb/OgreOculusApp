@@ -393,12 +393,20 @@ list(APPEND HEADERS_TO_INCLUDE_PUBLIC "${PROJECT_INCLUDE_DIR}")
 if(USE_BUNDLED_OculusSDK AND COMPILE_OculusSDK)
 	add_subdirectory(${OCULUS_HOME})					# OculusSDK subproject source
 	#set_target_properties(ovr PROPERTIES FOLDER "3rdParty")
-	list(APPEND LIBRARIES_TO_LINK ovr)					# OculusSDK subproject lib link4
-	list(APPEND HEADERS_TO_INCLUDE_PUBLIC						# OculusSDK subproject include
+	list(APPEND LIBRARIES_TO_LINK ovr)					# OculusSDK subproject lib link
+	list(APPEND HEADERS_TO_INCLUDE_PUBLIC				# OculusSDK subproject include
 		"${OCULUS_HOME}/LibOVR/Include"
 		"${OCULUS_HOME}/LibOVRKernel/Src"
 	)
 endif()
+
+# arUco lib - always compiled with the project
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/arUco") # arUco subproject src and config
+list(APPEND LIBRARIES_TO_LINK aruco)					# arUco subproject lib link
+	list(APPEND HEADERS_TO_INCLUDE_PUBLIC				# arUco subproject include
+		"${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/arUco/src"
+	)
+
 
 
 ################################################################
