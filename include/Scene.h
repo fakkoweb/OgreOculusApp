@@ -36,7 +36,9 @@ class Scene : public Ogre::Camera::Listener
 		Ogre::Vector2 adjustVideoLeftTextureCalibrationOffset(const Ogre::Vector2 offsetIncrement);
 		Ogre::Vector2 adjustVideoRightTextureCalibrationOffset(const Ogre::Vector2 offsetIncrement);
 		void setVideoLeftTextureCalibrationAspectRatio(const float ar);
+		float adjustVideoLeftTextureCalibrationAspectRatio(const float arIncrement);
 		void setVideoRightTextureCalibrationAspectRatio(const float ar);
+		float adjustVideoRightTextureCalibrationAspectRatio(const float arIncrement);
 		float adjustVideoLeftTextureCalibrationScale(const float incrementFactor);
 		float adjustVideoRightTextureCalibrationScale(const float incrementFactor);
 		void setVideoOffset(const Ogre::Vector3 newVideoOffset);

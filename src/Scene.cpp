@@ -36,7 +36,6 @@ Scene::~Scene()
 void Scene::createRoom()
 {
 	mRoomNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("RoomNode");
-
 	Ogre::SceneNode* cubeNode = mRoomNode->createChildSceneNode();
 	Ogre::Entity* cubeEnt = mSceneMgr->createEntity( "Cube.mesh" );
 	cubeEnt->getSubEntity(0)->setMaterialName( "CubeMaterialRed" );
@@ -690,10 +689,22 @@ void Scene::setVideoLeftTextureCalibrationAspectRatio(const float ar)
 	if (ar >= 1) videoLeftTextureCalibrationAspectRatio = ar;
 	updateVideos();
 }
+float Scene::adjustVideoLeftTextureCalibrationAspectRatio(const float arIncrement)
+{
+	videoLeftTextureCalibrationAspectRatio += arIncrement;
+	updateVideos();
+	return videoLeftTextureCalibrationAspectRatio;
+}
 void Scene::setVideoRightTextureCalibrationAspectRatio(const float ar)
 {
 	if (ar >= 1) videoRightTextureCalibrationAspectRatio = ar;
 	updateVideos();
+}
+float Scene::adjustVideoRightTextureCalibrationAspectRatio(const float arIncrement)
+{
+	videoRightTextureCalibrationAspectRatio += arIncrement;
+	updateVideos();
+	return videoRightTextureCalibrationAspectRatio;
 }
 float Scene::adjustVideoLeftTextureCalibrationScale(const float incrementFactor = 0)
 {

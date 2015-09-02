@@ -78,6 +78,7 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		enum KeyboardLayout
 		{
 			Idle,
+			AspectRatioAdjust,
 			CalibrationAdjust,
 			DistanceAdjust,
 			FovAdjust,

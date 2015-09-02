@@ -687,6 +687,9 @@ bool App::keyPressed( const OIS::KeyEvent& e )
 	switch (e.key)
 	{
 	// keyboard mode selection
+	case OIS::KC_A:
+		keyLayout = AspectRatioAdjust;
+		break;
 	case OIS::KC_C:
 		keyLayout = CalibrationAdjust;
 		break;
@@ -727,6 +730,7 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 
 	// when a keyLayout key is released, restore standard behaviour
 	if (
+		e.key == OIS::KC_A ||
 		e.key == OIS::KC_C ||
 		e.key == OIS::KC_D ||
 		e.key == OIS::KC_F ||
@@ -743,12 +747,27 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		//Add Button
 		switch (keyLayout)
 		{
+		case AspectRatioAdjust:
+			switch (eyeSelected)
+			{
+			case Left:
+				mScene->adjustVideoLeftTextureCalibrationAspectRatio(+0.05f);
+				break;
+			case Right:
+				mScene->adjustVideoRightTextureCalibrationAspectRatio(+0.05f);
+				break;
+			default:
+				break;
+			}
+
+			break;
+
 		case CalibrationAdjust:
 
 			switch (eyeSelected)
 			{
 			case Left:
-				std::cout << mScene->adjustVideoLeftTextureCalibrationScale(+0.05f) << std::endl;
+				mScene->adjustVideoLeftTextureCalibrationScale(+0.05f);
 				break;
 			case Right:
 				mScene->adjustVideoRightTextureCalibrationScale(+0.05f);
@@ -775,6 +794,21 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		// Minus Button
 		switch (keyLayout)
 		{
+		case AspectRatioAdjust:
+			switch (eyeSelected)
+			{
+			case Left:
+				mScene->adjustVideoLeftTextureCalibrationAspectRatio(-0.05f);
+				break;
+			case Right:
+				mScene->adjustVideoRightTextureCalibrationAspectRatio(-0.05f);
+				break;
+			default:
+				break;
+			}
+
+			break;
+
 		case CalibrationAdjust:
 
 			switch (eyeSelected)
@@ -791,7 +825,7 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 
 			break;
 		case DistanceAdjust:
-			mScene->adjustVideoDistance(-0.1f);			// -0.1 units
+			mScene->adjustVideoDistance(-0.1f);				// -0.1 units
 			break;
 		case FovAdjust:
 			mScene->adjustVideoFov(-0.01f);
