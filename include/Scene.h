@@ -15,6 +15,12 @@ class Scene : public Ogre::Camera::Listener
 			Fisheye
 		};
 
+		enum StabilizationModel
+		{
+			Head,
+			Eye
+		};
+
 		Scene( Ogre::Root* root, OIS::Mouse* mouse, OIS::Keyboard* keyboard );
 		~Scene();
 
@@ -24,13 +30,16 @@ class Scene : public Ogre::Camera::Listener
 		Ogre::Camera* getGodCamera() { return mCamGod; }
 
 		// One-call functions for SeeThrough rig setup
-		void setupVideo(const CameraModel modelToUse, const Ogre::Vector3 eyeToCameraOffset, const float HFov, const float VFov);
-		void setupVideo(const CameraModel modelToUse, const Ogre::Vector3 eyeToCameraOffset, const float WSensor, const float HSensor, const float FL);
+		void setupVideo(const CameraModel camModelToUse, const StabilizationModel stabModelToUse, const Ogre::Vector3 eyeToCameraOffset, const float HFov, const float VFov);
+		void setupVideo(const CameraModel camModelToUse, const StabilizationModel stabModelToUse, const Ogre::Vector3 eyeToCameraOffset, const float WSensor, const float HSensor, const float FL);
 
 		// Functions for setup
 		void setIPD(float IPD);
 		void enableVideo();
 		void disableVideo();
+		void setStabilizationMode(StabilizationModel modelToUse);
+
+		// Functions for realtime runtime calibration
 		float adjustVideoDistance(const float distIncrement);
 		float adjustVideoFov(const float increment);
 		Ogre::Vector2 adjustVideoLeftTextureCalibrationOffset(const Ogre::Vector2 offsetIncrement);
@@ -64,6 +73,7 @@ class Scene : public Ogre::Camera::Listener
 	private:
 
 		CameraModel currentCameraModel = Fisheye;
+		StabilizationModel currentStabilizationModel = Head;
 		float cameraHFov;
 		float cameraVFov;
 
@@ -141,6 +151,8 @@ class Scene : public Ogre::Camera::Listener
 
 		Ogre::Camera* mCamLeft = nullptr;
 		Ogre::Camera* mCamRight = nullptr;
+		Ogre::SceneNode* mLeftStabilizationNode = nullptr;			// to this we assign one of the two nodes used for stabilization (neck or eye)
+		Ogre::SceneNode* mRightStabilizationNode = nullptr;			// to this we assign one of the two nodes used for stabilization (neck or eye)
 
 		Ogre::Image mLeftCameraRenderImage;
 		Ogre::Image mRightCameraRenderImage;
@@ -154,11 +166,13 @@ class Scene : public Ogre::Camera::Listener
 		Ogre::Camera* mCamGod = nullptr;
 
 		Ogre::SceneNode* mVideoLeft = nullptr;
-		Ogre::SceneNode* mCamLeftReference = nullptr;
 		Ogre::SceneNode* mVideoRight = nullptr;
-		Ogre::SceneNode* mCamRightReference = nullptr;
-		Ogre::SceneNode* mHeadStabilizationNodeLeft = nullptr;			// on this we apply Image stabilization full Orientation delta
-		Ogre::SceneNode* mHeadStabilizationNodeRight = nullptr;			// on this we apply Image stabilization full Orientation delta
+		Ogre::SceneNode* mCamLeftStabilizationNode = nullptr;		// on this we apply Image EYE stabilization full Orientation delta (if active)
+		Ogre::SceneNode* mCamRightStabilizationNode = nullptr;		// on this we apply Image EYE stabilization full Orientation delta (if active)
+		Ogre::SceneNode* mCamLeftReference = nullptr;				// this node just keeps track of mCamLeft position
+		Ogre::SceneNode* mCamRightReference = nullptr;				// this node just keeps track of mCamRight position
+		Ogre::SceneNode* mHeadStabilizationNodeLeft = nullptr;		// on this we apply Image NECK stabilization full Orientation delta (if active)
+		Ogre::SceneNode* mHeadStabilizationNodeRight = nullptr;		// on this we apply Image NECK stabilization full Orientation delta (if active)
 		Ogre::SceneNode* mHeadNode = nullptr;						// on this we apply Head full Orientation (Yaw/Pitch/Roll)
 		Ogre::SceneNode* mBodyTiltNode = nullptr;					// on this we apply Body Pitch transformation (up/down turn)
 		Ogre::SceneNode* mBodyYawNode = nullptr;					// on this we apply Body Yaw transformation (left/right turn)

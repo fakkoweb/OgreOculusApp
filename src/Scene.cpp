@@ -87,15 +87,16 @@ void Scene::createCameras()
 	// Create head node where virtual stereo rig will be attached:
 	mHeadNode = mBodyTiltNode->createChildSceneNode("HeadNode");
 
+	// STABILIZATION NODES (1): NECK IMAGE STABILIZATION - image will stabilize by rotating around the neck
 	// Prepare two Ogre SceneNodes (mHeadStabilizationNode) child of mHeadNode that will be used for image stabilization
 	// NOTE:	since any real camera has a delay, we want to move the image shown in the head pose as it was taken, not in the current headpose.
-	//			If the feature is disabled, mHeadStabilizationNode will simply follow mHeadNode position/orientation
+	//			If this feature is disabled, mHeadStabilizationNode will simply follow mHeadNode position/orientation
 	mHeadStabilizationNodeLeft = mHeadNode->createChildSceneNode("HeadStabilizationNodeLeft");
 	mHeadStabilizationNodeRight = mHeadNode->createChildSceneNode("HeadStabilizationNodeRight");
 	
 	// Attach cameras
 	// Cameras are created with a STANDARD INITIAL projection matrix (Ogre's default)
-	// Cameraa projection matrices should be set later to SDK suggested values by calling setCameraMatrices()
+	// Camera projection matrices will be set later to SDK suggested values by calling setCameraMatrices()
 	mHeadNode->attachObject(mCamLeft);
 	mHeadNode->attachObject(mCamRight);
 	mCamLeft->setFarClipDistance(50);
@@ -166,9 +167,9 @@ void Scene::createCameras()
 	light->setDiffuseColour( 0.35, 0.27, 0.23 );
 	mBodyNode->attachObject(light);
 }
-void Scene::setupVideo(const CameraModel modelToUse, const Ogre::Vector3 eyeToCameraOffset, const float HFov, const float VFov)
+void Scene::setupVideo(const CameraModel camModelToUse, const StabilizationModel stabModelToUse, const Ogre::Vector3 eyeToCameraOffset, const float HFov, const float VFov)
 {
-	if (!mVideoLeft)
+	if (!mVideoLeft && !mVideoRight)
 	{
 		if (HFov > 0 && VFov > 0)
 		{
@@ -181,7 +182,7 @@ void Scene::setupVideo(const CameraModel modelToUse, const Ogre::Vector3 eyeToCa
 			float planeWidth;
 			float planeHeight;
 
-			switch (modelToUse)
+			switch (camModelToUse)
 			{
 			case Pinhole:
 				planeWidth = std::tan(hFovRads / 2) * videoClippingScaleFactor * 2;
@@ -196,8 +197,24 @@ void Scene::setupVideo(const CameraModel modelToUse, const Ogre::Vector3 eyeToCa
 				break;
 			}
 
+			switch (stabModelToUse)
+			{
+			case Head:
+				mLeftStabilizationNode = mHeadStabilizationNodeLeft;
+				mRightStabilizationNode = mHeadStabilizationNodeRight;
+				break;
+			case Eye:
+				mLeftStabilizationNode = mCamLeftStabilizationNode;
+				mRightStabilizationNode = mCamRightStabilizationNode;
+				break;
+			default:
+				throw Ogre::Exception(Ogre::Exception::ERR_INVALIDPARAMS, "Invalid Stabilization Model selection!", "Scene::setupVideo");
+				break;
+			}
+
 			// save current values for later adjustments
-			currentCameraModel = modelToUse;
+			currentCameraModel = camModelToUse;
+			currentStabilizationModel = stabModelToUse;
 			videoHFov = cameraHFov;
 			videoVFov = cameraVFov;
 
@@ -215,9 +232,9 @@ void Scene::setupVideo(const CameraModel modelToUse, const Ogre::Vector3 eyeToCa
 		throw Ogre::Exception(Ogre::Exception::ERR_INTERNAL_ERROR, "Video has already been setup and created into Scene. setupVideo() must be called only once for Scene instance", "Scene::setupVideo");
 	}
 }
-void Scene::setupVideo(const CameraModel modelToUse, const Ogre::Vector3 eyeToCameraOffset, const float WSensor, const float HSensor, const float FL)
+void Scene::setupVideo(const CameraModel camModelToUse, const StabilizationModel stabModelToUse, const Ogre::Vector3 eyeToCameraOffset, const float WSensor, const float HSensor, const float FL)
 {
-	if (!mVideoLeft)
+	if (!mVideoLeft && !mVideoRight)
 	{
 		if (WSensor > 0 && HSensor > 0 && FL > 0)
 		{
@@ -225,7 +242,7 @@ void Scene::setupVideo(const CameraModel modelToUse, const Ogre::Vector3 eyeToCa
 			float planeWidth;
 			float planeHeight;
 
-			switch (modelToUse)
+			switch (camModelToUse)
 			{
 			case Pinhole:
 				planeWidth = (WSensor * videoClippingScaleFactor) / FL;
@@ -243,8 +260,24 @@ void Scene::setupVideo(const CameraModel modelToUse, const Ogre::Vector3 eyeToCa
 				break;
 			}
 
+			switch (stabModelToUse)
+			{
+			case Head:
+				mLeftStabilizationNode = mHeadStabilizationNodeLeft;
+				mRightStabilizationNode = mHeadStabilizationNodeRight;
+				break;
+			case Eye:
+				mLeftStabilizationNode = mCamLeftStabilizationNode;
+				mRightStabilizationNode = mCamRightStabilizationNode;
+				break;
+			default:
+				throw Ogre::Exception(Ogre::Exception::ERR_INVALIDPARAMS, "Invalid Stabilization Model selection!", "Scene::setupVideo");
+				break;
+			}
+
 			// save current values for later adjustments
-			currentCameraModel = modelToUse;
+			currentCameraModel = camModelToUse;
+			currentStabilizationModel = stabModelToUse;
 			videoHFov = cameraHFov;
 			videoVFov = cameraVFov;
 		}
@@ -257,6 +290,33 @@ void Scene::setupVideo(const CameraModel modelToUse, const Ogre::Vector3 eyeToCa
 	{
 		throw Ogre::Exception(Ogre::Exception::ERR_INTERNAL_ERROR, "Video has already been setup and created into Scene. setupVideo() must be called only once for Scene instance", "Scene::setupVideo");
 	}
+}
+void Scene::setStabilizationMode(StabilizationModel modelToUse)
+{
+	if (!mLeftStabilizationNode && !mRightStabilizationNode)
+	{
+		// reset last stabilization poses to IDENTITY
+		mLeftStabilizationNode->resetOrientation();
+		mRightStabilizationNode->resetOrientation();
+	}
+
+	// change stabilization node to use
+	switch (modelToUse)
+	{
+	case Head:
+		mLeftStabilizationNode = mHeadStabilizationNodeLeft;
+		mRightStabilizationNode = mHeadStabilizationNodeRight;
+		break;
+	case Eye:
+		mLeftStabilizationNode = mCamLeftStabilizationNode;
+		mRightStabilizationNode = mCamRightStabilizationNode;
+		break;
+	default:
+		throw Ogre::Exception(Ogre::Exception::ERR_INVALIDPARAMS, "Invalid Stabilization Model selection!", "Scene::setupVideo");
+		break;
+	}
+
+	currentStabilizationModel = modelToUse;
 }
 void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Ogre::Vector3 offset = Ogre::Vector3::ZERO)
 {
@@ -282,14 +342,21 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 
 	//Attach to each mHeadStabilizationNode a SceneNode that follows virtual camera position in respect to the neck
 	//so that we can deal with mVideoLeft and mVideoRight positions relatively to each camera despite stabilization node
-	mCamLeftReference = mHeadStabilizationNodeLeft->createChildSceneNode("HeadStabilizationCameraReferenceLeft");
+	mCamLeftReference = mHeadStabilizationNodeLeft->createChildSceneNode("CameraReferenceLeft");
 	mCamLeftReference->setPosition(mCamLeft->getPosition());
-	mCamRightReference = mHeadStabilizationNodeRight->createChildSceneNode("HeadStabilizationCameraReferenceRight");
+	mCamRightReference = mHeadStabilizationNodeRight->createChildSceneNode("CameraReferenceRight");
 	mCamRightReference->setPosition(mCamRight->getPosition());
 
+	// STABILIZATION NODES (2): EYE IMAGE STABILIZATION - image will stabilize by rotating around the virtual camera
+	// Prepare two Ogre SceneNodes (mCamStabilizationNode) child of mCamReference that will be used for image stabilization
+	// NOTE:	since any real camera has a delay, we want to move the image shown in the head pose as it was taken, not in the current headpose.
+	//			If this feature is disabled, mCamStabilizationNode will simply follow mCamReference position/orientation
+	mCamLeftStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeLeft");
+	mCamRightStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeRight");
+
 	//Finally attach mVideo nodes to camera references
-	mVideoLeft = mCamLeftReference->createChildSceneNode("LeftVideo");
-	mVideoRight = mCamRightReference->createChildSceneNode("RightVideo");
+	mVideoLeft = mCamLeftStabilizationNode->createChildSceneNode("LeftVideo");
+	mVideoRight = mCamRightStabilizationNode->createChildSceneNode("RightVideo");
 
 	//Attach videoPlaneEntityLeft to mVideoLeft SceneNode (now it will have a Position/Scale/Orientation)
 	mVideoLeft->attachObject(videoPlaneEntityLeft);
@@ -359,15 +426,22 @@ void Scene::createFisheyeVideos(const Ogre::Vector3 offset = Ogre::Vector3::ZERO
 	Ogre::Entity* videoSphereEntityRight = mSceneMgr->createEntity("FisheyeUndistort.polysphere.mesh");
 
 	//Attach to each mHeadStabilizationNode a SceneNode that follows virtual camera position in respect to the neck
-	//so that we can deal with mVideoLeft and mVideoRight positions relatively to each camera despite stabilization node
+	//so that we can deal with mVideoLeft and mVideoRight positions relatively to each camera despite Stabilization
 	mCamLeftReference = mHeadStabilizationNodeLeft->createChildSceneNode("HeadStabilizationCameraReferenceLeft");
 	mCamLeftReference->setPosition(mCamLeft->getPosition());
 	mCamRightReference = mHeadStabilizationNodeRight->createChildSceneNode("HeadStabilizationCameraReferenceRight");
 	mCamRightReference->setPosition(mCamRight->getPosition());
 
+	// STABILIZATION NODES (2): EYE IMAGE STABILIZATION - image will stabilize by rotating around the virtual camera
+	// Prepare two Ogre SceneNodes (mCamStabilizationNode) child of mCamReference that will be used for image stabilization
+	// NOTE:	since any real camera has a delay, we want to move the image shown in the head pose as it was taken, not in the current headpose.
+	//			If this feature is disabled, mCamStabilizationNode will simply follow mCamReference position/orientation
+	mCamLeftStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeLeft");
+	mCamRightStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeRight");
+
 	//Finally attach mVideo nodes to camera references
-	mVideoLeft = mCamLeftReference->createChildSceneNode("LeftVideo");
-	mVideoRight = mCamRightReference->createChildSceneNode("RightVideo");
+	mVideoLeft = mCamLeftStabilizationNode->createChildSceneNode("LeftVideo");
+	mVideoRight = mCamRightStabilizationNode->createChildSceneNode("RightVideo");
 
 	//Attach videoPlaneEntityLeft to mVideoLeft SceneNode (now shape will have a Position/Scale/Orientation)
 	mVideoLeft->attachObject(videoSphereEntityLeft);
@@ -449,7 +523,7 @@ void Scene::setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion 
 		// since:	Hpast-to-body = Hpres-to-body * Hpast-to-pres
 		// then:	Hpast-to-pres = INV(Hpres-to-body) * Hpast-to-body
 		Ogre::Quaternion deltaHeadPose = mHeadNode->getOrientation().Inverse() * pose;
-		mHeadStabilizationNodeLeft->setOrientation(deltaHeadPose);
+		mLeftStabilizationNode->setOrientation(deltaHeadPose);
 	}
 
 }
@@ -465,11 +539,12 @@ void Scene::setVideoImagePoseRight(const Ogre::PixelBox &image, Ogre::Quaternion
 		//Ogre::Quaternion delta = mCamLeft->getOrientation().Inverse() * pose;
 		//mVideoLeft->setOrientation(delta);
 
+		// IMAGE STABILIZATION: take HEAD-IMAGE orientation DELTA and apply it to stabilization node
 		// update image position/orientation
 		// since:	Hpast-to-body = Hpres-to-body * Hpast-to-pres
 		// then:	Hpast-to-pres = INV(Hpres-to-body) * Hpast-to-body
 		Ogre::Quaternion deltaHeadPose = mHeadNode->getOrientation().Inverse() * pose;
-		mHeadStabilizationNodeRight->setOrientation(deltaHeadPose);
+		mRightStabilizationNode->setOrientation(deltaHeadPose);
 
 	}
 
