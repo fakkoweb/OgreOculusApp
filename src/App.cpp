@@ -169,7 +169,7 @@ void App::initScenes()
 	try
 	{
 		// try first to load HFOV/VFOV values (higher priority)
-		mScene->setupVideo(Scene::CameraModel::Fisheye, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/HFOV"), mConfig->getValueAsReal("Camera/VFOV"));
+		mScene->setupVideo(Scene::CameraModel::Fisheye, Scene::StabilizationModel::Head, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/HFOV"), mConfig->getValueAsReal("Camera/VFOV"));
 	}
 	catch (Ogre::Exception &e)
 	{
@@ -179,7 +179,7 @@ void App::initScenes()
 			try
 			{
 				// ..try to load other parameters (these are preferred, but lower priority since not everyone know these)
-				mScene->setupVideo(Scene::CameraModel::Fisheye, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/SensorWidth"), mConfig->getValueAsReal("Camera/SensorHeight"), mConfig->getValueAsReal("Camera/FocalLenght"));
+				mScene->setupVideo(Scene::CameraModel::Fisheye, Scene::StabilizationModel::Head, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/SensorWidth"), mConfig->getValueAsReal("Camera/SensorHeight"), mConfig->getValueAsReal("Camera/FocalLenght"));
 			}
 			catch (Ogre::Exception &e)
 			{
@@ -778,13 +778,13 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 
 			break;
 		case DistanceAdjust:
-			std::cout<< mScene->adjustVideoDistance(+0.1f) << std::endl;				// +0.1 meters
+			mScene->adjustVideoDistance(+0.1f);				// +0.1 ogre units (here considered meters)
 			break;
 		case FovAdjust:
 			mScene->adjustVideoFov(+0.01f);
 			break;
 		case LagAdjust:
-			mCameraLeft->adjustManualCaptureDelay(+0.005f);	// +5 msec
+			mCameraLeft->adjustManualCaptureDelay(+1);		// +1 msec
 			break;
 		}
 
@@ -825,13 +825,13 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 
 			break;
 		case DistanceAdjust:
-			mScene->adjustVideoDistance(-0.1f);				// -0.1 units
+			mScene->adjustVideoDistance(-0.1f);				// -0.1 ogre units (here considered meters)
 			break;
 		case FovAdjust:
 			mScene->adjustVideoFov(-0.01f);
 			break;
 		case LagAdjust:
-			mCameraLeft->adjustManualCaptureDelay(-0.005f);	// -5 msec
+			mCameraLeft->adjustManualCaptureDelay(-1);		// -1 msec
 			break;
 		}
 
@@ -854,7 +854,7 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 
 	case OIS::KC_T:
 		
-		// T Button: toggle VIDEOCAMERAS in the scene
+		// T Button (Through): toggle REAL CAMERA images in the scene
 		if (seethroughEnabled)
 		{
 			mScene->disableVideo();
@@ -865,6 +865,16 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 			mScene->enableVideo();
 			seethroughEnabled = true;
 		}
+
+		break;
+
+	case OIS::KC_S:
+
+		// S Button (Stabilization): switch between Head or Eye image stabilization
+		if (stabilizationModel != Scene::StabilizationModel::Head)
+			mScene->setStabilizationMode(Scene::StabilizationModel::Head);
+		else
+			mScene->setStabilizationMode(Scene::StabilizationModel::Eye);
 
 		break;
 	default:

@@ -90,6 +90,7 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 			Right
 		} eyeSelected = Left;
 		bool seethroughEnabled = false;
+		Scene::StabilizationModel stabilizationModel = Scene::StabilizationModel::Head;
 
 		OIS::Mouse* mMouse = nullptr;
 
