@@ -99,7 +99,7 @@ void FrameCaptureHandler::captureLoop() {
 		case Precise_auto:
 			// Save the pose keeping count of grab() call delay (automatically computed)
 			// Version of OCULUSSDK included in this project has been tweaked to "PREDICT IN THE PAST"
-			tracking = ovrHmd_GetTrackingStateExtended(hmd, (ovrTimestamp - cameraCaptureRealDelayMs) * 1000);	// Function wants seconds
+			tracking = ovrHmd_GetTrackingStateExtended(hmd, (ovrTimestamp - cameraCaptureRealDelayMs) * 1000);		// Function wants seconds
 			break;
 		default:
 			// If something goes wrong in mode selection, disable compensation.
@@ -140,6 +140,7 @@ void FrameCaptureHandler::captureLoop() {
 				{
 					cameraCaptureRealDelayMs = 0;
 					currentCompensationMode = Precise_manual;
+					std::cout << "Precise_Auto mode unsupported (OpenCV returned -1 on timestamp request). Switching to Precise_Manual mode." << std::endl;
 				}
 			}
 
