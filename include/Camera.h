@@ -12,8 +12,6 @@
 struct FrameCaptureData {
 	Ogre::Quaternion pose;
 	cv::Mat image;
-	cv::Mat imageUnd;
-	//std::vector<aruco::Marker> markers;
 };
 
 class FrameCaptureHandler
@@ -30,8 +28,6 @@ class FrameCaptureHandler
 	private:
 		const unsigned int deviceId = 0;
 		cv::VideoCapture videoCapture;
-		aruco::CameraParameters videoCaptureParams, videoCaptureParamsUndistorted;
-		//aruco::MarkerDetector videoMarkerDetector;
 		std::thread captureThread;
 		std::mutex mutex;
 		FrameCaptureData frame;
@@ -55,19 +51,24 @@ class FrameCaptureHandler
 
 		CompensationMode currentCompensationMode = Precise_auto;
 
+		// Internal capture functions
+		void set(const FrameCaptureData & newFrame);
+		void captureLoop();
+
 	public:
 
 		FrameCaptureHandler(const unsigned int input_device, Rift* input_headset);
 
 		// Spawn capture thread and return webcam aspect ratio (width over height)
 		float startCapture();
-		void captureLoop();
 		void stopCapture();
 
-		//
-		void set(const FrameCaptureData & newFrame);
+		// Get data
 		bool get(FrameCaptureData & out);
 		float getAspectRatio(){ return aspectRatio; }
+		//void getCameraParameters(aruco::CameraParameters& outParameters);
+		//void getCameraParametersUndistorted(aruco::CameraParameters& outParameters);
+		aruco::CameraParameters videoCaptureParams, videoCaptureParamsUndistorted;	// only dependency from aruco. Remove them?
 
 		// Call this to change cameraCaptureManualDelay.
 		// Value is not used if currentCompensationMode != Precise_manual

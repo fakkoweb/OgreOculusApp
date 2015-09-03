@@ -73,7 +73,16 @@ bool FrameCaptureHandler::get(FrameCaptureData & out) {
 	hasFrame = false;
 	return true;
 }
-
+/*
+void FrameCaptureHandler::getCameraParameters(aruco::CameraParameters& outParameters)
+{
+	outParameters = videoCaptureParams;
+}
+void FrameCaptureHandler::getCameraParameters(aruco::CameraParameters& outParameters)
+{
+	outParameters = videoCaptureParamsUndistorted;
+}
+*/
 short int FrameCaptureHandler::adjustManualCaptureDelay(const short int adjustValue = 0)
 {
 	if (currentCompensationMode == Precise_manual)
@@ -166,12 +175,6 @@ void FrameCaptureHandler::captureLoop() {
 
 			// if frame is valid, decode and save it
 			videoCapture.retrieve(captured.image);
-
-			// compute its undistorted version and save it
-			cv::undistort(captured.image, captured.imageUnd, videoCaptureParams.CameraMatrix, videoCaptureParams.Distorsion);
-
-			// detect markers in the image
-			//TheMarkerDetector.detect(TheInputImageUnd, TheMarkers, CameraParamsUnd, TheMarkerSize);
 
 			// finally save pose as well (previously computed)
 			if (currentCompensationMode != None)
