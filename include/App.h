@@ -96,8 +96,6 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 
 		Ogre::Root* mRoot = nullptr;
 
-		Ogre::RenderWindow* mWindow = nullptr;
-		
 		// interface display
 		// Ogre::OverlaySystem* mOverlaySystem;
 		// OgreBites::SdkTrayManager*	mTrayMgr;
@@ -105,8 +103,11 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		// OgreBites::ParamsPanel*     mDetailsPanel;   		// Sample details panel
 		bool mCursorWasVisible=false;							// Was cursor visible before dialog appeared?
 
-		Ogre::RenderWindow* mSmallWindow = nullptr;
-		Ogre::RenderWindow* mGodWindow = nullptr;
+		Ogre::RenderWindow* mLeftEyeViewWindow = nullptr;
+		Ogre::RenderWindow* mRightEyeViewWindow = nullptr;
+		Ogre::RenderWindow* mRiftViewWindow = nullptr;
+		Ogre::RenderWindow* mDebugRiftViewWindow = nullptr;
+		Ogre::RenderWindow* mEnvironmentViewWindow = nullptr;
 		//Ogre::Viewport* mViewportL;
 		//Ogre::Viewport* mViewportR;
 

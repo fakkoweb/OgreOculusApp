@@ -34,8 +34,8 @@ App::App(const std::string& configurationFilesPath = "cfg/", const std::string& 
 	mMouse = nullptr;
 	mScene = nullptr;
 	mShutdown = false;
-	mWindow = nullptr;
-	mSmallWindow = nullptr;
+	mRiftViewWindow = nullptr;
+	mDebugRiftViewWindow = nullptr;
 	mRift = nullptr;
 
 
@@ -142,7 +142,10 @@ void App::initWindows()
 
 	loadOgreWindows();
 
-	mWindow = mRift->createRiftDisplayWindow(mRoot);
+	mRiftViewWindow = mRift->createRiftDisplayWindow(mRoot);
+#ifdef _DEBUG
+	mDebugRiftViewWindow = mRift->createDebugRiftDisplayWindow(mRoot);
+#endif
 }
 
 void App::initIO()
@@ -208,24 +211,42 @@ void App::initViewports()
 	mRift->attachCameras(mScene->getLeftCamera(), mScene->getRightCamera());
 
 	// Link orthographic inner scene Oculus camera to Oculus rendering window
-	Ogre::Viewport* oculusView = mWindow->addViewport(mRift->getCamera());
+	Ogre::Viewport* oculusView = mRiftViewWindow->addViewport(mRift->getCamera());
 	oculusView->setBackgroundColour(Ogre::ColourValue::Black);
 	oculusView->setOverlaysEnabled(true);
 
-	// Link other Ogre cameras to debug windows
-	if (mSmallWindow)
+	// Link orthographic inner scene Oculus camera to DEBUG Oculus rendering window (if any)
+	if (mDebugRiftViewWindow)
 	{
-		Ogre::Viewport* debugL = mSmallWindow->addViewport(mScene->getLeftCamera(), 0, 0.0, 0.0, 0.5, 1.0);
-		debugL->setBackgroundColour(Ogre::ColourValue(0.15, 0.15, 0.15));
-
-		Ogre::Viewport* debugR = mSmallWindow->addViewport(mScene->getRightCamera(), 1, 0.5, 0.0, 0.5, 1.0);
-		debugR->setBackgroundColour(Ogre::ColourValue(0.15, 0.15, 0.15));
+		Ogre::Viewport* oculusDebugView = mDebugRiftViewWindow->addViewport(mRift->getCamera());
+		oculusDebugView->setBackgroundColour(Ogre::ColourValue::Black);
+		oculusDebugView->setOverlaysEnabled(true);
 	}
 
-	// Create a God view window from a third view camera
-	if (mGodWindow)
+	// Link other Ogre cameras to debug windows
+	if (mLeftEyeViewWindow)
 	{
-		Ogre::Viewport* god = mGodWindow->addViewport(mScene->getGodCamera(), 0, 0.0, 0.0, 1.0, 1.0);
+		Ogre::Viewport* debugL = mLeftEyeViewWindow->addViewport(mScene->getLeftCamera());
+		debugL->setBackgroundColour(Ogre::ColourValue::Black);
+		debugL->setOverlaysEnabled(true);
+	}
+	if (mRightEyeViewWindow)
+	{
+		Ogre::Viewport* debugR = mRightEyeViewWindow->addViewport(mScene->getRightCamera());
+		debugR->setBackgroundColour(Ogre::ColourValue::Black);
+		debugR->setOverlaysEnabled(true);
+	}
+	/*
+	Ogre::Viewport* debugL = mDebugRiftViewWindow->addViewport(mScene->getLeftCamera(), 0, 0.0, 0.0, 0.5, 1.0);
+	debugL->setBackgroundColour(Ogre::ColourValue(0.15, 0.15, 0.15));
+	Ogre::Viewport* debugR = mDebugRiftViewWindow->addViewport(mScene->getRightCamera(), 1, 0.5, 0.0, 0.5, 1.0);
+	debugR->setBackgroundColour(Ogre::ColourValue(0.15, 0.15, 0.15));
+	*/
+
+	// Create a God view window from a third view camera
+	if (mEnvironmentViewWindow)
+	{
+		Ogre::Viewport* god = mEnvironmentViewWindow->addViewport(mScene->getGodCamera(), 0, 0.0, 0.0, 1.0, 1.0);
 	}
 }
 
@@ -374,30 +395,24 @@ void App::loadOgreWindows()
 	/*
 	// Create Window 1
 	if( !ROTATE_VIEW )
-	mWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1280, 800, true, &miscParams);
-	//mWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1920*0.5, 1080*0.5, false, &miscParams);
+		mRiftViewWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1280, 800, true, &miscParams);
+	//mRiftViewWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1920*0.5, 1080*0.5, false, &miscParams);
 	else
-	mWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1080, 1920, true, &miscParams);
+		mRiftViewWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1080, 1920, true, &miscParams);
 	*/
 
 #ifdef _DEBUG
-	// Options for Window 2 (debug window)
-	// This window will simply show what the two cameras see in two different viewports
-	Ogre::NameValuePairList miscParamsSmall;
-	miscParamsSmall["monitorIndex"] = Ogre::StringConverter::toString(0);
 
-	// Create Window 2
+	// Options for Ogre Scene debug windows
+	Ogre::NameValuePairList miscParams;
+	miscParams["monitorIndex"] = Ogre::StringConverter::toString(0);
 	if (DEBUG_WINDOW)
-		mSmallWindow = mRoot->createRenderWindow("DEBUG Oculus Rift Liver Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParamsSmall);
+	{
+		mLeftEyeViewWindow = mRoot->createRenderWindow("Ogre Left Eye Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
+		mRightEyeViewWindow = mRoot->createRenderWindow("Ogre Right Eye Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
+		mEnvironmentViewWindow = mRoot->createRenderWindow("Ogre Environment Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
+	}
 
-	// Options for Window 3 (god window)
-	// This debug window will show the whole scene from a top view perspective
-	Ogre::NameValuePairList miscParamsGod;
-	miscParamsSmall["monitorIndex"] = Ogre::StringConverter::toString(0);
-
-	// Create Window 3
-	if (DEBUG_WINDOW)
-		mGodWindow = mRoot->createRenderWindow("DEBUG God Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParamsSmall);
 #endif
 
 }
@@ -405,15 +420,15 @@ void App::loadOgreWindows()
 void App::initTray()
 {
 	// Register as a Window listener
-	//Ogre::WindowEventUtilities::addWindowEventListener(mWindow, this);
+	//Ogre::WindowEventUtilities::addWindowEventListener(mRiftViewWindow, this);
 
 	/*
-	if (mWindow)
+	if (mRiftViewWindow)
 	{
 		mInputContext.mKeyboard = mKeyboard;
 		mInputContext.mMouse = mMouse;
 
-		mTrayMgr = new OgreBites::SdkTrayManager("InterfaceName", mWindow, mInputContext, this);
+		mTrayMgr = new OgreBites::SdkTrayManager("InterfaceName", mRiftViewWindow, mInputContext, this);
 		mTrayMgr->showFrameStats(OgreBites::TL_BOTTOMLEFT);
 		//mTrayMgr->showLogo(OgreBites::TL_BOTTOMRIGHT);
 		mTrayMgr->hideCursor();
@@ -448,23 +463,23 @@ void App::createViewports()
 	// A pointer to a Viewport is returned, so we can access it directly.
 	// CAMERA -> render into -> VIEWPORT (rectangle area) -> displayed into -> WINDOW
 	/*
-	if (mWindow)		//check if Ogre rendering window has been created
+	if (mRiftViewWindow)		//check if Ogre rendering window has been created
 	{
 		if (NO_RIFT)
 		{
-			mViewportL = mWindow->addViewport(mScene->getLeftCamera(), 0, 0.0, 0.0, 0.5, 1.0);
+			mViewportL = mRiftViewWindow->addViewport(mScene->getLeftCamera(), 0, 0.0, 0.0, 0.5, 1.0);
 			mViewportL->setBackgroundColour(Ogre::ColourValue(0.15, 0.15, 0.15));
-			mViewportR = mWindow->addViewport(mScene->getRightCamera(), 1, 0.5, 0.0, 0.5, 1.0);
+			mViewportR = mRiftViewWindow->addViewport(mScene->getRightCamera(), 1, 0.5, 0.0, 0.5, 1.0);
 			mViewportR->setBackgroundColour(Ogre::ColourValue(0.15, 0.15, 0.15));
 		}
 
 		if( !ROTATE_VIEW )
 		{
-		mScene->getLeftCamera()->setAspectRatio( 0.5*mWindow->getWidth()/mWindow->getHeight() );
-		mScene->getRightCamera()->setAspectRatio( 0.5*mWindow->getWidth()/mWindow->getHeight() );
+		mScene->getLeftCamera()->setAspectRatio( 0.5*mRiftViewWindow->getWidth()/mRiftViewWindow->getHeight() );
+		mScene->getRightCamera()->setAspectRatio( 0.5*mRiftViewWindow->getWidth()/mRiftViewWindow->getHeight() );
 		} else {
-		mScene->getLeftCamera()->setAspectRatio( 0.5*mWindow->getHeight()/mWindow->getWidth() );
-		mScene->getRightCamera()->setAspectRatio( 0.5*mWindow->getHeight()/mWindow->getWidth() );
+		mScene->getLeftCamera()->setAspectRatio( 0.5*mRiftViewWindow->getHeight()/mRiftViewWindow->getWidth() );
+		mScene->getRightCamera()->setAspectRatio( 0.5*mRiftViewWindow->getHeight()/mRiftViewWindow->getWidth() );
 		/
 	}
 	*/
@@ -501,7 +516,7 @@ void App::initOIS()
     std::ostringstream windowHndStr;
  
     // Tell OIS about the Ogre Rendering window (give its id)
-    mWindow->getCustomAttribute("WINDOW", &windowHnd);
+    mRiftViewWindow->getCustomAttribute("WINDOW", &windowHnd);
     windowHndStr << windowHnd;
     pl.insert(std::make_pair(std::string("WINDOW"), windowHndStr.str()));
 
@@ -513,7 +528,7 @@ void App::initOIS()
     // Tell OIS about the window's dimensions
     unsigned int width, height, depth;
     int top, left;
-    mWindow->getMetrics(width, height, depth, left, top);
+    mRiftViewWindow->getMetrics(width, height, depth, left, top);
     const OIS::MouseState &ms = mMouse->getMouseState();
     ms.width = width;
     ms.height = height;
@@ -541,7 +556,7 @@ void App::initRift()
 	try {
 		// This class implements a custom C++ Class version of RIFT C API
 		//Rift::init();		//OPTIONAL: automatically called by Rift constructor, if necessary
-		mRift = new Rift( 0, mRoot, mWindow /*if null, Rift creates the window*/, ROTATE_VIEW );
+		mRift = new Rift( 0, mRoot, mRiftViewWindow /*if null, Rift creates the window*/, ROTATE_VIEW );
 	}
 	catch (const std::ios_base::failure& e) {
 		std::cout << ">> " << e.what() << std::endl;
@@ -737,7 +752,7 @@ bool App::keyPressed( const OIS::KeyEvent& e )
 		break;
 	}
 
-	//mWindow->writeContentsToFile("Screenshot.png");
+	//mRiftViewWindow->writeContentsToFile("Screenshot.png");
 
 	return true;
 }
