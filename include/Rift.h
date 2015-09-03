@@ -52,6 +52,7 @@ class Rift
 		void recenterPose();
 
 		Ogre::RenderWindow* createRiftDisplayWindow(Ogre::Root* const root);
+		Ogre::RenderWindow* createDebugRiftDisplayWindow(Ogre::Root* const root);
 		void createRiftDisplayScene(Ogre::Root* const root);
 
 		Ogre::Camera* getCamera(){ return mCamera; }

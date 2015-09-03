@@ -134,15 +134,37 @@ Ogre::RenderWindow* Rift::createRiftDisplayWindow(Ogre::Root* const root)
 
 	// Creating Oculus rendering window
 	if (hmd->Type == ovrHmd_DK1)
-		mRenderWindow = root->createRenderWindow("Oculus Rift Liver Visualization", 1280, 800, !simulationMode, &miscParams);
+		mRenderWindow = root->createRenderWindow("Oculus Rift Live Visualization", 1280, 800, !simulationMode, &miscParams);
 		//mWindow = mRoot->createRenderWindow("Oculus Rift Liver Visualization", 1920*0.5, 1080*0.5, false, &miscParams);
 	else if (hmd->Type == ovrHmd_DK2)
 	{
-		if (simulationMode) mRenderWindow = root->createRenderWindow("Oculus Rift Liver Visualization", 1920, 1080, !simulationMode, &miscParams);
-		else /* rotated */	mRenderWindow = root->createRenderWindow("Oculus Rift Liver Visualization", 1080, 1920, !simulationMode, &miscParams);
+		if (simulationMode) mRenderWindow = root->createRenderWindow("Oculus Rift Live Visualization", 1920, 1080, false, &miscParams);
+		else /* rotated */	mRenderWindow = root->createRenderWindow("Oculus Rift Live Visualization", 1080, 1920, true, &miscParams);
 	}
 
 	return mRenderWindow;
+
+}
+
+Ogre::RenderWindow* Rift::createDebugRiftDisplayWindow(Ogre::Root* const root)
+{
+	//Setup Oculus rendering window options
+	Ogre::NameValuePairList miscParams;
+	Ogre::RenderWindow* debugWindow = nullptr;
+	if (!simulationMode)
+	{
+		// setting on main screen
+		miscParams["monitorIndex"] = Ogre::StringConverter::toString(0);
+		// creating debug rendering window
+		if (hmd->Type == ovrHmd_DK1)
+			debugWindow = root->createRenderWindow("Oculus DEBUG Rift Live Visualization", 1280, 800, false, &miscParams);
+		else if (hmd->Type == ovrHmd_DK2)
+		{
+			debugWindow = root->createRenderWindow("Oculus Rift DEBUG Live Visualization", 1080/2, 1920/2, false, &miscParams);
+		}
+	}
+
+	return debugWindow;
 
 }
 
