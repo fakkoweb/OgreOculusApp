@@ -1,13 +1,33 @@
 #include "Camera.h"
 
 
+FrameCaptureHandler::FrameCaptureHandler(const unsigned int input_device, Rift* input_headset) : headset(input_headset), deviceId(input_device)
+{
+	// save handle for headset (from which poses are read)
+	hmd = headset->getHandle();
+
+	// find and read camera calibration file
+	try {
+		videoCaptureParams.readFromXMLFile("");
+	}
+	catch (std::exception &ex) {
+		cerr << ex.what() << endl;
+		throw std::runtime_error("File not found or error in loading camera parameters for .yml file");
+	}
+
+	// make the undistorted version of camera parameters (null distortion matrix)
+	videoCaptureParamsUndistorted = videoCaptureParams;
+	videoCaptureParamsUndistorted.Distorsion = cv::Mat::zeros(4, 1, CV_32F);
+}
+
 // Spawn capture thread and return webcam aspect ratio (width over height)
 float FrameCaptureHandler::startCapture()
 {
+
 	videoCapture.open(deviceId);
 	if (!videoCapture.isOpened() || !videoCapture.read(frame.image))
 	{
-		std::cout << "Could not open video source to capture first frame";
+		std::cout << "Could not open video source! Could not capture first frame!";
 		opening_failed = true;
 	}
 	else
@@ -147,7 +167,13 @@ void FrameCaptureHandler::captureLoop() {
 			// if frame is valid, decode and save it
 			videoCapture.retrieve(captured.image);
 
-			// and save pose as well
+			// compute its undistorted version and save it
+			cv::undistort(captured.image, captured.imageUnd, videoCaptureParams.CameraMatrix, videoCaptureParams.Distorsion);
+
+			// detect markers in the image
+			//TheMarkerDetector.detect(TheInputImageUnd, TheMarkers, CameraParamsUnd, TheMarkerSize);
+
+			// finally save pose as well (previously computed)
 			if (currentCompensationMode != None)
 			{
 				if (tracking.StatusFlags & (ovrStatus_OrientationTracked | ovrStatus_PositionTracked)) {
@@ -160,7 +186,7 @@ void FrameCaptureHandler::captureLoop() {
 				}
 			}
 
-			// set new capture as available
+			// set the new capture as available
 			set(captured);
 			//std::cout << "Frame retrieved from " << deviceId << "." << std::endl;
 

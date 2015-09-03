@@ -1,6 +1,7 @@
 #pragma once
 
 #include <opencv2/opencv.hpp>
+#include <aruco.h>
 #include <thread>
 #include <mutex>
 #include "Rift.h"
@@ -11,6 +12,8 @@
 struct FrameCaptureData {
 	Ogre::Quaternion pose;
 	cv::Mat image;
+	cv::Mat imageUnd;
+	//std::vector<aruco::Marker> markers;
 };
 
 class FrameCaptureHandler
@@ -27,6 +30,8 @@ class FrameCaptureHandler
 	private:
 		const unsigned int deviceId = 0;
 		cv::VideoCapture videoCapture;
+		aruco::CameraParameters videoCaptureParams, videoCaptureParamsUndistorted;
+		//aruco::MarkerDetector videoMarkerDetector;
 		std::thread captureThread;
 		std::mutex mutex;
 		FrameCaptureData frame;
@@ -52,10 +57,7 @@ class FrameCaptureHandler
 
 	public:
 
-		FrameCaptureHandler(const unsigned int input_device, Rift* input_headset) : headset(input_headset), deviceId(input_device)
-		{
-			hmd=headset->getHandle();
-		}
+		FrameCaptureHandler(const unsigned int input_device, Rift* input_headset);
 
 		// Spawn capture thread and return webcam aspect ratio (width over height)
 		float startCapture();
