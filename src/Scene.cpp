@@ -36,17 +36,18 @@ Scene::~Scene()
 void Scene::createRoom()
 {
 	mRoomNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("RoomNode");
-	Ogre::SceneNode* cubeNode = mRoomNode->createChildSceneNode();
-	Ogre::Entity* cubeEnt = mSceneMgr->createEntity( "Cube.mesh" );
-	cubeEnt->getSubEntity(0)->setMaterialName( "CubeMaterialRed" );
-	cubeNode->attachObject( cubeEnt );
-	cubeNode->setPosition( 1.0, 0.0, 0.0 );
+	Ogre::Entity* cubeEnt = mSceneMgr->createEntity("Cube.mesh");
+	cubeEnt->getSubEntity(0)->setMaterialName("CubeMaterialRed");
+	mCubeRed = mRoomNode->createChildSceneNode("CubeRed");								// node to which marker position/orientation is applied
+	Ogre::SceneNode* mCubeRedOffset = mCubeRed->createChildSceneNode("CubeRedOffset");	// offset to place cube as you wish around marker reference
+	mCubeRedOffset->attachObject( cubeEnt );
+	mCubeRed->setPosition(1.0, 0.0, 0.0);	//initial position in the Scene
+	mCubeRedOffset->setScale(0.5, 0.5, 0.5);
 	Ogre::SceneNode* cubeNode2 = mRoomNode->createChildSceneNode();
 	Ogre::Entity* cubeEnt2 = mSceneMgr->createEntity( "Cube.mesh" );
 	cubeEnt2->getSubEntity(0)->setMaterialName( "CubeMaterialGreen" );
 	cubeNode2->attachObject( cubeEnt2 );
 	cubeNode2->setPosition( 3.0, 0.0, 0.0 );
-	cubeNode->setScale( 0.5, 0.5, 0.5 );
 	cubeNode2->setScale( 0.5, 0.5, 0.5 );
 	
 	Ogre::SceneNode* cubeNode3 = mRoomNode->createChildSceneNode();

@@ -57,6 +57,8 @@ class Scene : public Ogre::Camera::Listener
 		void setRiftPose( Ogre::Quaternion orientation, Ogre::Vector3 pos );
 		void setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion pose);
 		void setVideoImagePoseRight(const Ogre::PixelBox &image, Ogre::Quaternion pose);
+		void setCubePosition(Ogre::Vector3 pos){ mCubeRed->setPosition(pos); }
+		void setCubeOrientation(Ogre::Quaternion ori){ mCubeRed->setOrientation(ori); };
 		//void setCameraTextureRight();
 	
 		// Keyboard and mouse events (forwarded by App)
@@ -179,6 +181,7 @@ class Scene : public Ogre::Camera::Listener
 		Ogre::SceneNode* mBodyNode = nullptr;						// on this we apply Body position transformation (=mBodyYawNode)
 
 		Ogre::SceneNode* mRoomNode = nullptr;
+		Ogre::SceneNode* mCubeRed = nullptr;
 };
 
 #endif
