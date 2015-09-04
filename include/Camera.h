@@ -43,13 +43,13 @@ class FrameCaptureHandler
 		// Usage:
 		// If OpenCV and your camera support timestamping, cameraCaptureRealDelayMs is automatically set.
 		// Otherwise cameraCaptureManualDelayMs is used and can be adjusted manually with adjustManualCaptureDelay()
-		short int cameraCaptureRealDelayMs = 0;		// Automatically computed.
-		short int cameraCaptureManualDelayMs = 0;	// Clamped between 0 and 50.
+		double cameraCaptureRealDelayMs = 0;		// Automatically computed.
+		double cameraCaptureManualDelayMs = 0;		// Clamped between 0 and 50.
 
 		Rift* headset = nullptr;
 		ovrHmd hmd = nullptr;
 
-		CompensationMode currentCompensationMode = Precise_auto;
+		CompensationMode currentCompensationMode = Approximate;
 
 		// Internal capture functions
 		void set(const FrameCaptureData & newFrame);

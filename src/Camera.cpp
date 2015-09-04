@@ -7,6 +7,7 @@ FrameCaptureHandler::FrameCaptureHandler(const unsigned int input_device, Rift* 
 	hmd = headset->getHandle();
 
 	// find and read camera calibration file
+	/*
 	try {
 		videoCaptureParams.readFromXMLFile("");
 	}
@@ -14,6 +15,7 @@ FrameCaptureHandler::FrameCaptureHandler(const unsigned int input_device, Rift* 
 		cerr << ex.what() << endl;
 		throw std::runtime_error("File not found or error in loading camera parameters for .yml file");
 	}
+	*/
 
 	// make the undistorted version of camera parameters (null distortion matrix)
 	videoCaptureParamsUndistorted = videoCaptureParams;
@@ -108,7 +110,8 @@ void FrameCaptureHandler::captureLoop() {
 		// grab() will ALWAYS return a frame OLDER than time of its call..
 		// so "cameraCaptureDelayMs" is used to predict a PAST pose relative to this moment
 		// LOCAL OCULUSSDK HAS BEEN TWEAKED TO "PREDICT IN THE PAST" (extension of: ovrHmd_GetTrackingState)
-		double ovrTimestamp = ovr_GetTimeInMilliseconds();
+		double ovrTimestamp = ovr_GetTimeInSeconds();	// very precise timing! - more than ovr_GetTimeInMilliseconds()
+		
 		ovrTrackingState tracking;
 		switch (currentCompensationMode)
 		{
@@ -118,17 +121,17 @@ void FrameCaptureHandler::captureLoop() {
 			break;
 		case Approximate:
 			// Just save pose for the image before grabbing a new frame
-			tracking = ovrHmd_GetTrackingState(hmd, ovrTimestamp*1000 );
+			tracking = ovrHmd_GetTrackingState(hmd, ovrTimestamp);
 			break;
 		case Precise_manual:
 			// Save the pose keeping count of grab() call delay (manually set)
 			// Version of OCULUSSDK included in this project has been tweaked to "PREDICT IN THE PAST"
-			tracking = ovrHmd_GetTrackingStateExtended(hmd, (ovrTimestamp - cameraCaptureManualDelayMs) * 1000);	// Function wants seconds
+			tracking = ovrHmd_GetTrackingStateExtended(hmd, (ovrTimestamp - (cameraCaptureManualDelayMs/1000) ));	// Function wants double in seconds
 			break;
 		case Precise_auto:
 			// Save the pose keeping count of grab() call delay (automatically computed)
 			// Version of OCULUSSDK included in this project has been tweaked to "PREDICT IN THE PAST"
-			tracking = ovrHmd_GetTrackingStateExtended(hmd, (ovrTimestamp - cameraCaptureRealDelayMs) * 1000);		// Function wants seconds
+			tracking = ovrHmd_GetTrackingStateExtended(hmd, (ovrTimestamp - (cameraCaptureRealDelayMs/1000) ));		// Function wants double in seconds
 			break;
 		default:
 			// If something goes wrong in mode selection, disable compensation.
@@ -146,7 +149,7 @@ void FrameCaptureHandler::captureLoop() {
 				if (realTimestamp != -1)
 				{
 					// compute grab() call delay compensation
-					cameraCaptureRealDelayMs = ovrTimestamp - realTimestamp;
+					cameraCaptureRealDelayMs = (ovrTimestamp/1000) - realTimestamp;
 
 					// Computed value will be used for next frame pose prediction.
 					// Explanation:
