@@ -13,7 +13,7 @@ fragment_program FisheyeImageMapping_PS glsl
         // THESE TWO PARAMETERS ARE ADJUSTED FROM CODE AT RUNTIME!
         param_named adjustTextureAspectRatio float 1.0
         param_named adjustTextureScale float 1.0
-        param_named adjustTextureOffset float2 0.0 0.0
+        param_named adjustTextureOffset float2 0.5 0.5
     }
 }
 
@@ -41,25 +41,25 @@ material FisheyeImageMappingMaterial/LeftEye
             cull_hardware clockwise
             depth_check on
             depth_func less_equal
-            depth_write on
+            depth_write off                         // kept off for alpha to work (see doc.)
             illumination_stage 
             light_clip_planes off
             light_scissor off
             lighting off
             normalise_normals off
             polygon_mode solid
-            scene_blend one zero
+            scene_blend alpha_blend                 // must be alpha_blend (see doc.)
             scene_blend_op add
             shading gouraud
             transparent_sorting on
 
             texture_unit 
             {
-                texture fisheye_realsample.png
-                tex_address_mode clamp
+                //texture fisheye_sample.png        // field set at runtime
+                tex_address_mode border             // to extend image, can be set to mirror
+                tex_border_colour 0.0 0.0 0.0 0.0   // if border, make transparent (see doc.)
                 scale 1.0 1.0
-                tex_coord_set 0
-                colour_op modulate
+                tex_coord_set 0                     // read from .xml file
             }
         }
     }
@@ -89,25 +89,25 @@ material FisheyeImageMappingMaterial/RightEye
             cull_hardware clockwise
             depth_check on
             depth_func less_equal
-            depth_write on
+            depth_write off                         // kept off for alpha to work (see doc.)
             illumination_stage 
             light_clip_planes off
             light_scissor off
             lighting off
             normalise_normals off
             polygon_mode solid
-            scene_blend one zero
+            scene_blend alpha_blend                 // must be alpha_blend (see doc.)
             scene_blend_op add
             shading gouraud
             transparent_sorting on
 
             texture_unit 
             {
-                texture fisheye_sample.png
-                tex_address_mode clamp
+                //texture fisheye_sample.png        // field set at runtime
+                tex_address_mode border             // to extend image, can be set to mirror
+                tex_border_colour 0.0 0.0 0.0 0.0   // if border, make transparent (see doc.)
                 scale 1.0 1.0
-                tex_coord_set 0
-                colour_op modulate
+                tex_coord_set 0                     // read from .xml file
             }
         }
     }

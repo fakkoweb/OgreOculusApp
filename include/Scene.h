@@ -99,7 +99,8 @@ class Scene : public Ogre::Camera::Listener
 		float videoFovScaleFactor = 1.0f;
 
 		// This value is used to alter video mesh UV coordinates and calibrate projection (Fisheye model).
-		// Adjusting Offset, fisheye texture will move right/left or up/down.
+		// Adjusting Offset, fisheye TEXTURE will move right/left or up/down.
+		// N.B. This is achieved by (in reality) subtracting this values from UV coordinates.
 		// This is very useful since sensor proportions and the center of fisheye circle on the sensor
 		// vary from user to user.
 		// User can find the best value (for his camera/lens setup) when the center of fisheye circle image
@@ -107,8 +108,11 @@ class Scene : public Ogre::Camera::Listener
 		// It is suggested to adjust this with small texture scale: when image is small enough, it will show
 		// as a small circle and not as an ellipsis.
 		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO THEY ARE USED SEPARATELY.
-		Ogre::Vector2 videoLeftTextureCalibrationOffset = Ogre::Vector2::ZERO;
-		Ogre::Vector2 videoRightTextureCalibrationOffset = Ogre::Vector2::ZERO;
+		// Default value is UV map centered in the image. Since we assume UV map has original center in 0,0
+		// (which means bottom-left vertex of the image) we translate all UV points by 0.5, which means in
+		// the user's view to translate the image by -0.5
+		Ogre::Vector2 videoLeftTextureCalibrationOffset = Ogre::Vector2(-0.5f,-0.5f);
+		Ogre::Vector2 videoRightTextureCalibrationOffset = Ogre::Vector2(-0.5f,-0.5f);
 
 		// This value is used to alter video mesh UV coordinates and calibrate projection (Fisheye model).
 		// Adjusting AspectRatio, fisheye texture will get wider along x.
