@@ -579,11 +579,11 @@ void App::quitRift()
 
 void App::initCameras()
 {
-	//mCameraLeft = new FrameCaptureHandler(0, mRift);
-	//mCameraRight = new FrameCaptureHandler(1, mRift);
+	mCameraLeft = new FrameCaptureHandler(0, mRift);
+	mCameraRight = new FrameCaptureHandler(1, mRift);
 
-	//mCameraLeft->startCapture();
-	//mCameraRight->startCapture();
+	mCameraLeft->startCapture();
+	mCameraRight->startCapture();
 
 	cv::namedWindow("CameraDebugLeft", cv::WINDOW_NORMAL);
 	cv::resizeWindow("CameraDebugLeft", 1920 / 4, 1080 / 4);
@@ -593,11 +593,9 @@ void App::initCameras()
 
 void App::quitCameras()
 {
-	/*
 	mCameraLeft->stopCapture();
 	mCameraRight->stopCapture();
 	if (mCameraLeft) delete mCameraLeft;
-	*/
 	if (mCameraRight) delete mCameraRight;
 }
 
@@ -629,7 +627,6 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 		}
 	}
 
-	/*
 	// [CAMERA] UPDATE
 	// update real cameras information and sends it to Scene (Texture of pictures planes/shapes)
 	FrameCaptureData nextFrameLeft;
@@ -661,6 +658,7 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 			
 	}
 	
+	/*
 	// [ARUCO] UPDATE
 	// undistort images from real cameras and use them for AR
 	cv::Mat imageLeftUndistorted, imageRightUndistorted;
