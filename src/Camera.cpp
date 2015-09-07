@@ -40,23 +40,27 @@ float FrameCaptureHandler::startCapture()
 		videoCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
 		videoCapture.set(CV_CAP_PROP_FPS, 30);
 		aspectRatio = (float)frame.image.cols / (float)frame.image.rows;
-		stopped = false;
 		captureThread = std::thread(&FrameCaptureHandler::captureLoop, this);
+		stopped = false;
 		std::cout << "Capture loop for camera " << deviceId << " started." << std::endl;
+		opening_failed = false;
 	}
 	return aspectRatio;
 }
 
 void FrameCaptureHandler::stopCapture() {
-	stopped = true;
-	hasFrame = false;
-	aspectRatio = 0;
-	cameraCaptureRealDelayMs = 0;
-	cameraCaptureManualDelayMs = 0;
-	if (!opening_failed)
+	if (!stopped)
 	{
-		captureThread.join();
-		videoCapture.release();
+		stopped = true;
+		hasFrame = false;
+		aspectRatio = 0;
+		cameraCaptureRealDelayMs = 0;
+		cameraCaptureManualDelayMs = 0;
+		if (!opening_failed)
+		{
+			captureThread.join();
+			videoCapture.release();
+		}
 	}
 }
 
