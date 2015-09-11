@@ -5,7 +5,7 @@ attribute vec4 vertex;
 attribute vec2 uv0;			// Red channel
 attribute vec2 uv1;			// Green channel
 attribute vec2 uv2;			// Blue channel
-attribute vec4 colour;			// Vertex Colour
+attribute vec4 colour;		// Vertex Colour (here: x=y=z=vignette, w=timewarp)
 
 // Load in values defined in the material:
 uniform mat4 worldViewProj;
@@ -27,19 +27,29 @@ vec2 timewarpTexCoord( vec2 texCoord, mat4 rotMat )
 
 void main(void)
 {
-	/*float timewarpLerpFactor = 0.0;
-	mat4 lerpedEyeRot = eyeRotationStart * (1 - timewarpLerpFactor) + eyeRotationEnd * timewarpLerpFactor;
 
+	// TIMEWARPING
+	// Read timewarpLerpFactor (that was packed by app into 4th coord of vertex colour)
+	float timewarpLerpFactor = colour.w;
+	// lerp() between eye start and end matrices by timewarp factor
+	mat4 lerpedEyeRot = eyeRotationStart * (1 - timewarpLerpFactor) + eyeRotationEnd * timewarpLerpFactor;
+	// apply timewarping to uv coordinates
 	gl_TexCoord[0] = vec4( timewarpTexCoord( uv0, lerpedEyeRot ), 0.0, 0.0 );
 	gl_TexCoord[1] = vec4( timewarpTexCoord( uv1, lerpedEyeRot ), 0.0, 0.0 );
-	gl_TexCoord[2] = vec4( timewarpTexCoord( uv2, lerpedEyeRot ), 0.0, 0.0 );*/
-	
+	gl_TexCoord[2] = vec4( timewarpTexCoord( uv2, lerpedEyeRot ), 0.0, 0.0 );
+
+	/* OLD CODE - no timewarp
+	// apply texture coordinates without timewarping
 	gl_TexCoord[0] = vec4( eyeToSourceUVScale * uv0 + eyeToSourceUVOffset, 0.0, 0.0 );
 	gl_TexCoord[1] = vec4( eyeToSourceUVScale * uv1 + eyeToSourceUVOffset,  0.0, 0.0 );
 	gl_TexCoord[2] = vec4( eyeToSourceUVScale * uv2 + eyeToSourceUVOffset,  0.0, 0.0 );
+	*/
 
+	// VERTEX POSITION AND COLOUR
+	// set vertex position (no change, mesh is not modified)
 	gl_Position = worldViewProj * vertex;
-
-	gl_FrontColor = colour;
+	// set final vertex colour (contains vignette factor for the Fragment Shader)
+	// N.B. Back-culling for this mesh is not needed/enabled so we only need FrontColor
+	gl_FrontColor = colour.xyzx;	// w coordinate (timewarp) is replaced with x (vignette)
 }
 

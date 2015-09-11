@@ -7,7 +7,7 @@
 #include "OGRE/Ogre.h"
 using namespace OVR;
 
-class Rift
+class Rift : public Ogre::RenderTargetListener
 {
 	public:
 		// Contructor initiates Rift Rendering environment, as follows:
@@ -36,6 +36,10 @@ class Rift
 		// Update Rift data every frame. This should return true as long as data is read from rift.
 		bool update( float dt );
 
+		// Pre-render listeners (for reduced latency and time-warping)
+		virtual void preRenderTargetUpdate(const Ogre::RenderTargetEvent& rte);
+		virtual void postRenderTargetUpdate(const Ogre::RenderTargetEvent& rte);
+
 		Ogre::Quaternion getOrientation() { return mOrientation; }
 		Ogre::Vector3 getPosition() { return mPosition; }
 
@@ -57,6 +61,8 @@ class Rift
 
 		Ogre::Camera* getCamera(){ return mCamera; }
 
+
+		Ogre::SceneNode* mHeadNode = nullptr;
 		/*
 		well why be an arist if the only thing you could give is the way you express it?
 
@@ -73,18 +79,17 @@ class Rift
 		ovrFrameTiming frameTiming;
 		static bool isInitialized;
 		static unsigned short int ovr_Users;
+		ovrEyeType nextEyeToRender;
+		ovrEyeRenderDesc eyeRenderDesc[2];
+		ovrPosef headPose[2];
 		static void init();
 		static void shutdown();
 
-		// Oculus Rift Outer Scene representation (virtual stereo cameras + head + body)
+		// Oculus Rift Outer Scene (head pose)
+		//Ogre::SceneNode* mHeadNode = nullptr;
 		Ogre::Vector3 mPosition;
 		Ogre::Quaternion mOrientation;
-		Ogre::Camera* mCamLeft = nullptr;
-		Ogre::Camera* mCamRight = nullptr;
-		Ogre::SceneNode* mHeadNode = nullptr;
-		Ogre::SceneNode* mBodyNode = nullptr;
-		Ogre::SceneNode* mBodyTiltNode = nullptr;
-		// Oculus Rift Inner Scene representation (barrell effect for Oculus display)
+		// Oculus Rift Inner Scene representation (barrell effect and timewarping for optimal Oculus display)
 		Ogre::SceneManager* mSceneMgr = nullptr;
 		Ogre::SceneNode* mCamNode = nullptr;
 		Ogre::Camera* mCamera = nullptr;
@@ -92,6 +97,8 @@ class Rift
 		Ogre::TexturePtr mRightEyeRenderTexture;
 		Ogre::MaterialPtr mMatLeft;
 		Ogre::MaterialPtr mMatRight;
+		Ogre::RenderTexture* mRenderTexture[2];
+
 		
 		
 		// Oculus Rift Display rendering window (displayed on Oculus)
