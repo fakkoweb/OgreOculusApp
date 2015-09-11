@@ -33,7 +33,7 @@ class FrameCaptureHandler
 		FrameCaptureData frame;
 		float aspectRatio = 0;
 		bool hasFrame = false;
-		bool stopped = false;
+		bool stopped = true;
 		bool opening_failed = false;
 
 		// Explanation:
@@ -49,7 +49,7 @@ class FrameCaptureHandler
 		Rift* headset = nullptr;
 		ovrHmd hmd = nullptr;
 
-		CompensationMode currentCompensationMode = Approximate;
+		CompensationMode currentCompensationMode = Precise_manual;
 
 		// Internal capture functions
 		void set(const FrameCaptureData & newFrame);
@@ -74,7 +74,7 @@ class FrameCaptureHandler
 		// Value is not used if currentCompensationMode != Precise_manual
 		// adjustValue can be negative or positive.
 		// It returns the modified value. 0 returns the current value.
-		short int adjustManualCaptureDelay(const short int adjustValue);
+		double adjustManualCaptureDelay(const short int adjustValue);
 
 		void setCompensationMode(const CompensationMode newMode){ currentCompensationMode = newMode; }
 

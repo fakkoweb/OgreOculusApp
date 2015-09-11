@@ -31,6 +31,7 @@ float FrameCaptureHandler::startCapture()
 	{
 		std::cout << "Could not open video source! Could not capture first frame!";
 		opening_failed = true;
+		stopped = true;
 	}
 	else
 	{
@@ -40,10 +41,10 @@ float FrameCaptureHandler::startCapture()
 		videoCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
 		videoCapture.set(CV_CAP_PROP_FPS, 30);
 		aspectRatio = (float)frame.image.cols / (float)frame.image.rows;
-		captureThread = std::thread(&FrameCaptureHandler::captureLoop, this);
 		stopped = false;
-		std::cout << "Capture loop for camera " << deviceId << " started." << std::endl;
 		opening_failed = false;
+		captureThread = std::thread(&FrameCaptureHandler::captureLoop, this);
+		std::cout << "Capture loop for camera " << deviceId << " started." << std::endl;
 	}
 	return aspectRatio;
 }
@@ -89,7 +90,7 @@ void FrameCaptureHandler::getCameraParameters(aruco::CameraParameters& outParame
 	outParameters = videoCaptureParamsUndistorted;
 }
 */
-short int FrameCaptureHandler::adjustManualCaptureDelay(const short int adjustValue = 0)
+double FrameCaptureHandler::adjustManualCaptureDelay(const short int adjustValue = 0)
 {
 	if (currentCompensationMode == Precise_manual)
 	{
@@ -115,7 +116,6 @@ void FrameCaptureHandler::captureLoop() {
 		// so "cameraCaptureDelayMs" is used to predict a PAST pose relative to this moment
 		// LOCAL OCULUSSDK HAS BEEN TWEAKED TO "PREDICT IN THE PAST" (extension of: ovrHmd_GetTrackingState)
 		double ovrTimestamp = ovr_GetTimeInSeconds();	// very precise timing! - more than ovr_GetTimeInMilliseconds()
-		
 		ovrTrackingState tracking;
 		switch (currentCompensationMode)
 		{
