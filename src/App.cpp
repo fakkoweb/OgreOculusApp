@@ -66,13 +66,13 @@ App::App(const std::string& configurationFilesPath = "cfg/", const std::string& 
 	start();
 
 	//Rift Setup (creates Oculus rendering window and Oculus inner scene - user shouldn't care about it)
-	initRift();
+	//initRift();
 
 	//Stereo camera rig setup ()
 	//initCameras();
 
 	//Input/Output setup (associate I/O to Oculus window)
-	initOIS();
+	//initOIS();
 
 
 	// when setup has finished successfully, enable Video into scene
@@ -82,7 +82,7 @@ App::App(const std::string& configurationFilesPath = "cfg/", const std::string& 
 	//initTray();
 
 	//Viewport setup (link scene cameras to Ogre/Oculus windows)
-	createViewports();
+	//createViewports();
 
 
 
@@ -118,9 +118,10 @@ void App::loadConfig(const std::string& configurationFilesPath)
 	// Overwrite default parameters values
 	CAMERA_BUFFERING_DELAY = mConfig->getValueAsInt("Camera/BufferingDelay");
 	ROTATE_VIEW = mConfig->getValueAsBool("Oculus/RotateView");
-	CAMERA_ROTATION = mConfig->getValueAsInt("Camera/Rotation");
-	if (CAMERA_ROTATION <= -180 || CAMERA_ROTATION > 180)
-		CAMERA_ROTATION = 180;
+	CAMERA_ROLL_LEFT = mConfig->getValueAsInt("Camera/CameraRollLeft");
+	CAMERA_ROLL_RIGHT = mConfig->getValueAsInt("Camera/CameraRollRight");
+	if (CAMERA_ROLL_LEFT <= -180 || CAMERA_ROLL_LEFT > 180) CAMERA_ROLL_LEFT = 180;
+	if (CAMERA_ROLL_RIGHT <= -180 || CAMERA_ROLL_RIGHT > 180) CAMERA_ROLL_RIGHT = 180;
 
 }
 
@@ -609,6 +610,7 @@ void App::quitCameras()
 // Good time to update measurements and physics before rendering next frame!
 bool App::frameRenderingQueued(const Ogre::FrameEvent& evt) 
 {
+	
 	// [TIME] FRAME RATE DISPLAY
 	//calculate delay from last frame and show
 	ogre_last_frame_delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ogre_last_frame_displayed_time);
@@ -705,8 +707,8 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 
 
 
-	//exit if key ESCAPE pressed 
-	if(mKeyboard->isKeyDown(OIS::KC_ESCAPE)) 
+	//exit if key ESCAPE pressed
+	if(mKeyboard->isKeyDown(OIS::KC_ESCAPE))
 		return false;
 
 	return true; 
@@ -894,10 +896,14 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		if (seethroughEnabled)
 		{
 			mScene->disableVideo();
+			mCameraLeft->stopCapture();
+			mCameraRight->stopCapture();
 			seethroughEnabled = false;
 		}
 		else
 		{
+			mCameraLeft->startCapture();
+			mCameraRight->startCapture();
 			mScene->enableVideo();
 			seethroughEnabled = true;
 		}

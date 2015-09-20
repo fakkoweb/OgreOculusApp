@@ -83,14 +83,14 @@ class Scene : public Ogre::Camera::Listener
 		float videoHFov;
 		float videoVFov;
 
-		// Default value is 1. This value means:
+		// Default value is 6.4 (about 100*IPD). This value means:
 		// - plane scaled with factor x, at distance x meters from the virtual camera
 		// - sphere scaled with factor x, radius x meters with center in virtual camera
 		// Warning: this only affects video mesh scale, keeping percieved FOV constant
-		float videoClippingScaleFactor = 1.0f;
+		float videoClippingScaleFactor = 6.4f;
 		
 		// Default value is 1. This value means:
-		// - plane is scaled along its XY axis by an additional x factor
+		// - plane is scaled along its XY axis by an additional 1/x factor
 		// - sphere is scaled along its Z axis by an additional x factor
 		// Increase in this value means increase in percieved fov of the video image.
 		// This value may be used to compensate the "too close" effect of real objects
@@ -100,17 +100,17 @@ class Scene : public Ogre::Camera::Listener
 
 		// This value is used to alter video mesh UV coordinates and calibrate projection (Fisheye model).
 		// Adjusting Offset, fisheye TEXTURE will move right/left or up/down.
-		// N.B. This is achieved by (in reality) subtracting this values from UV coordinates.
+		// N.B. This is achieved by actually subtracting this values from UV coordinates.
 		// This is very useful since sensor proportions and the center of fisheye circle on the sensor
 		// vary from user to user.
-		// User can find the best value (for his camera/lens setup) when the center of fisheye circle image
+		// User can find the best value (for his camera/lens setup) when the center of fisheye circle
 		// (the part of the image with less distortion) is in front of the eye.
-		// It is suggested to adjust this with small texture scale: when image is small enough, it will show
-		// as a small circle and not as an ellipsis.
-		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO THEY ARE USED SEPARATELY.
-		// Default value is UV map centered in the image. Since we assume UV map has original center in 0,0
-		// (which means bottom-left vertex of the image) we translate all UV points by 0.5, which means in
-		// the user's view to translate the image by -0.5
+		// It is suggested to adjust this while having small texture scale: when image is small enough, it will show
+		// as a small circle and therefore easier to position.
+		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO TWO DIFFERENT VARIABLES ARE USED.
+		// Default value is (-0.5,-0.5). For this project, UV coordinates of the sphere central vertex is 0,0
+		// (which corresponds to bottom-left edge of the texture). We want the center of the image in front of the user,
+		// therefore we translate all UV points by 0.5, which means to translate the image texture by -0.5.
 		Ogre::Vector2 videoLeftTextureCalibrationOffset = Ogre::Vector2(-0.5f,-0.5f);
 		Ogre::Vector2 videoRightTextureCalibrationOffset = Ogre::Vector2(-0.5f,-0.5f);
 
@@ -119,16 +119,16 @@ class Scene : public Ogre::Camera::Listener
 		// User will find the correct value (for his camera/lens setup) when image will appear as a perfect
 		// circle.
 		// This value is the exact aspect ratio of the image user is using (ex. 4:3 -> 1.333)
-		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO THEY ARE USED SEPARATELY.floa
+		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO THEY ARE USED SEPARATELY.
+		// Default value is 1.0, which means square image. For now this value must be setup manually..
 		float videoLeftTextureCalibrationAspectRatio = 1.0f;
 		float videoRightTextureCalibrationAspectRatio = 1.0f;
-
 
 		// This value is used to alter video mesh UV coordinates and calibrate projection (Fisheye model).
 		// Adjusting Scale, fisheye texture will get smaller or wider.
 		// User will find the correct value (for his camera/lens setup) when lines supposed to be straight
-		// will show as straight as seen in the headset.
-		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO THEY ARE USED SEPARATELY.floa
+		// will show as straight in the headset.
+		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO THEY ARE USED SEPARATELY.
 		float videoLeftTextureCalibrationScale = 1.0f;
 		float videoRightTextureCalibrationScale = 1.0f;
 

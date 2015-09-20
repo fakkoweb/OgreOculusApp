@@ -403,7 +403,7 @@ endif()
 # arUco lib - always compiled with the project
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/arUco") # arUco subproject src and config
 list(APPEND LIBRARIES_TO_LINK aruco)					# arUco subproject lib link
-	list(APPEND HEADERS_TO_INCLUDE_PUBLIC				# arUco subproject include
+list(APPEND HEADERS_TO_INCLUDE_PUBLIC					# arUco subproject include
 		"${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/arUco/src"
 	)
 

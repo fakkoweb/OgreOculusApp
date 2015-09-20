@@ -186,9 +186,9 @@ void Scene::setupVideo(const CameraModel camModelToUse, const StabilizationModel
 			switch (camModelToUse)
 			{
 			case Pinhole:
-				planeWidth = std::tan(hFovRads / 2) * videoClippingScaleFactor * 2;
-				planeHeight = std::tan(vFovRads / 2) * videoClippingScaleFactor * 2;
-				createPinholeVideos(planeWidth, planeHeight, eyeToCameraOffset);
+				planeWidth = std::tan(hFovRads / 2) * 1.0f /**/ * 2;				// ** Plane mesh is created using videoClippingScaleFactor = 1 as a distance reference.
+				planeHeight = std::tan(vFovRads / 2) * 1.0f /**/ * 2;				//	  Then we only need to act on its scale and position multiplying custom user's value
+				createPinholeVideos(planeWidth, planeHeight, eyeToCameraOffset);	//    to resize plane accordingly: no need to recreate the mesh.
 				break;
 			case Fisheye:
 				createFisheyeVideos(eyeToCameraOffset);
@@ -246,12 +246,13 @@ void Scene::setupVideo(const CameraModel camModelToUse, const StabilizationModel
 			switch (camModelToUse)
 			{
 			case Pinhole:
-				planeWidth = (WSensor * videoClippingScaleFactor) / FL;
-				planeHeight = (HSensor * videoClippingScaleFactor) / FL;
-				createPinholeVideos(planeWidth, planeHeight, eyeToCameraOffset);
+				
+				planeWidth = (WSensor * 1.0f /**/) / FL;							// ** Plane mesh is created using videoClippingScaleFactor = 1 as a distance reference.
+				planeHeight = (HSensor * 1.0f /**/) / FL;							//	  Then we only need to act on its scale and position multiplying custom user's value
+				createPinholeVideos(planeWidth, planeHeight, eyeToCameraOffset);	//    to resize plane accordingly: no need to recreate the mesh.
 				// compute current fov values for later adjustments
-				cameraHFov = ((2 * std::atan(planeWidth / (2 * videoClippingScaleFactor))) * 180) / M_PI;
-				cameraVFov = ((2 * std::atan(planeHeight / (2 * videoClippingScaleFactor))) * 180) / M_PI;
+				cameraHFov = ((2 * std::atan(planeWidth / (2 * 1.0f /**/))) * 180) / M_PI;
+				cameraVFov = ((2 * std::atan(planeHeight / (2 * 1.0f /**/))) * 180) / M_PI;
 				break;
 			case Fisheye:
 				createFisheyeVideos(eyeToCameraOffset);
@@ -355,9 +356,11 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 	mCamLeftStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeLeft");
 	mCamRightStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeRight");
 
-	//Finally attach mVideo nodes to camera references
+	//Finally create and attach mVideo nodes to camera references (also apply roll from configuration)
 	mVideoLeft = mCamLeftStabilizationNode->createChildSceneNode("LeftVideo");
+	mVideoLeft->roll(Ogre::Degree(CAMERA_ROLL_LEFT));
 	mVideoRight = mCamRightStabilizationNode->createChildSceneNode("RightVideo");
+	mVideoRight->roll(Ogre::Degree(CAMERA_ROLL_RIGHT));
 
 	//Attach videoPlaneEntityLeft to mVideoLeft SceneNode (now it will have a Position/Scale/Orientation)
 	mVideoLeft->attachObject(videoPlaneEntityLeft);
@@ -440,9 +443,11 @@ void Scene::createFisheyeVideos(const Ogre::Vector3 offset = Ogre::Vector3::ZERO
 	mCamLeftStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeLeft");
 	mCamRightStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeRight");
 
-	//Finally attach mVideo nodes to camera references
+	//Finally create and attach mVideo nodes to camera references (also apply roll from configuration)
 	mVideoLeft = mCamLeftStabilizationNode->createChildSceneNode("LeftVideo");
+	mVideoLeft->roll(Ogre::Degree(CAMERA_ROLL_LEFT));
 	mVideoRight = mCamRightStabilizationNode->createChildSceneNode("RightVideo");
+	mVideoRight->roll(Ogre::Degree(CAMERA_ROLL_RIGHT));
 
 	//Attach videoPlaneEntityLeft to mVideoLeft SceneNode (now shape will have a Position/Scale/Orientation)
 	mVideoLeft->attachObject(videoSphereEntityLeft);
@@ -688,7 +693,7 @@ void Scene::updateVideos()
 
 	std::cout << videoLeftTextureCalibrationAspectRatio << std::endl;
 
-	// Setup orientation (if needed) -- for now is constant
+	// Setup orientation (if needed) -- for now this is read from .cfg file and applied on mesh creation!
 	//mVideoLeft->roll(Ogre::Degree(-CAMERA_ROTATION));
 	//mVideoRight->roll(Ogre::Degree(CAMERA_ROTATION));
 

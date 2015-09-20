@@ -10,7 +10,8 @@ unsigned short int CAMERA_BUFFERING_DELAY = 0;		// delay between a grab() call a
 													// ex.	plane moves then the image moves -> reduce delay value
 													//		image moves then the plane moves -> increase delay value
 													// WARNING: this value depends from your OS/Camera setup!
-int CAMERA_ROTATION = 0;
+int CAMERA_ROLL_LEFT = 0;
+int CAMERA_ROLL_RIGHT = 0;
 
 //Globals used from Camera.cpp and Scene.cpp
 std::chrono::steady_clock::time_point camera_last_frame_request_time = std::chrono::system_clock::now();
