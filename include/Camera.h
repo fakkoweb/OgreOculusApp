@@ -9,9 +9,21 @@
 #include "OGRE/Ogre.h"
 #include "Globals.h"
 
+struct ImageCaptureData
+{
+	cv::Mat rgb;
+	double orientation[4];
+};
+
+struct ARCaptureData
+{
+	double position[3];
+	double orientation[4];
+};
+
 struct FrameCaptureData {
-	Ogre::Quaternion pose;
-	cv::Mat image;
+	ImageCaptureData image;
+	std::vector<ARCaptureData> markers;
 };
 
 class FrameCaptureHandler
@@ -32,6 +44,8 @@ class FrameCaptureHandler
 		std::mutex mutex;
 		FrameCaptureData frame;
 		float aspectRatio = 0;
+		bool arEnabled = false;
+
 		bool hasFrame = false;
 		bool stopped = true;
 		bool opening_failed = false;
@@ -57,7 +71,7 @@ class FrameCaptureHandler
 
 	public:
 
-		FrameCaptureHandler(const unsigned int input_device, Rift* input_headset);
+		FrameCaptureHandler(const unsigned int input_device, Rift* const input_headset, const bool enable_AR);
 
 		// Spawn capture thread and return webcam aspect ratio (width over height)
 		float startCapture();

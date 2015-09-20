@@ -1,21 +1,21 @@
 #include "Camera.h"
 
 
-FrameCaptureHandler::FrameCaptureHandler(const unsigned int input_device, Rift* input_headset) : headset(input_headset), deviceId(input_device)
+FrameCaptureHandler::FrameCaptureHandler(const unsigned int input_device, Rift* const input_headset, const bool enable_AR = false) : headset(input_headset), deviceId(input_device), arEnabled(enable_AR)
 {
 	// save handle for headset (from which poses are read)
 	hmd = headset->getHandle();
 
 	// find and read camera calibration file
-	/*
 	try {
-		videoCaptureParams.readFromXMLFile("");
+		char calibration_file_name_buffer[30];
+		sprintf(calibration_file_name_buffer, "camera%d_intrinsics.yml", deviceId);
+		videoCaptureParams.readFromXMLFile(std::string(calibration_file_name_buffer));
 	}
 	catch (std::exception &ex) {
 		cerr << ex.what() << endl;
 		throw std::runtime_error("File not found or error in loading camera parameters for .yml file");
 	}
-	*/
 
 	// make the undistorted version of camera parameters (null distortion matrix)
 	videoCaptureParamsUndistorted = videoCaptureParams;
@@ -27,7 +27,7 @@ float FrameCaptureHandler::startCapture()
 {
 
 	videoCapture.open(deviceId);
-	if (!videoCapture.isOpened() || !videoCapture.read(frame.image))
+	if (!videoCapture.isOpened() || !videoCapture.read(frame.image.rgb))
 	{
 		std::cout << "Could not open video source! Could not capture first frame!";
 		opening_failed = true;
@@ -35,12 +35,18 @@ float FrameCaptureHandler::startCapture()
 	}
 	else
 	{
-		videoCapture.set(CV_CAP_PROP_FOURCC, CV_FOURCC('H', '2', '6', '4'));
-		//videoCapture.set(CV_CAP_PROP_FOURCC, CV_FOURCC('M', 'J', 'P', 'G'));
-		videoCapture.set(CV_CAP_PROP_FRAME_WIDTH, 1920);
-		videoCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 1080);
+		std::cout << "Camera " << deviceId << " parameters: " << std::endl
+			<< "  K = " << videoCaptureParams.CameraMatrix << std::endl
+			<< "  D = " << videoCaptureParams.Distorsion.t() << std::endl;
+			//<< "  rms = " << rms << "\n\n";
+		//videoCapture.set(CV_CAP_PROP_FOURCC, CV_FOURCC('H', '2', '6', '4'));
+		videoCapture.set(CV_CAP_PROP_FOURCC, CV_FOURCC('M', 'J', 'P', 'G'));
+		videoCapture.set(CV_CAP_PROP_FRAME_WIDTH, 1024);
+		videoCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 576);
 		videoCapture.set(CV_CAP_PROP_FPS, 30);
-		aspectRatio = (float)frame.image.cols / (float)frame.image.rows;
+		videoCapture.set(CV_CAP_PROP_FOCUS, 0);
+		//videoCapture.set(CV_CAP_PROP_EXPOSURE, ??);
+		aspectRatio = (float)frame.image.rgb.cols / (float)frame.image.rgb.rows;
 		stopped = false;
 		opening_failed = false;
 		captureThread = std::thread(&FrameCaptureHandler::captureLoop, this);
@@ -65,6 +71,8 @@ void FrameCaptureHandler::stopCapture() {
 	}
 }
 
+// CAN BE OPTIMIZED: frame struct copy between threads is a 1:1 copy (slow)
+// it is not clear whether types manage copy internally in a good way (like cv:Mat does)
 void FrameCaptureHandler::set(const FrameCaptureData & newFrame) {
 	std::lock_guard<std::mutex> guard(mutex);
 	frame = newFrame;
@@ -96,7 +104,7 @@ double FrameCaptureHandler::adjustManualCaptureDelay(const short int adjustValue
 	{
 		// set manual delay compensation
 		cameraCaptureManualDelayMs += adjustValue;
-		if (cameraCaptureManualDelayMs > 50) cameraCaptureManualDelayMs = 50;
+		if (cameraCaptureManualDelayMs > 200) cameraCaptureManualDelayMs = 50;
 		else if (cameraCaptureManualDelayMs < 0) cameraCaptureManualDelayMs = 0;
 	}
 	return cameraCaptureManualDelayMs;
@@ -104,8 +112,18 @@ double FrameCaptureHandler::adjustManualCaptureDelay(const short int adjustValue
 
 void FrameCaptureHandler::captureLoop() {
 	FrameCaptureData captured;
+	Ogre::Quaternion noRotation = Ogre::Quaternion::IDENTITY;
+	captured.image.orientation[0] = noRotation.x;
+	captured.image.orientation[1] = noRotation.y;
+	captured.image.orientation[2] = noRotation.z;
+	captured.image.orientation[3] = noRotation.w;
+	//double f = 0;
 	while (!stopped) {
-		
+
+		//if (videoCapture.set(CV_CAP_PROP_EXPOSURE, 0)) cout << f << endl;
+		//f = f + 1.0f;
+		//cout << videoCapture.get(CV_CAP_PROP_EXPOSURE) << endl;
+
 		//Save time point for request time of the frame (for camera frame rate calculation)
 		camera_last_frame_request_time = std::chrono::system_clock::now();	//GLOBAL VARIABLE
 		
@@ -121,7 +139,10 @@ void FrameCaptureHandler::captureLoop() {
 		{
 		case None:
 			// No orientation info is saved for the image
-			captured.pose = Ogre::Quaternion::IDENTITY;
+			captured.image.orientation[0] = noRotation.x;
+			captured.image.orientation[1] = noRotation.y;
+			captured.image.orientation[2] = noRotation.z;
+			captured.image.orientation[3] = noRotation.w;
 			break;
 		case Approximate:
 			// Just save pose for the image before grabbing a new frame
@@ -179,22 +200,51 @@ void FrameCaptureHandler::captureLoop() {
 					std::cout << "Precise_Auto mode unsupported (OpenCV returned -1 on timestamp request). Switching to Precise_Manual mode." << std::endl;
 				}
 			}
-
+			
+			cv::Mat distorted;
 			// if frame is valid, decode and save it
-			videoCapture.retrieve(captured.image);
-
+			videoCapture.retrieve(captured.image.rgb);
 			// finally save pose as well (previously computed)
 			if (currentCompensationMode != None)
 			{
 				if (tracking.StatusFlags & (ovrStatus_OrientationTracked | ovrStatus_PositionTracked)) {
 					Posef pose = tracking.HeadPose.ThePose;		// The cpp compatibility layer is used to convert ovrPosef to Posef (see OVR_Math.h)
-					captured.pose = Ogre::Quaternion(pose.Rotation.w, pose.Rotation.x, pose.Rotation.y, pose.Rotation.z);
+					//captured.image.orientation = Ogre::Quaternion(pose.Rotation.w, pose.Rotation.x, pose.Rotation.y, pose.Rotation.z);
+					captured.image.orientation[0] = pose.Rotation.w;
+					captured.image.orientation[1] = pose.Rotation.x;
+					captured.image.orientation[2] = pose.Rotation.y;
+					captured.image.orientation[3] = pose.Rotation.z;
 				}
 				else
 				{
 					// use last predicted/saved pose
+					std::cerr << "tracking info not available" << std::endl;
 				}
 			}
+
+			/*
+			// perform undistortion (with parameters of the camera)
+			cv::undistort(distorted, captured.image.rgb, videoCaptureParams.CameraMatrix, videoCaptureParams.Distorsion);
+
+			// [AR] Operations
+			if (arEnabled)
+			{
+
+				// detect markers in the image
+				aruco::MarkerDetector videoMarkerDetector;
+				std::vector<aruco::Marker> markers;
+				videoMarkerDetector.detect(captured.image.rgb, markers, videoCaptureParamsUndistorted, 0.056f);	//need marker size in meters
+				// show nodes for detected markers
+				captured.markers.clear();
+				for (unsigned int i = 0; i<markers.size(); i++) {
+					ARCaptureData new_marker;
+					markers[i].OgreGetPoseParameters(new_marker.position, new_marker.orientation);
+					captured.markers.insert(captured.markers.begin(),new_marker);
+					std::cout << "marker " << i << " detected." << endl;
+				}
+			}
+			*/
+			
 
 			// set the new capture as available
 			set(captured);

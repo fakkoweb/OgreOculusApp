@@ -388,11 +388,11 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 	//Create two special textures (TU_DYNAMIC_WRITE_ONLY_DISCARDABLE) that will be applied to the two videoPlaneEntities
 	mLeftCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
 		"RenderTextureCameraLeft", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8,
+		Ogre::TEX_TYPE_2D, 1024, 576, 0, Ogre::PF_R8G8B8,
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);
 	mRightCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
 		"RenderTextureCameraRight", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8,
+		Ogre::TEX_TYPE_2D, 1024, 576, 0, Ogre::PF_R8G8B8,
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);
 
 	// Creare new materials and assign the two textures that can be used on the shapes created
@@ -473,11 +473,11 @@ void Scene::createFisheyeVideos(const Ogre::Vector3 offset = Ogre::Vector3::ZERO
 	//Create two special textures (TU_DYNAMIC_WRITE_ONLY_DISCARDABLE) that will be applied to the two videoPlaneEntities
 	mLeftCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
 		"RenderTextureCameraLeft", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8A8,	// A8 is added so Texture can be transparent outside the image!
+		Ogre::TEX_TYPE_2D, 1024, 576, 0, Ogre::PF_R8G8B8A8,	// A8 is added so Texture can be transparent outside the image!
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);				// see also here -> http://www.ogre3d.org/tikiwiki/-material
 	mRightCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
 		"RenderTextureCameraRight", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8A8,	// A8 is added so Texture can be transparent outside the image!
+		Ogre::TEX_TYPE_2D, 1024, 576, 0, Ogre::PF_R8G8B8A8,	// A8 is added so Texture can be transparent outside the image!
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);				// see also here -> http://www.ogre3d.org/tikiwiki/-material
 	
 	// Load scripted materials and assign the two dynamic textures just created.

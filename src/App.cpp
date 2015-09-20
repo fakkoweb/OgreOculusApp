@@ -173,7 +173,7 @@ void App::initScenes()
 	try
 	{
 		// try first to load HFOV/VFOV values (higher priority)
-		mScene->setupVideo(Scene::CameraModel::Fisheye, Scene::StabilizationModel::Head, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/HFOV"), mConfig->getValueAsReal("Camera/VFOV"));
+		mScene->setupVideo(Scene::CameraModel::Pinhole, Scene::StabilizationModel::Head, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/HFOV"), mConfig->getValueAsReal("Camera/VFOV"));
 	}
 	catch (Ogre::Exception &e)
 	{
@@ -183,7 +183,7 @@ void App::initScenes()
 			try
 			{
 				// ..try to load other parameters (these are preferred, but lower priority since not everyone know these)
-				mScene->setupVideo(Scene::CameraModel::Fisheye, Scene::StabilizationModel::Head, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/SensorWidth"), mConfig->getValueAsReal("Camera/SensorHeight"), mConfig->getValueAsReal("Camera/FocalLenght"));
+				mScene->setupVideo(Scene::CameraModel::Pinhole, Scene::StabilizationModel::Head, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/SensorWidth"), mConfig->getValueAsReal("Camera/SensorHeight"), mConfig->getValueAsReal("Camera/FocalLenght"));
 			}
 			catch (Ogre::Exception &e)
 			{
@@ -580,25 +580,23 @@ void App::quitRift()
 
 void App::initCameras()
 {
-	//mCameraLeft = new FrameCaptureHandler(0, mRift);
-	//mCameraRight = new FrameCaptureHandler(1, mRift);
-
-	//mCameraLeft->startCapture();
-	//mCameraRight->startCapture();
-
-	cv::namedWindow("CameraDebugLeft", cv::WINDOW_NORMAL);
-	cv::resizeWindow("CameraDebugLeft", 1920 / 4, 1080 / 4);
-	cv::namedWindow("CameraDebugRight", cv::WINDOW_NORMAL);
-	cv::resizeWindow("CameraDebugRight", 1920 / 4, 1080 / 4);
+	mCameraLeft = new FrameCaptureHandler(0, mRift, true);
+	mCameraRight = new FrameCaptureHandler(1, mRift, false);
+	/*
+	FrameCaptureData emptyFrame;
+	emptyFrame.image = cv::Mat(cv::Scalar(0.0f, 0.0f, 0.0f, 1.0f));
+	emptyFrame.pose = Ogre::Quaternion::IDENTITY;
+	*/
+	std::string window_name = "Video stream";
+	cv::namedWindow(window_name, CV_WINDOW_AUTOSIZE);
 }
 
 void App::quitCameras()
 {
-	/*
+	mScene->disableVideo();
 	mCameraLeft->stopCapture();
 	mCameraRight->stopCapture();
 	if (mCameraLeft) delete mCameraLeft;
-	*/
 	if (mCameraRight) delete mCameraRight;
 }
 
@@ -622,47 +620,57 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 	// update Oculus information and sends it to Scene (Position/Orientation of character's head)
 	if(mRift)
 	{
-		if ( mRift->update( evt.timeSinceLastFrame ) )		// saves new orientation/position information
-		{
-			mScene->setRiftPose( mRift->getOrientation(), mRift->getPosition() );	// sets orientation/position to a SceneNode
-		} else {
-			delete mRift;
-			mRift = NULL;
-		}
+		//if ( mRift->update( evt.timeSinceLastFrame ) )		// saves new orientation/position information
+		//{
+		//	mScene->setRiftPose( mRift->getOrientation(), mRift->getPosition() );	// sets orientation/position to a SceneNode
+		//} else {
+		//	delete mRift;
+		//	mRift = NULL;
+		//}
 	}
-
-	/*
+	//std::cout << "Updating frame..." << std::endl;
+	
 	// [CAMERA] UPDATE
 	// update real cameras information and sends it to Scene (Texture of pictures planes/shapes)
 	FrameCaptureData nextFrameLeft;
 	if (mCameraLeft && mCameraLeft->get(nextFrameLeft))		// if camera is initialized AND there is a new frame
 	{
-		//std::cout << "Drawing the frame in debug window..." << std::endl;
-		cv::imshow("CameraDebugLeft", nextFrameLeft.image);
-		cv::waitKey(1);
+		//std::cout << "Set new left image..." << std::endl;
+		//cv::imshow("CameraDebugLeft", nextFrameLeft.image);
+		//cv::waitKey(1);
 			
 		//std::cout << "converting from cv::Mat to Ogre::PixelBox..." << std::endl;
-		mOgrePixelBoxLeft = Ogre::PixelBox(1920, 1080, 1, Ogre::PF_R8G8B8, nextFrameLeft.image.ptr<uchar>(0));
+		mOgrePixelBoxLeft = Ogre::PixelBox(nextFrameLeft.image.rgb.cols, nextFrameLeft.image.rgb.rows, 1, Ogre::PF_R8G8B8, nextFrameLeft.image.rgb.ptr<uchar>(0));
 		//std::cout << "sending new image to the scene..." << std::endl;
-		mScene->setVideoImagePoseLeft(mOgrePixelBoxLeft,nextFrameLeft.pose);
+		mScene->setVideoImagePoseLeft(mOgrePixelBoxLeft, Ogre::Quaternion(nextFrameLeft.image.orientation[0], nextFrameLeft.image.orientation[1], nextFrameLeft.image.orientation[2], nextFrameLeft.image.orientation[3]) );
 		//std::cout << "image sent!\nImage plane updated!" << std::endl;
-
+		
+		for (unsigned int i = 0; i < nextFrameLeft.markers.size(); i++)
+		{
+			cout << "cube position/orientation "<<i<<" set." << endl;
+			mScene->setCubePosition(Ogre::Vector3(nextFrameLeft.markers[i].position[0], nextFrameLeft.markers[i].position[1], nextFrameLeft.markers[i].position[2]));
+			mScene->setCubeOrientation(Ogre::Quaternion(nextFrameLeft.markers[i].orientation[0], nextFrameLeft.markers[i].orientation[1], nextFrameLeft.markers[i].orientation[2], nextFrameLeft.markers[i].orientation[3]));
+		}
+		cv::imshow("Video stream", nextFrameLeft.image.rgb);
+		cv::waitKey(1);
 	}
+
 	FrameCaptureData nextFrameRight;
 	if (mCameraRight && mCameraRight->get(nextFrameRight))	// if camera is initialized AND there is a new frame
 	{
-
-		cv::imshow("CameraDebugRight", nextFrameRight.image);
-		cv::waitKey(1);
+		//std::cout << "Set new right image..." << std::endl;
+		//cv::imshow("CameraDebugRight", nextFrameRight.image);
+		//cv::waitKey(1);
 
 		//std::cout << "converting from cv::Mat to Ogre::PixelBox..." << std::endl;
-		mOgrePixelBoxRight = Ogre::PixelBox(1920, 1080, 1, Ogre::PF_R8G8B8, nextFrameRight.image.ptr<uchar>(0));
+		mOgrePixelBoxRight = Ogre::PixelBox(nextFrameRight.image.rgb.cols, nextFrameRight.image.rgb.rows, 1, Ogre::PF_R8G8B8, nextFrameRight.image.rgb.ptr<uchar>(0));
 		//std::cout << "sending new image to the scene..." << std::endl;
-		mScene->setVideoImagePoseRight(mOgrePixelBoxRight, nextFrameRight.pose);
+		mScene->setVideoImagePoseRight(mOgrePixelBoxRight, Ogre::Quaternion(nextFrameRight.image.orientation[0], nextFrameRight.image.orientation[1], nextFrameRight.image.orientation[2], nextFrameRight.image.orientation[3]));
 		//std::cout << "image sent!\nImage plane updated!" << std::endl;
 			
 	}
 	
+	/* KEPT FOR PERSONAL REFERENCE
 	// [ARUCO] UPDATE
 	// undistort images from real cameras and use them for AR
 	cv::Mat imageLeftUndistorted, imageRightUndistorted;
@@ -670,10 +678,10 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 	aruco::MarkerDetector videoMarkerDetector;
 	// perform undistortion (with parameters of each camera)
 	cv::undistort(nextFrameLeft.image, imageLeftUndistorted, mCameraLeft->videoCaptureParams.CameraMatrix, mCameraLeft->videoCaptureParams.Distorsion);
-	cv::undistort(nextFrameRight.image, imageRightUndistorted, mCameraRight->videoCaptureParams.CameraMatrix, mCameraRight->videoCaptureParams.Distorsion);
+	//cv::undistort(nextFrameRight.image, imageRightUndistorted, mCameraRight->videoCaptureParams.CameraMatrix, mCameraRight->videoCaptureParams.Distorsion);
 	// detect markers in the image
-	videoMarkerDetector.detect(imageLeftUndistorted, markersLeft, mCameraLeft->videoCaptureParamsUndistorted, 0.1f);	//need marker size in meters
-	videoMarkerDetector.detect(imageRightUndistorted, markersRight, mCameraRight->videoCaptureParamsUndistorted, 0.1f);
+	videoMarkerDetector.detect(imageLeftUndistorted, markersLeft, mCameraLeft->videoCaptureParamsUndistorted, 0.1f);		//need marker size in meters
+	//videoMarkerDetector.detect(imageRightUndistorted, markersRight, mCameraRight->videoCaptureParamsUndistorted, 0.1f);
 
 	double position[3], orientation[4];
 	// show nodes for detected markers
