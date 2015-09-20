@@ -113,7 +113,7 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 
 		// If this is set to true, the app will close during the next frame:
 		bool mShutdown = false;
-
+		bool mPause = false;
 		Scene* mScene = nullptr;
 
 		Rift* mRift = nullptr;

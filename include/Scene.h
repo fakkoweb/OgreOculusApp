@@ -72,6 +72,7 @@ class Scene : public Ogre::Camera::Listener
 		void cameraPostRenderScene(Ogre::Camera* cam);
 		void cameraPreRenderScene(Ogre::Camera* cam);
 
+		Ogre::SceneNode* mHeadNode = nullptr;
 	private:
 
 		CameraModel currentCameraModel = Fisheye;
@@ -179,7 +180,7 @@ class Scene : public Ogre::Camera::Listener
 		Ogre::SceneNode* mCamRightReference = nullptr;				// this node just keeps track of mCamRight position
 		Ogre::SceneNode* mHeadStabilizationNodeLeft = nullptr;		// on this we apply Image NECK stabilization full Orientation delta (if active)
 		Ogre::SceneNode* mHeadStabilizationNodeRight = nullptr;		// on this we apply Image NECK stabilization full Orientation delta (if active)
-		Ogre::SceneNode* mHeadNode = nullptr;						// on this we apply Head full Orientation (Yaw/Pitch/Roll)
+		//Ogre::SceneNode* mHeadNode = nullptr;						// on this we apply Head full Orientation (Yaw/Pitch/Roll)
 		Ogre::SceneNode* mBodyTiltNode = nullptr;					// on this we apply Body Pitch transformation (up/down turn)
 		Ogre::SceneNode* mBodyYawNode = nullptr;					// on this we apply Body Yaw transformation (left/right turn)
 		Ogre::SceneNode* mBodyNode = nullptr;						// on this we apply Body position transformation (=mBodyYawNode)

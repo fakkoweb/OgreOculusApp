@@ -203,6 +203,9 @@ void App::initScenes()
 	mRift->setCameraMatrices(mScene->getLeftCamera(), mScene->getRightCamera());	// adjust matrices
 	mScene->setVideoLeftTextureCalibrationAspectRatio(1.77778f);
 
+	// DEBUG
+	mRift->mHeadNode = mScene->mHeadNode;
+
 }
 
 void App::initViewports()
@@ -255,7 +258,17 @@ void App::start()
 {
 	// START RENDERING!
 	// WHO CREATES AN INSTANCE OF THIS CLASS WILL WAIT INDEFINITELY UNTIL THIS CALL RETURNS
-	mRoot->startRendering();
+	//mRoot->startRendering();
+
+	while (!mShutdown)
+	{
+		Ogre::WindowEventUtilities::messagePump();
+		
+		//if (mWindow->isClosed()) return false;
+		if (!mRoot->renderOneFrame()) mShutdown = true;
+		//if (mPause)
+			//mScene->getSceneMgr()->_pauseRendering();
+	}
 }
 
 /////////////////////////////////////////////////////////////////
@@ -927,6 +940,14 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 			mScene->setStabilizationMode(Scene::StabilizationModel::Eye);
 
 		break;
+
+	case OIS::KC_SPACE:
+
+		// SPACE Button (Stop): interrupts main scene rendering loop
+		mRift->pauseRender(true);
+
+		break;
+
 	default:
 		// Do nothing
 		break;

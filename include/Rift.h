@@ -35,6 +35,8 @@ class Rift : public Ogre::RenderTargetListener
 
 		// Update Rift data every frame. This should return true as long as data is read from rift.
 		bool update( float dt );
+		void pauseRender(bool pauseRender) { pause = pauseRender; }
+		bool pause = false;
 
 		// Pre-render listeners (for reduced latency and time-warping)
 		virtual void preRenderTargetUpdate(const Ogre::RenderTargetEvent& rte);

@@ -476,7 +476,7 @@ void Rift::preRenderTargetUpdate(const Ogre::RenderTargetEvent& rte)
 		for (int eyeIndex = 0; eyeIndex < ovrEye_Count; eyeIndex++)
 		{
 			nextEyeToRender = hmd->EyeRenderOrder[eyeIndex];
-			mRenderTexture[nextEyeToRender]->update();
+			if(!pause) mRenderTexture[nextEyeToRender]->update();
 		}
 
 		// Phase (4): Wait till time-warp point to reduce latency (to get closest as possible to the screen time).
