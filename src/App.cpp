@@ -409,9 +409,9 @@ void App::loadOgreWindows()
 	miscParams["monitorIndex"] = Ogre::StringConverter::toString(0);
 	if (DEBUG_WINDOW)
 	{
-		mLeftEyeViewWindow = mRoot->createRenderWindow("Ogre Left Eye Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
-		mRightEyeViewWindow = mRoot->createRenderWindow("Ogre Right Eye Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
-		mEnvironmentViewWindow = mRoot->createRenderWindow("Ogre Environment Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
+		//mLeftEyeViewWindow = mRoot->createRenderWindow("Ogre Left Eye Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
+		//mRightEyeViewWindow = mRoot->createRenderWindow("Ogre Right Eye Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
+		//mEnvironmentViewWindow = mRoot->createRenderWindow("Ogre Environment Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
 	}
 
 #endif
