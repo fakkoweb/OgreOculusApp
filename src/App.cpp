@@ -830,7 +830,7 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 			mScene->adjustVideoFov(+0.01f);
 			break;
 		case LagAdjust:
-			mCameraLeft->adjustManualCaptureDelay(+1);		// +1 msec
+			cout << mCameraLeft->adjustManualCaptureDelay(+1) <<endl;		// +1 msec
 			break;
 		}
 
@@ -877,7 +877,7 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 			mScene->adjustVideoFov(-0.01f);
 			break;
 		case LagAdjust:
-			mCameraLeft->adjustManualCaptureDelay(-1);		// -1 msec
+			cout << mCameraLeft->adjustManualCaptureDelay(-1) << endl;		// -1 msec
 			break;
 		}
 
