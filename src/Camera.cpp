@@ -39,8 +39,8 @@ float FrameCaptureHandler::startCapture()
 			<< "  K = " << videoCaptureParams.CameraMatrix << std::endl
 			<< "  D = " << videoCaptureParams.Distorsion.t() << std::endl;
 			//<< "  rms = " << rms << "\n\n";
-		//videoCapture.set(CV_CAP_PROP_FOURCC, CV_FOURCC('H', '2', '6', '4'));
-		videoCapture.set(CV_CAP_PROP_FOURCC, CV_FOURCC('M', 'J', 'P', 'G'));
+		videoCapture.set(CV_CAP_PROP_FOURCC, CV_FOURCC('H', '2', '6', '4'));
+		//videoCapture.set(CV_CAP_PROP_FOURCC, CV_FOURCC('M', 'J', 'P', 'G'));
 		videoCapture.set(CV_CAP_PROP_FRAME_WIDTH, 1024);
 		videoCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 576);
 		videoCapture.set(CV_CAP_PROP_FPS, 30);
@@ -203,7 +203,7 @@ void FrameCaptureHandler::captureLoop() {
 			
 			cv::Mat distorted;
 			// if frame is valid, decode and save it
-			videoCapture.retrieve(captured.image.rgb);
+			videoCapture.retrieve(distorted);
 			// finally save pose as well (previously computed)
 			if (currentCompensationMode != None)
 			{
@@ -222,7 +222,7 @@ void FrameCaptureHandler::captureLoop() {
 				}
 			}
 
-			/*
+			
 			// perform undistortion (with parameters of the camera)
 			cv::undistort(distorted, captured.image.rgb, videoCaptureParams.CameraMatrix, videoCaptureParams.Distorsion);
 
@@ -233,7 +233,7 @@ void FrameCaptureHandler::captureLoop() {
 				// detect markers in the image
 				aruco::MarkerDetector videoMarkerDetector;
 				std::vector<aruco::Marker> markers;
-				videoMarkerDetector.detect(captured.image.rgb, markers, videoCaptureParamsUndistorted, 0.056f);	//need marker size in meters
+				videoMarkerDetector.detect(captured.image.rgb, markers, videoCaptureParamsUndistorted, 0.1f);	//need marker size in meters
 				// show nodes for detected markers
 				captured.markers.clear();
 				for (unsigned int i = 0; i<markers.size(); i++) {
@@ -243,7 +243,7 @@ void FrameCaptureHandler::captureLoop() {
 					std::cout << "marker " << i << " detected." << endl;
 				}
 			}
-			*/
+			
 			
 
 			// set the new capture as available

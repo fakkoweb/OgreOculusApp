@@ -42,13 +42,14 @@ void Scene::createRoom()
 	Ogre::SceneNode* mCubeRedOffset = mCubeRed->createChildSceneNode("CubeRedOffset");	// offset to place cube as you wish around marker reference
 	mCubeRedOffset->attachObject( cubeEnt );
 	mCubeRed->setPosition(1.0, 0.0, 0.0);	//initial position in the Scene
+	mCubeRed->setScale(0.1, 0.1, 0.1);
 	mCubeRedOffset->setScale(0.5, 0.5, 0.5);
-	Ogre::SceneNode* cubeNode2 = mRoomNode->createChildSceneNode();
+	mCubeGreen = mRoomNode->createChildSceneNode();
 	Ogre::Entity* cubeEnt2 = mSceneMgr->createEntity( "Cube.mesh" );
 	cubeEnt2->getSubEntity(0)->setMaterialName( "CubeMaterialGreen" );
-	cubeNode2->attachObject( cubeEnt2 );
-	cubeNode2->setPosition( 3.0, 0.0, 0.0 );
-	cubeNode2->setScale( 0.5, 0.5, 0.5 );
+	mCubeGreen->attachObject( cubeEnt2 );
+	mCubeGreen->setPosition( 0.0, 0.0, 0.0 );
+	mCubeGreen->setScale( 0.1, 0.1, 0.1 );
 	
 	Ogre::SceneNode* cubeNode3 = mRoomNode->createChildSceneNode();
 	Ogre::Entity* cubeEnt3 = mSceneMgr->createEntity( "Cube.mesh" );
@@ -110,7 +111,7 @@ void Scene::createCameras()
 	float default_IPdist = 0.064f;			// distance between the eyes
 	float default_HorETNdist = 0.0805f;		// horizontal distance from the eye to the neck
 	float default_VerETNdist = 0.075f;		// vertical distance from the eye to the neck
-	mCamLeft->setPosition ( -default_IPdist / 2.0f , default_VerETNdist, -default_HorETNdist ); //x is side, y is up, z is towards the screen
+	mCamLeft->setPosition ( -default_IPdist / 2.0f , default_VerETNdist, -default_HorETNdist ); //x is right, y is up, z is towards the screen
 	mCamRight->setPosition( default_IPdist / 2.0f  , default_VerETNdist, -default_HorETNdist );
 
 	/*
@@ -355,6 +356,14 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 	//			If this feature is disabled, mCamStabilizationNode will simply follow mCamReference position/orientation
 	mCamLeftStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeLeft");
 	mCamRightStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeRight");
+
+	//RED CUBE REFERENCE HERE!
+	mCubeRed->getParentSceneNode()->removeChild(mCubeRed);
+	mCamLeftStabilizationNode->addChild(mCubeRed);
+
+	//GREEN CUBE REFERENCE HERE!
+	mCubeGreen->getParentSceneNode()->removeChild(mCubeGreen);
+	mCamLeftStabilizationNode->addChild(mCubeGreen);
 
 	//Finally create and attach mVideo nodes to camera references (also apply roll from configuration)
 	mVideoLeft = mCamLeftStabilizationNode->createChildSceneNode("LeftVideo");
@@ -906,7 +915,7 @@ void Scene::cameraPostRenderScene(Ogre::Camera* cam)
 			//std::cout << "Camera milliseconds delay: " << camera_last_frame_display_delay.count() << " ms"<< std::endl;
 			camera_frame_updated = false;
 		}
-		mVideoLeft->setVisible(false, false);
+		//mVideoLeft->setVisible(false, false);
 	}
 	if (cam == mCamRight)
 	{

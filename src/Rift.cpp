@@ -374,6 +374,7 @@ void Rift::setCameraMatrices( Ogre::Camera* camLeft, Ogre::Camera* camRight )
 				projR.M[1][0], projR.M[1][1], projR.M[1][2], projR.M[1][3],
 				projR.M[2][0], projR.M[2][1], projR.M[2][2], projR.M[2][3],
 				projR.M[3][0], projR.M[3][1], projR.M[3][2], projR.M[3][3] ) );
+
 }
 
 void Rift::attachCameras(Ogre::Camera* const camLeft, Ogre::Camera* const camRight)

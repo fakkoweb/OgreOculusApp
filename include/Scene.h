@@ -187,6 +187,7 @@ class Scene : public Ogre::Camera::Listener
 
 		Ogre::SceneNode* mRoomNode = nullptr;
 		Ogre::SceneNode* mCubeRed = nullptr;
+		Ogre::SceneNode* mCubeGreen = nullptr;
 };
 
 #endif

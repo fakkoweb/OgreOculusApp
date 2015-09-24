@@ -205,6 +205,7 @@ void App::initScenes()
 
 	// DEBUG
 	mRift->mHeadNode = mScene->mHeadNode;
+	std::cout << "Camera internal left virtual matrix:\n" << mScene->getLeftCamera()->getProjectionMatrix() << std::endl;
 
 }
 
@@ -424,7 +425,7 @@ void App::loadOgreWindows()
 	{
 		//mLeftEyeViewWindow = mRoot->createRenderWindow("Ogre Left Eye Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
 		//mRightEyeViewWindow = mRoot->createRenderWindow("Ogre Right Eye Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
-		//mEnvironmentViewWindow = mRoot->createRenderWindow("Ogre Environment Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
+		mEnvironmentViewWindow = mRoot->createRenderWindow("Ogre Environment Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
 	}
 
 #endif
@@ -660,8 +661,8 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 		
 		for (unsigned int i = 0; i < nextFrameLeft.markers.size(); i++)
 		{
-			cout << "cube position/orientation "<<i<<" set." << endl;
-			mScene->setCubePosition(Ogre::Vector3(nextFrameLeft.markers[i].position[0], nextFrameLeft.markers[i].position[1], nextFrameLeft.markers[i].position[2]));
+			cout << "cube position/orientation " << i << " set to " << -nextFrameLeft.markers[i].position[0] << "," << nextFrameLeft.markers[i].position[1] << "," << -nextFrameLeft.markers[i].position[2] << endl;
+			mScene->setCubePosition(Ogre::Vector3(-nextFrameLeft.markers[i].position[0], nextFrameLeft.markers[i].position[1], -nextFrameLeft.markers[i].position[2]));
 			mScene->setCubeOrientation(Ogre::Quaternion(nextFrameLeft.markers[i].orientation[0], nextFrameLeft.markers[i].orientation[1], nextFrameLeft.markers[i].orientation[2], nextFrameLeft.markers[i].orientation[3]));
 		}
 		cv::imshow("Video stream", nextFrameLeft.image.rgb);
