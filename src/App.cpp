@@ -19,7 +19,7 @@ void frames_per_second(int delay)
 }
 
 //Globals used only in App.cpp
-std::chrono::steady_clock::time_point ogre_last_frame_displayed_time = std::chrono::system_clock::now();
+std::chrono::steady_clock::time_point ogre_last_frame_displayed_time = std::chrono::steady_clock::now();
 std::chrono::duration< int, std::milli > ogre_last_frame_delay;
 
 ////////////////////////////////////////////////////////////
@@ -625,7 +625,7 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 	
 	// [TIME] FRAME RATE DISPLAY
 	//calculate delay from last frame and show
-	ogre_last_frame_delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ogre_last_frame_displayed_time);
+	ogre_last_frame_delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - ogre_last_frame_displayed_time);
 	frames_per_second(ogre_last_frame_delay.count());
 
 	if (mShutdown) return false;
@@ -720,7 +720,7 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 
 	// [TIME] UPDATE
 	// save time point for this frame (for frame rate calculation)
-	ogre_last_frame_displayed_time = std::chrono::system_clock::now();
+	ogre_last_frame_displayed_time = std::chrono::steady_clock::now();
 
 
 	// [VALUE EXPERIMENTS]

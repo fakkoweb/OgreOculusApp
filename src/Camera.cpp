@@ -125,7 +125,7 @@ void FrameCaptureHandler::captureLoop() {
 		//cout << videoCapture.get(CV_CAP_PROP_EXPOSURE) << endl;
 
 		//Save time point for request time of the frame (for camera frame rate calculation)
-		camera_last_frame_request_time = std::chrono::system_clock::now();	//GLOBAL VARIABLE
+		camera_last_frame_request_time = std::chrono::steady_clock::now();	//GLOBAL VARIABLE
 		
 		//std::cout << "Retrieving frame from " << deviceId << " ..." << std::endl;
 		
