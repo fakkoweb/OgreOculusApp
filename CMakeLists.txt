@@ -406,6 +406,7 @@ list(APPEND LIBRARIES_TO_LINK aruco)					# arUco subproject lib link
 list(APPEND HEADERS_TO_INCLUDE_PUBLIC					# arUco subproject include
 		"${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/arUco/src"
 	)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 
 
 
