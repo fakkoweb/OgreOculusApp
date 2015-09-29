@@ -1,6 +1,7 @@
 #pragma once
 
 #include <opencv2/opencv.hpp>
+#include <opencv2/gpu/gpu.hpp>
 #include <aruco.h>
 #include <thread>
 #include <mutex>
@@ -45,6 +46,11 @@ class FrameCaptureHandler
 		FrameCaptureData frame;
 		float aspectRatio = 0;
 		bool arEnabled = false;
+
+		static bool isInitialized;
+		static unsigned short int cuda_Users;
+		static void initCuda();
+		static void shutdownCuda();
 
 		bool hasFrame = false;
 		bool stopped = true;

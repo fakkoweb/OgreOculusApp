@@ -1,5 +1,28 @@
 #include "Camera.h"
 
+////////////////////////////////////////////////
+// Static members for handling OpenCV CUDA API:
+////////////////////////////////////////////////
+bool FrameCaptureHandler::isInitialized = false;
+unsigned short int FrameCaptureHandler::cuda_Users = 0;
+void FrameCaptureHandler::initCuda()
+{
+	if (!isInitialized)
+	{
+		cv::gpu::setDevice(0);		//set gpu device for cuda (n.b.: launch the app with gpu!)
+		isInitialized = true;
+	}
+	cuda_Users++;
+}
+void FrameCaptureHandler::shutdownCuda()
+{
+	cuda_Users--;
+	if (cuda_Users == 0 && isInitialized)
+	{
+		//nop
+		isInitialized = false;
+	}
+}
 
 FrameCaptureHandler::FrameCaptureHandler(const unsigned int input_device, Rift* const input_headset, const bool enable_AR = false) : headset(input_headset), deviceId(input_device), arEnabled(enable_AR)
 {
@@ -25,7 +48,10 @@ FrameCaptureHandler::FrameCaptureHandler(const unsigned int input_device, Rift* 
 // Spawn capture thread and return webcam aspect ratio (width over height)
 float FrameCaptureHandler::startCapture()
 {
+	// Init Cuda for elaboration
+	initCuda();
 
+	// Init device for capture
 	videoCapture.open(deviceId);
 	if (!videoCapture.isOpened() || !videoCapture.read(frame.image.rgb))
 	{
@@ -68,6 +94,7 @@ void FrameCaptureHandler::stopCapture() {
 			captureThread.join();
 			videoCapture.release();
 		}
+		shutdownCuda();
 	}
 }
 
@@ -111,7 +138,15 @@ double FrameCaptureHandler::adjustManualCaptureDelay(const short int adjustValue
 }
 
 void FrameCaptureHandler::captureLoop() {
-	FrameCaptureData captured;
+	//cv::gpu::CudaMem image_pagelocked_ram_buffer(cv::Size(1024, 576), CV_32FC3);	//page locked buffer in RAM ready for asynchronous transfer to GPU
+	//cv::gpu::Stream image_processing_pipeline;
+	//cv::Mat cpusrc = image_pagelocked_ram_buffer;
+	FrameCaptureData captured; // cpudst is the cv::Mat in FrameCaptureData struct
+	//cv::gpu::GpuMat gpusrc, gpudst;
+	
+	aruco::MarkerDetector videoMarkerDetector;
+	std::vector<aruco::Marker> markers;
+
 	Ogre::Quaternion noRotation = Ogre::Quaternion::IDENTITY;
 	captured.image.orientation[0] = noRotation.x;
 	captured.image.orientation[1] = noRotation.y;
@@ -201,9 +236,38 @@ void FrameCaptureHandler::captureLoop() {
 				}
 			}
 			
-			cv::Mat distorted;
+			cv::Mat distorted, undistorted;
 			// if frame is valid, decode and save it
 			videoCapture.retrieve(distorted);
+
+			// perform undistortion (with parameters of the camera)
+			cv::undistort(distorted, captured.image.rgb, videoCaptureParams.CameraMatrix, videoCaptureParams.Distorsion);
+
+			// GPU ASYNC OPERATIONS
+			// -------------------------------
+			// Load source image to pipeline
+			//image_processing_pipeline.enqueueUpload(cpusrc, gpusrc);
+			// Other elaboration on image
+			// - - - PUT IT HERE! - - -
+			// Download final result image to ram
+			//image_processing_pipeline.enqueueDownload(gpusrc, captured.image.rgb);
+
+			// CPU SYNC OPERATIONS
+			// -------------------------------		
+			// AR detection operation
+			if (arEnabled)
+			{
+				// detect markers in the image
+				videoMarkerDetector.detect(captured.image.rgb, markers, videoCaptureParamsUndistorted, 0.1f);	//need marker size in meters
+				// show nodes for detected markers
+				for (unsigned int i = 0; i<markers.size(); i++) {
+					ARCaptureData new_marker;
+					markers[i].OgreGetPoseParameters(new_marker.position, new_marker.orientation);
+					captured.markers.insert(captured.markers.begin(), new_marker);
+					std::cout << "marker " << i << " detected." << endl;
+				}
+				captured.markers.clear();
+			}
 			// finally save pose as well (previously computed)
 			if (currentCompensationMode != None)
 			{
@@ -218,35 +282,14 @@ void FrameCaptureHandler::captureLoop() {
 				else
 				{
 					// use last predicted/saved pose
-					std::cerr << "tracking info not available" << std::endl;
+					//std::cerr << "tracking info not available" << std::endl;
 				}
 			}
+			// wait for pipeline end
+			//image_processing_pipeline.waitForCompletion();
+			// -------------------------------					
 
-			
-			// perform undistortion (with parameters of the camera)
-			cv::undistort(distorted, captured.image.rgb, videoCaptureParams.CameraMatrix, videoCaptureParams.Distorsion);
-
-			// [AR] Operations
-			if (arEnabled)
-			{
-
-				// detect markers in the image
-				aruco::MarkerDetector videoMarkerDetector;
-				std::vector<aruco::Marker> markers;
-				videoMarkerDetector.detect(captured.image.rgb, markers, videoCaptureParamsUndistorted, 0.1f);	//need marker size in meters
-				// show nodes for detected markers
-				captured.markers.clear();
-				for (unsigned int i = 0; i<markers.size(); i++) {
-					ARCaptureData new_marker;
-					markers[i].OgreGetPoseParameters(new_marker.position, new_marker.orientation);
-					captured.markers.insert(captured.markers.begin(),new_marker);
-					std::cout << "marker " << i << " detected." << endl;
-				}
-			}
-			
-			
-
-			// set the new capture as available
+			// set the new capture as available (result of both gpu/cpu operations)
 			set(captured);
 			//std::cout << "Frame retrieved from " << deviceId << "." << std::endl;
 
