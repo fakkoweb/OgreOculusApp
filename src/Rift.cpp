@@ -1,11 +1,11 @@
 #include "Rift.h"
 
-bool Rift::isInitialized = false;
-unsigned short int Rift::ovr_Users = 0;
 
 //////////////////////////////////////////
 // Static members for handling the API:
 //////////////////////////////////////////
+bool Rift::isInitialized = false;
+unsigned short int Rift::ovr_Users = 0;
 void Rift::init()
 {
 	if( ! isInitialized )
