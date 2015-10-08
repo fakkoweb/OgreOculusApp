@@ -9,7 +9,7 @@ void FrameCaptureHandler::initCuda()
 {
 	if (!isInitialized)
 	{
-		cv::gpu::setDevice(0);		//set gpu device for cuda (n.b.: launch the app with gpu!)
+		//cv::gpu::setDevice(0);		//set gpu device for cuda (n.b.: launch the app with gpu!)
 		isInitialized = true;
 	}
 	cuda_Users++;
@@ -257,6 +257,8 @@ void FrameCaptureHandler::captureLoop() {
 			// AR detection operation
 			if (arEnabled)
 			{
+				// clear previously captured markers
+				captured.markers.clear();
 				// detect markers in the image
 				videoMarkerDetector.detect(captured.image.rgb, markers, videoCaptureParamsUndistorted, 0.1f);	//need marker size in meters
 				// show nodes for detected markers
@@ -266,7 +268,6 @@ void FrameCaptureHandler::captureLoop() {
 					captured.markers.insert(captured.markers.begin(), new_marker);
 					std::cout << "marker " << i << " detected." << endl;
 				}
-				captured.markers.clear();
 			}
 			// finally save pose as well (previously computed)
 			if (currentCompensationMode != None)
