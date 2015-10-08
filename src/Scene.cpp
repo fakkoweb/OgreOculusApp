@@ -36,14 +36,15 @@ Scene::~Scene()
 void Scene::createRoom()
 {
 	mRoomNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("RoomNode");
-	Ogre::Entity* cubeEnt = mSceneMgr->createEntity("Cube.mesh");
-	cubeEnt->getSubEntity(0)->setMaterialName("CubeMaterialRed");
+	Ogre::Entity* cubeEnt = mSceneMgr->createEntity("Axis.mesh");
+	cubeEnt->getSubEntity(0)->setMaterialName("BaseAxis");
 	mCubeRed = mRoomNode->createChildSceneNode("CubeRed");								// node to which marker position/orientation is applied
 	Ogre::SceneNode* mCubeRedOffset = mCubeRed->createChildSceneNode("CubeRedOffset");	// offset to place cube as you wish around marker reference
 	mCubeRedOffset->attachObject( cubeEnt );
-	mCubeRed->setPosition(1.0, 0.0, 0.0);	//initial position in the Scene
+	mCubeRed->setPosition(1.0, 0.0, 0.0);	//initial position in the Scene, will be overwritten when marker is detected
 	mCubeRed->setScale(0.1, 0.1, 0.1);
-	mCubeRedOffset->setScale(0.5, 0.5, 0.5);
+	mCubeRedOffset->setScale(1, 1, 1);
+	mCubeRedOffset->setPosition(-0.1f, 0.8f, -0.1f);
 	mCubeGreen = mRoomNode->createChildSceneNode();
 	Ogre::Entity* cubeEnt2 = mSceneMgr->createEntity( "Cube.mesh" );
 	cubeEnt2->getSubEntity(0)->setMaterialName( "CubeMaterialGreen" );
@@ -359,7 +360,9 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 
 	//RED CUBE REFERENCE HERE!
 	mCubeRed->getParentSceneNode()->removeChild(mCubeRed);
-	mCamLeftStabilizationNode->addChild(mCubeRed);
+	mCamLeftStabilizationNode->createChildSceneNode("ARreferenceAdjust");
+	mCamLeftStabilizationNode->getChild("ARreferenceAdjust")->addChild(mCubeRed);
+	mCamLeftStabilizationNode->getChild("ARreferenceAdjust")->yaw(Ogre::Degree(180));
 
 	//GREEN CUBE REFERENCE HERE!
 	mCubeGreen->getParentSceneNode()->removeChild(mCubeGreen);
@@ -915,7 +918,7 @@ void Scene::cameraPostRenderScene(Ogre::Camera* cam)
 			//std::cout << "Camera milliseconds delay: " << camera_last_frame_display_delay.count() << " ms"<< std::endl;
 			camera_frame_updated = false;
 		}
-		//mVideoLeft->setVisible(false, false);
+		mVideoLeft->setVisible(false, false);
 	}
 	if (cam == mCamRight)
 	{

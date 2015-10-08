@@ -662,7 +662,7 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 		for (unsigned int i = 0; i < nextFrameLeft.markers.size(); i++)
 		{
 			cout << "cube position/orientation " << i << " set to " << -nextFrameLeft.markers[i].position[0] << "," << nextFrameLeft.markers[i].position[1] << "," << -nextFrameLeft.markers[i].position[2] << endl;
-			mScene->setCubePosition(Ogre::Vector3(-nextFrameLeft.markers[i].position[0], nextFrameLeft.markers[i].position[1], -nextFrameLeft.markers[i].position[2]));
+			mScene->setCubePosition(Ogre::Vector3(nextFrameLeft.markers[i].position[0], nextFrameLeft.markers[i].position[1], nextFrameLeft.markers[i].position[2]));
 			mScene->setCubeOrientation(Ogre::Quaternion(nextFrameLeft.markers[i].orientation[0], nextFrameLeft.markers[i].orientation[1], nextFrameLeft.markers[i].orientation[2], nextFrameLeft.markers[i].orientation[3]));
 		}
 		cv::imshow("Video stream", nextFrameLeft.image.rgb);
