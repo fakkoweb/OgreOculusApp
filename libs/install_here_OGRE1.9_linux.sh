@@ -10,12 +10,12 @@ echo "Building Ogre1.9 ..."
 cd ogre_repo
 hg pull && hg update v1-9-0
 mkdir build
-cmake . -Bbuild -DOGRE_USE_BOOST=1 -DCMAKE_INSTALL_PREFIX:PATH=../../OGRE/
+cmake . -Bbuild -DOGRE_USE_BOOST=0 -DCMAKE_INSTALL_PREFIX:PATH=../../OGRE/
 cd build
 make -j3
 echo "Installing Ogre1.9 locally..."
 make install
 cd .. && cd ..
 echo "Removing source files..."
-rm -R ogre_repo
+echo "ogre_repo contains the source files of Ogre1.9. Remove it if you don't need it anymore."
 echo "Ogre1.9 libraries successfully downloaded, compiled and installed in 'Ogre' directory."

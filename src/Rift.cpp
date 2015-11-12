@@ -87,7 +87,8 @@ Rift::Rift(const unsigned int ID, Ogre::Root* const root, Ogre::RenderWindow* &r
 		if (hmd->Type == ovrHmd_DK1)
 			this->rotateView = false;
 		else if (hmd->Type == ovrHmd_DK2)
-			this->rotateView = true;
+			this->rotateView = false;	//on windows and sdk 0.5, this worked with "true"
+										//on ubuntu and sdk 0.5, this worked with "false"
 
 	}
 
@@ -148,7 +149,7 @@ Ogre::RenderWindow* Rift::createRiftDisplayWindow(Ogre::Root* const root)
 	else if (hmd->Type == ovrHmd_DK2)
 	{
 		if (simulationMode) mRenderWindow = root->createRenderWindow("Oculus Rift Live Visualization", 1920, 1080, false, &miscParams);
-		else /* rotated */	mRenderWindow = root->createRenderWindow("Oculus Rift Live Visualization", 1080, 1920, true, &miscParams);
+		else /* rotated */	mRenderWindow = root->createRenderWindow("Oculus Rift Live Visualization", 1080, 1920, false, &miscParams);
 	}
 
 	// Register render listener (to perform operations right before and after rendering the window)

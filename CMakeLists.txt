@@ -21,8 +21,8 @@
 # THIS IS REALLY HELPFUL TO UNDERSTAND HOW CMAKE WORKS MORE OR LESS: http://www.kaizou.org/2014/11/typical-cmake-project/
 #
 
-cmake_minimum_required(VERSION 2.8.12)
-cmake_policy(VERSION 2.8.12)
+cmake_minimum_required(VERSION 2.8.9)
+cmake_policy(VERSION 2.8.9)
 #cmake_policy(SET CMP0048 OLD)			# how to set project version (retrocompatibility with OLD rule)
 #cmake_policy(SET CMP0040 OLD)
 
@@ -382,6 +382,7 @@ file(GLOB_RECURSE header_files "${header_dir_name}/*.hpp" "${header_dir_name}/*.
 source_group("${header_dir_name}" FILES ${header_files})
 
 # add header files to included directories
+#include_directories(${PROJECT_INCLUDE_DIR})
 list(APPEND HEADERS_TO_INCLUDE_PUBLIC "${PROJECT_INCLUDE_DIR}")
 
 
@@ -429,13 +430,14 @@ endif()
 ################################################################
 
 if(DEFINED HEADERS_TO_INCLUDE_PUBLIC)
-	target_include_directories(${OUTPUT_FILE_NAME} PUBLIC ${HEADERS_TO_INCLUDE_PUBLIC})		# these headers will be accessible from parent projects and can be
+	include_directories(${HEADERS_TO_INCLUDE_PUBLIC})
+#	target_include_directories(${OUTPUT_FILE_NAME} PUBLIC ${HEADERS_TO_INCLUDE_PUBLIC})		# these headers will be accessible from parent projects and can be
 endif()																							# included automatically by including:
 																								# $<TARGET_PROPERTY:OgreOculusApp,INTERFACE_INCLUDE_DIRECTORIES>
 																								# as PRIVATE or PUBLIC to your target.
 
 if(DEFINED HEADERS_TO_INCLUDE_PRIVATE)
-	target_include_directories(${OUTPUT_FILE_NAME} PRIVATE ${HEADERS_TO_INCLUDE_PRIVATE})		# these headers cannot be accessed from parent projects, unless
+#	target_include_directories(${OUTPUT_FILE_NAME} PRIVATE ${HEADERS_TO_INCLUDE_PRIVATE})		# these headers cannot be accessed from parent projects, unless
 endif()																							# you include them manually by hardcoding their path.
 																								# By the way, these are only the headers that are not meant to be
 																								# used by parent project (hidden dependencies)
@@ -472,7 +474,7 @@ elseif( UNIX )
 		librt.so
 		libXrandr.so
 		libGL.so
-		libXxf86vm.so
+		#libXxf86vm.so
 		libpthread.so
 		${XINERAMA_LIBRARY}
 		${X11_LIBRARIES}

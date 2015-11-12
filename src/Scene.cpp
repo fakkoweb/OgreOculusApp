@@ -44,7 +44,7 @@ void Scene::createRoom()
 	mCubeRed->setPosition(1.0, 0.0, 0.0);	//initial position in the Scene, will be overwritten when marker is detected
 	mCubeRed->setScale(0.1, 0.1, 0.1);
 	mCubeRedOffset->setScale(1, 1, 1);
-	mCubeRedOffset->setPosition(-0.1f, 0.8f, -0.1f);
+	mCubeRedOffset->setPosition(0.0f, 0.0f, 0.0f);
 	mCubeGreen = mRoomNode->createChildSceneNode();
 	Ogre::Entity* cubeEnt2 = mSceneMgr->createEntity( "Cube.mesh" );
 	cubeEnt2->getSubEntity(0)->setMaterialName( "CubeMaterialGreen" );
@@ -363,6 +363,8 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 	mCamLeftStabilizationNode->createChildSceneNode("ARreferenceAdjust");
 	mCamLeftStabilizationNode->getChild("ARreferenceAdjust")->addChild(mCubeRed);
 	mCamLeftStabilizationNode->getChild("ARreferenceAdjust")->yaw(Ogre::Degree(180));
+	//mCubeRed->roll(Ogre::Degree(90));
+
 
 	//GREEN CUBE REFERENCE HERE!
 	mCubeGreen->getParentSceneNode()->removeChild(mCubeGreen);

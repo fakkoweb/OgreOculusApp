@@ -14,7 +14,6 @@ make -j3
 echo "Installing Ogre dependencies locally..."
 make install
 cd .. & cd ..
-echo "Removing source files..."
-rm -R ogredeps_repo
+echo "ogredeps_repo contains the source files of dependencies. Remove it if you don't need it anymore."
 echo "Ogre dependencies successfully downloaded, compiled and installed in 'OgreDeps' directory."
 
