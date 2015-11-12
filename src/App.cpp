@@ -601,8 +601,10 @@ void App::initCameras()
 	emptyFrame.image = cv::Mat(cv::Scalar(0.0f, 0.0f, 0.0f, 1.0f));
 	emptyFrame.pose = Ogre::Quaternion::IDENTITY;
 	*/
-	std::string window_name = "Video stream";
-	cv::namedWindow(window_name, CV_WINDOW_AUTOSIZE);
+	std::string window_name_left = "Video stream left";
+	cv::namedWindow(window_name_left, CV_WINDOW_AUTOSIZE);
+	std::string window_name_right = "Video stream right";
+	cv::namedWindow(window_name_right, CV_WINDOW_AUTOSIZE);
 }
 
 void App::quitCameras()
@@ -665,7 +667,7 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 			mScene->setCubePosition(Ogre::Vector3(nextFrameLeft.markers[i].position[0], nextFrameLeft.markers[i].position[1], nextFrameLeft.markers[i].position[2]));
 			mScene->setCubeOrientation(Ogre::Quaternion(nextFrameLeft.markers[i].orientation[0], nextFrameLeft.markers[i].orientation[1], nextFrameLeft.markers[i].orientation[2], nextFrameLeft.markers[i].orientation[3]));
 		}
-		cv::imshow("Video stream", nextFrameLeft.image.rgb);
+		cv::imshow("Video stream left", nextFrameLeft.image.rgb);
 		cv::waitKey(1);
 	}
 
@@ -681,7 +683,8 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 		//std::cout << "sending new image to the scene..." << std::endl;
 		mScene->setVideoImagePoseRight(mOgrePixelBoxRight, Ogre::Quaternion(nextFrameRight.image.orientation[0], nextFrameRight.image.orientation[1], nextFrameRight.image.orientation[2], nextFrameRight.image.orientation[3]));
 		//std::cout << "image sent!\nImage plane updated!" << std::endl;
-			
+		cv::imshow("Video stream right", nextFrameRight.image.rgb);
+		cv::waitKey(1);	
 	}
 	
 	/* KEPT FOR PERSONAL REFERENCE
