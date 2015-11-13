@@ -634,6 +634,7 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 
 	// [RIFT] UPDATE
 	// update Oculus information and sends it to Scene (Position/Orientation of character's head)
+	// NOT DONE HERE! OPTIMIZED: THIS IS DONE JUST BEFORE START RENDERING EACH EYE (SO TWO TIMES)!!
 	if(mRift)
 	{
 		//if ( mRift->update( evt.timeSinceLastFrame ) )		// saves new orientation/position information

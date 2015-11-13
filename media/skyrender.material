@@ -23,7 +23,6 @@ material skyrender
 				//tex_coord_set 0
 				//tex_address_mode clamp
 				
-				
             }
         }
     }

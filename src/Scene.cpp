@@ -214,24 +214,11 @@ void Scene::setupVideo(const CameraModel camModelToUse, const StabilizationModel
 				break;
 			}
 
-			switch (stabModelToUse)
-			{
-			case Head:
-				mLeftStabilizationNode = mHeadStabilizationNodeLeft;
-				mRightStabilizationNode = mHeadStabilizationNodeRight;
-				break;
-			case Eye:
-				mLeftStabilizationNode = mCamLeftStabilizationNode;
-				mRightStabilizationNode = mCamRightStabilizationNode;
-				break;
-			default:
-				throw Ogre::Exception(Ogre::Exception::ERR_INVALIDPARAMS, "Invalid Stabilization Model selection!", "Scene::setupVideo");
-				break;
-			}
+			//set stabilization model
+			setStabilizationMode(stabModelToUse);
 
 			// save current values for later adjustments
 			currentCameraModel = camModelToUse;
-			currentStabilizationModel = stabModelToUse;
 			videoHFov = cameraHFov;
 			videoVFov = cameraVFov;
 
@@ -278,24 +265,11 @@ void Scene::setupVideo(const CameraModel camModelToUse, const StabilizationModel
 				break;
 			}
 
-			switch (stabModelToUse)
-			{
-			case Head:
-				mLeftStabilizationNode = mHeadStabilizationNodeLeft;
-				mRightStabilizationNode = mHeadStabilizationNodeRight;
-				break;
-			case Eye:
-				mLeftStabilizationNode = mCamLeftStabilizationNode;
-				mRightStabilizationNode = mCamRightStabilizationNode;
-				break;
-			default:
-				throw Ogre::Exception(Ogre::Exception::ERR_INVALIDPARAMS, "Invalid Stabilization Model selection!", "Scene::setupVideo");
-				break;
-			}
+			//set stabilization model
+			setStabilizationMode(stabModelToUse);
 
 			// save current values for later adjustments
 			currentCameraModel = camModelToUse;
-			currentStabilizationModel = stabModelToUse;
 			videoHFov = cameraHFov;
 			videoVFov = cameraVFov;
 		}
@@ -313,9 +287,12 @@ void Scene::setStabilizationMode(StabilizationModel modelToUse)
 {
 	if (!mLeftStabilizationNode && !mRightStabilizationNode)
 	{
-		// reset last stabilization poses to IDENTITY
+		// reset last stabilization poses to IDENTITY and their default behaviour
 		mLeftStabilizationNode->resetOrientation();
 		mRightStabilizationNode->resetOrientation();
+		mLeftStabilizationNode->setInheritOrientation(true);
+		mRightStabilizationNode->setInheritOrientation(true);
+
 	}
 
 	// change stabilization node to use
@@ -333,6 +310,9 @@ void Scene::setStabilizationMode(StabilizationModel modelToUse)
 		throw Ogre::Exception(Ogre::Exception::ERR_INVALIDPARAMS, "Invalid Stabilization Model selection!", "Scene::setupVideo");
 		break;
 	}
+	// Set current stabilization node independent from parent (see why in Scene.h on Ehnanced Head Model comments)
+	mLeftStabilizationNode->setInheritOrientation(false);
+	mRightStabilizationNode->setInheritOrientation(false);
 
 	currentStabilizationModel = modelToUse;
 }
