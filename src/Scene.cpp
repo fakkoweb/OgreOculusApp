@@ -287,7 +287,8 @@ void Scene::setupVideo(const CameraModel camModelToUse, const StabilizationModel
 }
 void Scene::setStabilizationMode(StabilizationModel modelToUse)
 {
-	if (!mLeftStabilizationNode && !mRightStabilizationNode)
+	
+	if (mLeftStabilizationNode!=nullptr && mRightStabilizationNode!=nullptr)
 	{
 		// reset last stabilization poses to IDENTITY and their default behaviour
 		mLeftStabilizationNode->resetOrientation();
@@ -296,7 +297,7 @@ void Scene::setStabilizationMode(StabilizationModel modelToUse)
 		mRightStabilizationNode->setInheritOrientation(true);
 
 	}
-
+	
 	// change stabilization node to use
 	switch (modelToUse)
 	{
@@ -313,8 +314,9 @@ void Scene::setStabilizationMode(StabilizationModel modelToUse)
 		break;
 	}
 	// Set current stabilization node independent from parent (see why in Scene.h on Ehnanced Head Model comments)
-	mLeftStabilizationNode->setInheritOrientation(false);
-	mRightStabilizationNode->setInheritOrientation(false);
+	// STILL TO TEST OUT!
+	//mLeftStabilizationNode->setInheritOrientation(false);
+	//mRightStabilizationNode->setInheritOrientation(false);
 
 	currentStabilizationModel = modelToUse;
 }
