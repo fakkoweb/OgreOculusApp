@@ -294,6 +294,8 @@ void Scene::setupVideo(const CameraModel camModelToUse, const StabilizationModel
 				throw Ogre::Exception(Ogre::Exception::ERR_INVALIDPARAMS, "Invalid Stabilization Model selection!", "Scene::setupVideo");
 				break;
 			}
+			mLeftStabilizationNode->setInheritOrientation(false);
+			mRightStabilizationNode->setInheritOrientation(false);
 
 			// save current values for later adjustments
 			currentCameraModel = camModelToUse;
