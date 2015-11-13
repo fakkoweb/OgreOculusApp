@@ -173,6 +173,11 @@ class Scene : public Ogre::Camera::Listener
 		
 		Ogre::Camera* mCamGod = nullptr;
 
+		// This is the implementation of Enhanced Head Mode, with some additions:
+		// - there is an additional nodes: mHeadStabilizationNode, which can apply stabilization in respect to head (just to experiment)
+		// - pointers mLeftStabilizationNode and mRightStabilizationNode select if stabilization should be around eye (default) or head (to experiment)
+		// - since before render for each eye is rendered a new head pose is set, also delta of stabilization should be recalculated; to
+		//	 avoid this, setInheritOrientation(false) is set on the current used stabilization nodes (so the delta needs to be applied just once, just with a new frame)
 		Ogre::SceneNode* mVideoLeft = nullptr;
 		Ogre::SceneNode* mVideoRight = nullptr;
 		Ogre::SceneNode* mCamLeftStabilizationNode = nullptr;		// on this we apply Image EYE stabilization full Orientation delta (if active)
