@@ -57,8 +57,9 @@ class Scene : public Ogre::Camera::Listener
 		void setRiftPose( Ogre::Quaternion orientation, Ogre::Vector3 pos );
 		void setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion pose);
 		void setVideoImagePoseRight(const Ogre::PixelBox &image, Ogre::Quaternion pose);
-		void setCubePosition(Ogre::Vector3 pos){ mCubeRed->setPosition(pos); }
-		void setCubeOrientation(Ogre::Quaternion ori){ mCubeRed->setOrientation(ori); };
+		// Apply relative AR pose and save it as absolute in world coordinates
+		void setCubePosition(Ogre::Vector3 pos){ mCubeRedReference->setPosition(pos); mCubeRed->setPosition(mCubeRedReference->_getDerivedPosition()); }
+		void setCubeOrientation(Ogre::Quaternion ori){ mCubeRedReference->setOrientation(ori); mCubeRed->setOrientation(mCubeRedReference->_getDerivedOrientation()); };
 		//void setCameraTextureRight();
 	
 		// Keyboard and mouse events (forwarded by App)
@@ -187,6 +188,8 @@ class Scene : public Ogre::Camera::Listener
 
 		Ogre::SceneNode* mRoomNode = nullptr;
 		Ogre::SceneNode* mCubeRed = nullptr;
+		Ogre::SceneNode* mCubeRedReference = nullptr;
+		Ogre::SceneNode* mCubeRedOffset = nullptr;
 		Ogre::SceneNode* mCubeGreen = nullptr;
 };
 

@@ -36,15 +36,17 @@ Scene::~Scene()
 void Scene::createRoom()
 {
 	mRoomNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("RoomNode");
+	
+	// Prepare mesh/entity for AR object
 	Ogre::Entity* cubeEnt = mSceneMgr->createEntity("Axis.mesh");
 	cubeEnt->getSubEntity(0)->setMaterialName("BaseAxis");
-	mCubeRed = mRoomNode->createChildSceneNode("CubeRed");								// node to which marker position/orientation is applied
-	Ogre::SceneNode* mCubeRedOffset = mCubeRed->createChildSceneNode("CubeRedOffset");	// offset to place cube as you wish around marker reference
-	mCubeRedOffset->attachObject( cubeEnt );
-	mCubeRed->setPosition(1.0, 0.0, 0.0);	//initial position in the Scene, will be overwritten when marker is detected
+	
+	// Create a node in WORLD coordinates to which attach AR object
+	mCubeRed = mRoomNode->createChildSceneNode("CubeRed");
 	mCubeRed->setScale(0.1, 0.1, 0.1);
-	mCubeRedOffset->setScale(1, 1, 1);
-	mCubeRedOffset->setPosition(0.0f, 0.0f, 0.0f);
+	mCubeRed->attachObject( cubeEnt );
+
+	// Other useless objects (temporary)
 	mCubeGreen = mRoomNode->createChildSceneNode();
 	Ogre::Entity* cubeEnt2 = mSceneMgr->createEntity( "Cube.mesh" );
 	cubeEnt2->getSubEntity(0)->setMaterialName( "CubeMaterialGreen" );
@@ -372,15 +374,22 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 	mCamLeftStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeLeft");
 	mCamRightStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeRight");
 
-	//RED CUBE REFERENCE HERE!
-	mCubeRed->getParentSceneNode()->removeChild(mCubeRed);
-	mCamLeftStabilizationNode->createChildSceneNode("ARreferenceAdjust");
-	mCamLeftStabilizationNode->getChild("ARreferenceAdjust")->addChild(mCubeRed);
+
+	// AR REFERENCE: Create empty node to use as a relative reference of AR object respect to camera
+	// This is a program optimization (it is easier than calculating inverse transform manually)
+	Ogre::SceneNode* arreference = mCamLeftStabilizationNode->createChildSceneNode("ARreferenceAdjust");// node to apply needed transformation from arUco to Ogre reference
+	mCubeRedReference = arreference->createChildSceneNode("CubeRedReference");							// node to which marker position/orientation is applied
+	mCubeRedOffset = mCubeRedReference->createChildSceneNode("CubeRedOffset");							// node to which custom offset of entity in respect to marker is applied
+	mCubeRedReference->setPosition(0.0, 0.0, 0.0);	//just initial position , will be overwritten as soon as marker is detected
+	mCubeRedOffset->setPosition(0.0f, 0.0f, 0.0f);	//offset to place cube as you wish around marker reference	
+	// Adjustments of coordinates between arUco and Ogre
+	// Applying automatically coordinates of arUco does not work, probably because arUco returns pose of the camera in respect to marker, not viceversa
+	// By using an intermediate node "ARreferenceAdjust" between stabilization node and mCubeRedReference we can do it easily and only once!
 	mCamLeftStabilizationNode->getChild("ARreferenceAdjust")->yaw(Ogre::Degree(180));
-	//mCubeRed->roll(Ogre::Degree(90));
+	//mCubeRedReference->roll(Ogre::Degree(90));
 
 
-	//GREEN CUBE REFERENCE HERE!
+	//GREEN CUBE REFERENCE HERE (used for testing only)!
 	mCubeGreen->getParentSceneNode()->removeChild(mCubeGreen);
 	mCamLeftStabilizationNode->addChild(mCubeGreen);
 
