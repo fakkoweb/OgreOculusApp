@@ -59,10 +59,10 @@ void Scene::createRoom()
 	cubeNode3->setPosition( -1.0, 0.0, 0.0 );
 	cubeNode3->setScale( 0.5, 0.5, 0.5 );
 
-	Ogre::Entity* roomEnt = mSceneMgr->createEntity( "Room.mesh" );
-	roomEnt->setCastShadows( false );
-	mRoomNode->attachObject( roomEnt );
-
+	//Ogre::Entity* roomEnt = mSceneMgr->createEntity( "Room.mesh" );
+	//roomEnt->setCastShadows( false );
+	//mRoomNode->attachObject( roomEnt );
+/*
 	Ogre::Light* roomLight = mSceneMgr->createLight();
 	roomLight->setType(Ogre::Light::LT_POINT);
 	roomLight->setCastShadows( false );
@@ -72,8 +72,22 @@ void Scene::createRoom()
 	roomLight->setDiffuseColour( 0.85, 0.76, 0.7 );
 
 	roomLight->setPosition( 5, 5, 5 );
+*/
+	//mRoomNode->attachObject( roomLight );
 
-	mRoomNode->attachObject( roomLight );
+Ogre::Light* light = mSceneMgr->createLight("tstLight");
+    light->setType(Ogre::Light::LT_DIRECTIONAL);
+    Ogre::Vector3 lightdir(0.55, -0.3, 0.75);
+    lightdir.normalise();
+    light->setDirection(lightdir);
+    light->setDiffuseColour(Ogre::ColourValue::White);
+    light->setSpecularColour(Ogre::ColourValue(0.4, 0.4, 0.4));
+ 
+    mSceneMgr->setAmbientLight(Ogre::ColourValue(0.2, 0.2, 0.2));
+
+	mSceneMgr->setSkyBox(true, "skyrender", 25, true); //value is half of cube edge size
+											 // default should be 5000, AND NOT RENDER ALWAYS!!
+											 // see here: http://www.ogre3d.org/forums/viewtopic.php?f=2&t=40792&p=521011#p521011
 }
 void Scene::createCameras()
 {
@@ -102,8 +116,8 @@ void Scene::createCameras()
 	// Camera projection matrices will be set later to SDK suggested values by calling setCameraMatrices()
 	mHeadNode->attachObject(mCamLeft);
 	mHeadNode->attachObject(mCamRight);
-	mCamLeft->setFarClipDistance(50);
-	mCamRight->setFarClipDistance(50);
+	mCamLeft->setFarClipDistance(10000);						// see here: http://www.ogre3d.org/forums/viewtopic.php?f=2&t=40792&p=521011#p521011
+	mCamRight->setFarClipDistance(10000);
 	mCamLeft->setNearClipDistance(0.001);
 	mCamRight->setNearClipDistance(0.001);
 
