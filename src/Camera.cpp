@@ -1,4 +1,6 @@
 #include "Camera.h"
+#include <opencv2/gpu/gpu.hpp>
+//using namespace cv;
 
 void getGray(const cv::Mat& input, cv::Mat& gray)
 {
@@ -24,7 +26,7 @@ void FrameCaptureHandler::initCuda()
 {
 	if (!isInitialized)
 	{
-		//cv::gpu::setDevice(0);		//set gpu device for cuda (n.b.: launch the app with gpu!)
+		cv::gpu::setDevice(0);		//set gpu device for cuda (n.b.: launch the app with gpu!)
 		isInitialized = true;
 	}
 	cuda_Users++;
@@ -153,11 +155,11 @@ double FrameCaptureHandler::adjustManualCaptureDelay(const short int adjustValue
 }
 
 void FrameCaptureHandler::captureLoop() {
-	//cv::gpu::CudaMem image_pagelocked_ram_buffer(cv::Size(1024, 576), CV_32FC3);	//page locked buffer in RAM ready for asynchronous transfer to GPU
-	//cv::gpu::Stream image_processing_pipeline;
-	//cv::Mat cpusrc = image_pagelocked_ram_buffer;
+	cv::gpu::CudaMem image_pagelocked_ram_buffer(cv::Size(1024, 576), CV_32FC3);	//page locked buffer in RAM ready for asynchronous transfer to GPU
+	cv::gpu::Stream image_processing_pipeline;
+	cv::Mat cpusrc = image_pagelocked_ram_buffer;
 	FrameCaptureData captured; // cpudst is the cv::Mat in FrameCaptureData struct
-	//cv::gpu::GpuMat gpusrc, gpudst;
+	cv::gpu::GpuMat gpusrc, gpudst;
 	
 	aruco::MarkerDetector videoMarkerDetector;
 	std::vector<aruco::Marker> markers;
@@ -266,11 +268,20 @@ void FrameCaptureHandler::captureLoop() {
 			// GPU ASYNC OPERATIONS
 			// -------------------------------
 			// Load source image to pipeline
-			//image_processing_pipeline.enqueueUpload(cpusrc, gpusrc);
+			image_processing_pipeline.enqueueUpload(cpusrc, gpusrc);
 			// Other elaboration on image
 			// - - - PUT IT HERE! - - -
+				// TOON in GPU - from: https://github.com/BloodAxe/OpenCV-Tutorial/blob/master/OpenCV%20Tutorial/CartoonFilter.cpp
+				cv::gpu::GpuMat bgr, gray, edges, edgesBgr;
+			    //cv::gpu::cvtColor(gpusrc, bgr, cv::COLOR_BGRA2BGR); // camera does not give alpha
+			    cv::gpu::meanShiftFiltering(gpusrc, bgr, 15, 40);
+			    cv::gpu::cvtColor(bgr, gray, cv::COLOR_BGR2GRAY);
+			    cv::gpu::Canny(gray, edges, 150, 150);
+			    cv::gpu::cvtColor(edges, edgesBgr, cv::COLOR_GRAY2BGR);
+			    //bgr = bgr - edgesBgr;
+			    cv::gpu::cvtColor(bgr, gpudst, cv::COLOR_BGR2BGRA);
 			// Download final result image to ram
-			//image_processing_pipeline.enqueueDownload(gpusrc, captured.image.rgb);
+			image_processing_pipeline.enqueueDownload(gpudst, fx);
 
 			// CPU SYNC OPERATIONS
 			// -------------------------------		
@@ -307,14 +318,10 @@ void FrameCaptureHandler::captureLoop() {
 				}
 			}
 			// TEST FX on CPU
+			/*
 			if(toon)
 			{
-				// V1
-				/*
-				cv::Mat temp;
-				medianBlur( undistorted, temp, 5 );
-				*/
-				// V2 -- https://github.com/BloodAxe/OpenCV-Tutorial/blob/master/OpenCV%20Tutorial/CartoonFilter.cpp
+				// TOON - https://github.com/BloodAxe/OpenCV-Tutorial/blob/master/OpenCV%20Tutorial/CartoonFilter.cpp
 				cv::Mat bgr, gray, edges, edgesBgr;
 			    cv::cvtColor(undistorted, bgr, cv::COLOR_BGRA2BGR);
 			    cv::pyrMeanShiftFiltering(bgr.clone(), bgr, 15, 40);
@@ -325,12 +332,17 @@ void FrameCaptureHandler::captureLoop() {
 			    cv::cvtColor(bgr, fx, cv::COLOR_BGR2BGRA);
 		    }
 		    else fx = undistorted;
+		    */
 
-			captured.image.rgb = fx;
-			// wait for pipeline end
-			//image_processing_pipeline.waitForCompletion();
+			// wait for gpu pipeline to end
+			image_processing_pipeline.waitForCompletion();
 			// -------------------------------					
 
+			// show image with or without fx?
+			if(toon)
+				captured.image.rgb = fx;
+			else
+				captured.image.rgb = undistorted;
 			// set the new capture as available (result of both gpu/cpu operations)
 			set(captured);
 			//std::cout << "Frame retrieved from " << deviceId << "." << std::endl;
