@@ -1,5 +1,20 @@
 #include "Camera.h"
 
+void getGray(const cv::Mat& input, cv::Mat& gray)
+{
+  const int numChannes = input.channels();
+  
+  if (numChannes == 3)
+  {
+      cv::cvtColor(input, gray, cv::COLOR_BGR2GRAY);
+  }
+  else if (numChannes == 1)
+  {
+    gray = input;
+  }
+  else throw std::runtime_error("Number of channels for input image not supported");
+}
+
 ////////////////////////////////////////////////
 // Static members for handling OpenCV CUDA API:
 ////////////////////////////////////////////////
@@ -236,12 +251,17 @@ void FrameCaptureHandler::captureLoop() {
 				}
 			}
 			
-			cv::Mat distorted, undistorted;
+			bool undistort = false, toon = false;
+
+			cv::Mat distorted, undistorted, fx;
 			// if frame is valid, decode and save it
 			videoCapture.retrieve(distorted);
 
 			// perform undistortion (with parameters of the camera)
-			cv::undistort(distorted, captured.image.rgb, videoCaptureParams.CameraMatrix, videoCaptureParams.Distorsion);
+			if(undistort)
+				cv::undistort(distorted, undistorted, videoCaptureParams.CameraMatrix, videoCaptureParams.Distorsion);
+			else
+				undistorted = distorted;
 
 			// GPU ASYNC OPERATIONS
 			// -------------------------------
@@ -260,7 +280,7 @@ void FrameCaptureHandler::captureLoop() {
 				// clear previously captured markers
 				captured.markers.clear();
 				// detect markers in the image
-				videoMarkerDetector.detect(captured.image.rgb, markers, videoCaptureParamsUndistorted, 0.1f);	//need marker size in meters
+				videoMarkerDetector.detect(undistorted, markers, videoCaptureParamsUndistorted, 0.1f);	//need marker size in meters
 				// show nodes for detected markers
 				for (unsigned int i = 0; i<markers.size(); i++) {
 					ARCaptureData new_marker;
@@ -286,6 +306,27 @@ void FrameCaptureHandler::captureLoop() {
 					//std::cerr << "tracking info not available" << std::endl;
 				}
 			}
+			// TEST FX on CPU
+			if(toon)
+			{
+				// V1
+				/*
+				cv::Mat temp;
+				medianBlur( undistorted, temp, 5 );
+				*/
+				// V2 -- https://github.com/BloodAxe/OpenCV-Tutorial/blob/master/OpenCV%20Tutorial/CartoonFilter.cpp
+				cv::Mat bgr, gray, edges, edgesBgr;
+			    cv::cvtColor(undistorted, bgr, cv::COLOR_BGRA2BGR);
+			    cv::pyrMeanShiftFiltering(bgr.clone(), bgr, 15, 40);
+			    getGray(bgr, gray);
+			    cv::Canny(gray, edges, 150, 150);
+			    cv::cvtColor(edges, edgesBgr, cv::COLOR_GRAY2BGR);
+			    bgr = bgr - edgesBgr;
+			    cv::cvtColor(bgr, fx, cv::COLOR_BGR2BGRA);
+		    }
+		    else fx = undistorted;
+
+			captured.image.rgb = fx;
 			// wait for pipeline end
 			//image_processing_pipeline.waitForCompletion();
 			// -------------------------------					
