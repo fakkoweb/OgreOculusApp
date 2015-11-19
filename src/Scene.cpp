@@ -40,7 +40,8 @@ void Scene::createRoom()
 	// Prepare mesh/entity for AR object
 	Ogre::Entity* cubeEnt = mSceneMgr->createEntity("Axis.mesh");
 	cubeEnt->getSubEntity(0)->setMaterialName("BaseAxis");
-	
+	//cubeEnt->setMaterialName("Shading/PerPixel/Gooch");
+
 	// Create a node in WORLD coordinates to which attach AR object
 	mCubeRed = mRoomNode->createChildSceneNode("CubeRed");
 	mCubeRed->setScale(0.1, 0.1, 0.1);
@@ -165,7 +166,7 @@ void Scene::createCameras()
 	mHeadLight->setDiffuseColour( 1.0, 1.0, 1.0 );
 	mHeadNode->attachObject( mHeadLight );*/
 
-	mBodyNode->setPosition( 4.0, 1.5, 4.0 );
+	mBodyNode->setPosition( 0.0f, 1.7f, 0.0f);	//4.0, 1.5, 4.0 );
 	//mBodyYawNode->lookAt( Ogre::Vector3::ZERO, Ogre::SceneNode::TS_WORLD );
 
 
