@@ -2,6 +2,29 @@
 #include <opencv2/gpu/gpu.hpp>
 //using namespace cv;
 
+string type2str(int type) {
+  string r;
+
+  uchar depth = type & CV_MAT_DEPTH_MASK;
+  uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+  switch ( depth ) {
+    case CV_8U:  r = "8U"; break;
+    case CV_8S:  r = "8S"; break;
+    case CV_16U: r = "16U"; break;
+    case CV_16S: r = "16S"; break;
+    case CV_32S: r = "32S"; break;
+    case CV_32F: r = "32F"; break;
+    case CV_64F: r = "64F"; break;
+    default:     r = "User"; break;
+  }
+
+  r += "C";
+  r += (chans+'0');
+
+  return r;
+}
+
 void getGray(const cv::Mat& input, cv::Mat& gray)
 {
   const int numChannes = input.channels();
@@ -155,12 +178,13 @@ double FrameCaptureHandler::adjustManualCaptureDelay(const short int adjustValue
 }
 
 void FrameCaptureHandler::captureLoop() {
-	cv::gpu::CudaMem image_pagelocked_ram_buffer(cv::Size(1024, 576), CV_32FC3);	//page locked buffer in RAM ready for asynchronous transfer to GPU
+	cv::gpu::CudaMem src_image_pagelocked_buffer(cv::Size(1024, 576), CV_8UC3);	//page locked buffer in RAM ready for asynchronous transfer to GPU (same color code and resolution as image!)
+	cv::gpu::CudaMem dst_image_pagelocked_buffer(cv::Size(1024, 576), CV_8UC3);
+	cv::Mat cpusrc = src_image_pagelocked_buffer;
+	cv::Mat fx = dst_image_pagelocked_buffer;
 	cv::gpu::Stream image_processing_pipeline;
-	cv::Mat cpusrc = image_pagelocked_ram_buffer;
-	FrameCaptureData captured; // cpudst is the cv::Mat in FrameCaptureData struct
 	cv::gpu::GpuMat gpusrc, gpudst;
-	
+	FrameCaptureData captured; // cpudst is the cv::Mat in FrameCaptureData struct
 	aruco::MarkerDetector videoMarkerDetector;
 	std::vector<aruco::Marker> markers;
 
@@ -253,11 +277,14 @@ void FrameCaptureHandler::captureLoop() {
 				}
 			}
 			
-			bool undistort = false, toon = false;
+			bool undistort = false, toon = true;
 
-			cv::Mat distorted, undistorted, fx;
+			cv::Mat distorted, undistorted;
 			// if frame is valid, decode and save it
 			videoCapture.retrieve(distorted);
+			// USE THIS LINE TO UNDERSTAND WHICH IMAGE TYPE IS RETURNED BY YOUR videoCapture
+			//std::cout<< type2str(distorted.type()) <<std::endl;
+			// THEN USE THIS TYPE FOR ANY OPERATION ON THE RETRIEVED IMAGE
 
 			// perform undistortion (with parameters of the camera)
 			if(undistort)
@@ -265,6 +292,7 @@ void FrameCaptureHandler::captureLoop() {
 			else
 				undistorted = distorted;
 
+			cpusrc = undistorted;
 			// GPU ASYNC OPERATIONS
 			// -------------------------------
 			// Load source image to pipeline
@@ -272,14 +300,15 @@ void FrameCaptureHandler::captureLoop() {
 			// Other elaboration on image
 			// - - - PUT IT HERE! - - -
 				// TOON in GPU - from: https://github.com/BloodAxe/OpenCV-Tutorial/blob/master/OpenCV%20Tutorial/CartoonFilter.cpp
-				cv::gpu::GpuMat bgr, gray, edges, edgesBgr;
-			    //cv::gpu::cvtColor(gpusrc, bgr, cv::COLOR_BGRA2BGR); // camera does not give alpha
-			    cv::gpu::meanShiftFiltering(gpusrc, bgr, 15, 40);
-			    cv::gpu::cvtColor(bgr, gray, cv::COLOR_BGR2GRAY);
+				
+				cv::gpu::GpuMat gpusrc_a, bgr, bgr_a, gray, edges, edgesBgr;
+				cv::gpu::cvtColor(gpusrc,gpusrc_a, CV_BGR2BGRA );			// hack: meanShiftFiltering for now supports only CV_8UC4!
+			    cv::gpu::meanShiftFiltering(gpusrc_a, bgr_a, 15, 40);
+			    cv::gpu::cvtColor(bgr_a, gray, cv::COLOR_BGRA2GRAY);		// hack: is BGRA2GRAY instead of BGR2GRAY for the same reason
 			    cv::gpu::Canny(gray, edges, 150, 150);
 			    cv::gpu::cvtColor(edges, edgesBgr, cv::COLOR_GRAY2BGR);
-			    cv::gpu::subtract(bgr, edgesBgr, bgr);				//bgr = bgr - edgesBgr;
-			    cv::gpu::cvtColor(bgr, gpudst, cv::COLOR_BGR2BGRA);
+			    cv::gpu::cvtColor(bgr_a, bgr, cv::COLOR_BGRA2BGR);			// hack: I need the BGR version from alpha result
+			    cv::gpu::subtract(bgr, edgesBgr, gpudst);					// gpudst = bgr - edgesBgr;
 			// Download final result image to ram
 			image_processing_pipeline.enqueueDownload(gpudst, fx);
 
