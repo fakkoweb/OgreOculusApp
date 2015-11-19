@@ -278,7 +278,7 @@ void FrameCaptureHandler::captureLoop() {
 			    cv::gpu::cvtColor(bgr, gray, cv::COLOR_BGR2GRAY);
 			    cv::gpu::Canny(gray, edges, 150, 150);
 			    cv::gpu::cvtColor(edges, edgesBgr, cv::COLOR_GRAY2BGR);
-			    //bgr = bgr - edgesBgr;
+			    cv::gpu::subtract(bgr, edgesBgr, bgr);				//bgr = bgr - edgesBgr;
 			    cv::gpu::cvtColor(bgr, gpudst, cv::COLOR_BGR2BGRA);
 			// Download final result image to ram
 			image_processing_pipeline.enqueueDownload(gpudst, fx);
