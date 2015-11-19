@@ -2,13 +2,14 @@
 #include <chrono>
 #include <thread>
 
-void frames_per_second(int delay)
+void frames_per_second(double delay)
 {
 	static int num_frame = 0;
 	static int time = 0;
 
 	num_frame++;
 	time += delay;
+	std::cout<<delay<<std::endl;
 	if (time >= 1000)
 	{
 		std::cout << "\tFPS:" << num_frame << std::endl;
@@ -257,18 +258,84 @@ void App::initViewports()
 
 void App::start()
 {
-	// START RENDERING!
+	// START AUTOMATIC RENDERING!
 	// WHO CREATES AN INSTANCE OF THIS CLASS WILL WAIT INDEFINITELY UNTIL THIS CALL RETURNS
 	//mRoot->startRendering();
 
+
+	// TIME VARIABLES FOR MANUAL RENDERING TIME
+	int fps = 60;		// SET HERE desired fps
+	std::chrono::duration< double, std::micro > frame_delay;
+	if(fps<=0) frame_delay = std::chrono::duration< double, std::micro >::zero();
+	else frame_delay = std::chrono::microseconds(1000000/fps);
+    // Time structures for jitter/delay removal
+    std::chrono::steady_clock::time_point frameStart_time;
+    std::chrono::steady_clock::time_point frameEnd_time;
+    std::chrono::duration< double, std::micro > wakeup_jitter = std::chrono::duration< double, std::micro >::zero();
+    std::chrono::duration< double, std::micro > needed_sleep_delay = std::chrono::duration< double, std::micro >::zero();
+    // Save this moment as the application start time (to sync other concurrent threads)
+	std::chrono::steady_clock::time_point loopStart_time = std::chrono::steady_clock::now();
+	// Initialize fps count
+	std::chrono::steady_clock::time_point currentSecondStart_time = loopStart_time;
+	unsigned int currentSecondNumFramesRendered = 0;
+
+	// START MANUAL RENDERING!
+	// This allows us to control when each frame is rendered (limiting frame rate)
+	frameStart_time = std::chrono::steady_clock::now();
 	while (!mShutdown)
 	{
 		Ogre::WindowEventUtilities::messagePump();
-		
-		//if (mWindow->isClosed()) return false;
+
+    	//if (mWindow->isClosed()) return false;
 		if (!mRoot->renderOneFrame()) mShutdown = true;
+		currentSecondNumFramesRendered++;
 		//if (mPause)
 			//mScene->getSceneMgr()->_pauseRendering();
+
+
+		//JITTER AND DELAY CALCULATION+REMOVAL!
+		//-----------------------------------------
+		//END: save now() as last render loop ends
+		frameEnd_time = std::chrono::steady_clock::now();
+				//cout<< "computation time delay: "<<std::chrono::duration_cast<std::chrono::microseconds>(frameEnd_time - frameStart_time).count()<<endl;			
+		//SLEEP for the next frame_delay, reduced by the last wakeup_jitter and computation time this loop took
+		needed_sleep_delay = frame_delay - std::chrono::duration_cast<std::chrono::microseconds>(frameEnd_time - frameStart_time) - wakeup_jitter;
+				//cout<< "new nominal wake-up delay: "<<std::chrono::duration_cast<std::chrono::microseconds>(needed_sleep_delay).count()<<endl;
+				//cout<<"------"<<endl;
+		if(needed_sleep_delay.count()<0)	//no sleep is performed if the loop is late on time schedule
+		{
+			std::cout<<"Warning: last frame was late on schedule. It took more than "<<(1000000/fps)<<" microseconds to execute."<<std::endl;
+			needed_sleep_delay = std::chrono::duration< double, std::micro >::zero();
+		}
+		else
+		{
+			#if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
+	        	Sleep( std::chrono::duration_cast<std::chrono::milliseconds>(needed_sleep_delay).count() );
+			#else
+	        	usleep( std::chrono::duration_cast<std::chrono::microseconds>(needed_sleep_delay).count() );
+				//sleep(fps/1000000); // this would be ok if we ignored computation time and wakeup_jitter
+			#endif			
+		}
+		//BEGIN: save now() as the time loop begins
+		frameStart_time = std::chrono::steady_clock::now();
+		//compute the jitter as the time it took this thread to wake-up since the time it had to wake up (in ideal world, wake_jitter would be 0...)
+		//if no sleep is performed, wakeup_jitter can be very small or zero, but never negative
+		wakeup_jitter = std::chrono::duration_cast<std::chrono::microseconds>(frameStart_time - frameEnd_time) - needed_sleep_delay;
+				//cout<<"------"<<endl;
+				//cout<< "nominal wake-up delay was: "<<std::chrono::duration_cast<std::chrono::microseconds>(needed_sleep_delay).count()<<endl;			// declared sleep time
+				//cout<< "real wake-up delay: "<<std::chrono::duration_cast<std::chrono::microseconds>(frameStart_time - frameEnd_time).count()<<endl;		// effective slept time
+				//cout<< "there was a wakeup jitter of : "<<std::chrono::duration_cast<std::chrono::microseconds>(wakeup_jitter).count()<<endl;				// computed jitter
+
+
+		// DISPLAY FPS
+		if(std::chrono::steady_clock::now() > currentSecondStart_time + std::chrono::seconds(1))
+		{
+			
+			std::cout << "\tFPS:" << currentSecondNumFramesRendered << std::endl;
+			currentSecondNumFramesRendered = 0;
+			currentSecondStart_time = currentSecondStart_time + std::chrono::seconds(1);
+		}
+		
 	}
 }
 
@@ -624,11 +691,7 @@ void App::quitCameras()
 // Good time to update measurements and physics before rendering next frame!
 bool App::frameRenderingQueued(const Ogre::FrameEvent& evt) 
 {
-	
-	// [TIME] FRAME RATE DISPLAY
-	//calculate delay from last frame and show
-	ogre_last_frame_delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - ogre_last_frame_displayed_time);
-	frames_per_second(ogre_last_frame_delay.count());
+
 
 	if (mShutdown) return false;
 
@@ -722,9 +785,6 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 	mScene->update( evt.timeSinceLastFrame );
 	//mTrayMgr->frameRenderingQueued(evt);
 
-	// [TIME] UPDATE
-	// save time point for this frame (for frame rate calculation)
-	ogre_last_frame_displayed_time = std::chrono::steady_clock::now();
 
 
 	// [VALUE EXPERIMENTS]
