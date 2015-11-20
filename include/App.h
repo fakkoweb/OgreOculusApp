@@ -82,7 +82,8 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 			CalibrationAdjust,
 			DistanceAdjust,
 			FovAdjust,
-			LagAdjust
+			LagAdjust,
+			ZPlaneAdjust
 		} keyLayout = Idle;
 		enum EyeCode
 		{

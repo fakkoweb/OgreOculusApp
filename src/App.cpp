@@ -119,10 +119,8 @@ void App::loadConfig(const std::string& configurationFilesPath)
 	// Overwrite default parameters values
 	CAMERA_BUFFERING_DELAY = mConfig->getValueAsInt("Camera/BufferingDelay");
 	ROTATE_VIEW = mConfig->getValueAsBool("Oculus/RotateView");
-	CAMERA_ROLL_LEFT = mConfig->getValueAsInt("Camera/CameraRollLeft");
-	CAMERA_ROLL_RIGHT = mConfig->getValueAsInt("Camera/CameraRollRight");
-	if (CAMERA_ROLL_LEFT <= -180 || CAMERA_ROLL_LEFT > 180) CAMERA_ROLL_LEFT = 180;
-	if (CAMERA_ROLL_RIGHT <= -180 || CAMERA_ROLL_RIGHT > 180) CAMERA_ROLL_RIGHT = 180;
+	CAMERA_TOEIN_ANGLE = mConfig->getValueAsInt("Camera/CameraToeInAngle");
+	if (CAMERA_TOEIN_ANGLE < 0 || CAMERA_TOEIN_ANGLE >= 90) CAMERA_TOEIN_ANGLE = 0;
 
 }
 
@@ -661,8 +659,8 @@ void App::quitRift()
 
 void App::initCameras()
 {
-	mCameraLeft = new FrameCaptureHandler(0, mRift, true, loopStart_time, 30);	//device_id, mRift, ARenable, starttimereference, fps
-	mCameraRight = new FrameCaptureHandler(1, mRift, false, loopStart_time, 30);
+	mCameraLeft = new FrameCaptureHandler(0, mRift, true, loopStart_time, 25);	//device_id, mRift, ARenable, starttimereference, fps
+	mCameraRight = new FrameCaptureHandler(1, mRift, false, loopStart_time, 25);
 	/*
 	FrameCaptureData emptyFrame;
 	emptyFrame.image = cv::Mat(cv::Scalar(0.0f, 0.0f, 0.0f, 1.0f));
@@ -837,6 +835,9 @@ bool App::keyPressed( const OIS::KeyEvent& e )
 	case OIS::KC_L:
 		keyLayout = LagAdjust;
 		break;
+	case OIS::KC_Z:
+		keyLayout = ZPlaneAdjust;
+		break;
 
 	// per eye setting selection
 	case OIS::KC_1:
@@ -869,7 +870,8 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		e.key == OIS::KC_C ||
 		e.key == OIS::KC_D ||
 		e.key == OIS::KC_F ||
-		e.key == OIS::KC_L
+		e.key == OIS::KC_L ||
+		e.key == OIS::KC_Z
 		)
 	{
 		keyLayout = Idle;
@@ -912,6 +914,7 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 			}
 
 			break;
+
 		case DistanceAdjust:
 			mScene->adjustVideoDistance(+0.1f);				// +0.1 ogre units (here considered meters)
 			break;
@@ -921,6 +924,11 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		case LagAdjust:
 			cout << mCameraLeft->adjustManualCaptureDelay(+1) <<endl;		// +1 msec
 			break;
+		
+		case ZPlaneAdjust:
+			cout<<mScene->adjustVideoToeInAngle(+0.5f);
+			break;
+
 		}
 
 		break;
@@ -969,6 +977,9 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 			cout << mCameraLeft->adjustManualCaptureDelay(-1) << endl;		// -1 msec
 			break;
 		}
+		case ZPlaneAdjust:
+			cout<<mScene->adjustVideoToeInAngle(-0.5f);
+			break;
 
 		break;
 

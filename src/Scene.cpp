@@ -377,9 +377,9 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 
 	//Finally create and attach mVideo nodes to camera references (also apply roll from configuration)
 	mVideoLeft = mCamLeftStabilizationNode->createChildSceneNode("LeftVideo");
-	mVideoLeft->roll(Ogre::Degree(CAMERA_ROLL_LEFT));
+	mVideoLeft->yaw(Ogre::Degree(CAMERA_TOEIN_ANGLE));
 	mVideoRight = mCamRightStabilizationNode->createChildSceneNode("RightVideo");
-	mVideoRight->roll(Ogre::Degree(CAMERA_ROLL_RIGHT));
+	mVideoRight->yaw(Ogre::Degree(-CAMERA_TOEIN_ANGLE));
 
 	//Attach videoPlaneEntityLeft to mVideoLeft SceneNode (now it will have a Position/Scale/Orientation)
 	mVideoLeft->attachObject(videoPlaneEntityLeft);
@@ -464,9 +464,9 @@ void Scene::createFisheyeVideos(const Ogre::Vector3 offset = Ogre::Vector3::ZERO
 
 	//Finally create and attach mVideo nodes to camera references (also apply roll from configuration)
 	mVideoLeft = mCamLeftStabilizationNode->createChildSceneNode("LeftVideo");
-	mVideoLeft->roll(Ogre::Degree(CAMERA_ROLL_LEFT));
+	mVideoLeft->yaw(Ogre::Degree(CAMERA_TOEIN_ANGLE));
 	mVideoRight = mCamRightStabilizationNode->createChildSceneNode("RightVideo");
-	mVideoRight->roll(Ogre::Degree(CAMERA_ROLL_RIGHT));
+	mVideoRight->yaw(Ogre::Degree(-CAMERA_TOEIN_ANGLE));
 
 	//Attach videoPlaneEntityLeft to mVideoLeft SceneNode (now shape will have a Position/Scale/Orientation)
 	mVideoLeft->attachObject(videoSphereEntityLeft);
@@ -655,6 +655,8 @@ void Scene::updateVideos()
 			inverse_scaling,
 			videoClippingScaleFactor
 			);
+		mVideoLeft->resetOrientation();
+		mVideoLeft->yaw(Ogre::Degree(videoToeInAngle));
 		mVideoRight->setPosition
 			(
 			videoOffset.x,
@@ -667,6 +669,8 @@ void Scene::updateVideos()
 			inverse_scaling,
 			videoClippingScaleFactor
 			);
+		mVideoRight->resetOrientation();
+		mVideoRight->yaw(Ogre::Degree(-videoToeInAngle));
 		break;
 
 	case Fisheye:
@@ -822,6 +826,12 @@ float Scene::adjustVideoRightTextureCalibrationScale(const float incrementFactor
 	videoRightTextureCalibrationScale += videoRightTextureCalibrationScale * incrementFactor;
 	updateVideos();
 	return videoRightTextureCalibrationScale;
+}
+float Scene::adjustVideoToeInAngle(const float incrementAngle = 0)
+{
+	videoToeInAngle += incrementAngle;
+	updateVideos();
+	return videoToeInAngle;
 }
 void Scene::setVideoOffset(const Ogre::Vector3 newVideoOffset = Ogre::Vector3::ZERO)
 {

@@ -50,6 +50,7 @@ class Scene : public Ogre::Camera::Listener
 		float adjustVideoRightTextureCalibrationAspectRatio(const float arIncrement);
 		float adjustVideoLeftTextureCalibrationScale(const float incrementFactor);
 		float adjustVideoRightTextureCalibrationScale(const float incrementFactor);
+		float adjustVideoToeInAngle(const float incrementAngle);
 		void setVideoOffset(const Ogre::Vector3 newVideoOffset);
 
 		// Update functions
@@ -133,6 +134,12 @@ class Scene : public Ogre::Camera::Listener
 		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO THEY ARE USED SEPARATELY.
 		float videoLeftTextureCalibrationScale = 1.0f;
 		float videoRightTextureCalibrationScale = 1.0f;
+
+		// This value is both used to correct keystoning and achieve minimum discrepancy between virtual and real world with toe-in camera
+		// Apply to this the positive inward rotation of the camera in degrees. It will be automatically applied simmetrically to both planes.
+		// Used only for pinhole model.
+		float videoToeInAngle = 0.0f;
+		// N.B. THIS VALUE IS SET BY CONFIGURATION FILE BY "CAMERA_TOEIN_ANGLE"
 
 		// This vector is an offset added to to plane/sphere mesh relative position from the virtual
 		// camera. It was supposed to model the displacement between the real camera and the eye.

@@ -7,8 +7,7 @@ extern bool ROTATE_VIEW;
 //extern bool NO_RIFT;
 extern bool DEBUG_WINDOW;
 extern unsigned short int CAMERA_BUFFERING_DELAY;
-extern int CAMERA_ROLL_LEFT;
-extern int CAMERA_ROLL_RIGHT;
+extern int CAMERA_TOEIN_ANGLE;
 extern bool undistort, toon;
 //Globals used from Camera.cpp and App.cpp
 extern std::chrono::steady_clock::time_point camera_last_frame_request_time;
