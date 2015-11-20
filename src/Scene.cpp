@@ -414,6 +414,7 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 		Ogre::TEX_TYPE_2D, 1024, 576, 0, Ogre::PF_R8G8B8,
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);
 
+	/* OLD CODE - manual material
 	// Creare new materials and assign the two textures that can be used on the shapes created
 	// WARNING: apparently modifying these lines in another equivalent form will cause runtime crashes!! BE CAREFUL!!
 	mLeftCameraRenderMaterial = Ogre::MaterialManager::getSingleton().create("Scene/LeftCamera", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
@@ -425,10 +426,25 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 	Ogre::Technique *technique2 = mRightCameraRenderMaterial->createTechnique();
 	technique2->createPass();
 	mRightCameraRenderMaterial->getTechnique(0)->getPass(0)->createTextureUnitState("RenderTextureCameraRight");
+	*/
+
+	// Load scripted materials and assign the two dynamic textures just created.
+	// ONLY the texture image is changed, other parameters are already set in .material file!
+	// WARNING: apparently modifying these lines in another equivalent form will cause runtime crashes!! BE CAREFUL!!
+	// (Remember: UV mapping of the mesh loaded is independent from the texture loaded)
+	mLeftCameraRenderMaterial = Ogre::MaterialManager::getSingleton().getByName("PinholeImageMappingMaterial/LeftEye");
+	mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
+	//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTextureAddressingMode(Ogre::TextureUnitState::TAM_MIRROR);
+	//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
+	mRightCameraRenderMaterial = Ogre::MaterialManager::getSingleton().getByName("PinholeImageMappingMaterial/RightEye");
+	mRightCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mRightCameraRenderTexture);
+	//mRightCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mRightCameraRenderTexture);
 
 	// Assign materials to videoPlaneEntities
 	videoPlaneEntityLeft->setMaterial(mLeftCameraRenderMaterial);
 	videoPlaneEntityRight->setMaterial(mRightCameraRenderMaterial);
+	
+
 
 	// Retrieve the "render target pointer" from the two textures (so we can use it as a standard render target as a window)
 	//Ogre::RenderTexture* mLeftCameraRenderTextureA = mLeftCameraRenderTexture->getBuffer()->getRenderTarget();
