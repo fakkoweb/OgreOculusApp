@@ -64,8 +64,10 @@ void FrameCaptureHandler::shutdownCuda()
 	}
 }
 
-FrameCaptureHandler::FrameCaptureHandler(const unsigned int input_device, Rift* const input_headset, const bool enable_AR = false,  const std::chrono::steady_clock::time_point syncStart_time = std::chrono::steady_clock::now(), const unsigned short int desiredFps = 30) : headset(input_headset), deviceId(input_device), arEnabled(enable_AR), captureStart_time(syncStart_time), fps(desiredFps)
+FrameCaptureHandler::FrameCaptureHandler(const unsigned int input_device, Rift* const input_headset, const bool enable_AR,  const std::chrono::steady_clock::time_point syncStart_time, const unsigned short int desiredFps) : headset(input_headset), deviceId(input_device), arEnabled(enable_AR), captureStart_time(syncStart_time), fps(desiredFps)
 {
+	fromFile = false;
+
 	// save handle for headset (from which poses are read)
 	hmd = headset->getHandle();
 
@@ -85,6 +87,33 @@ FrameCaptureHandler::FrameCaptureHandler(const unsigned int input_device, Rift* 
 	videoCaptureParamsUndistorted.Distorsion = cv::Mat::zeros(4, 1, CV_32F);
 }
 
+FrameCaptureHandler::FrameCaptureHandler(const string& input_file, Rift* const input_headset, const bool enable_AR,  const std::chrono::steady_clock::time_point syncStart_time, const unsigned short int desiredFps) : headset(input_headset), filePath(input_file), arEnabled(enable_AR), captureStart_time(syncStart_time), fps(desiredFps)
+{
+	fromFile = true;
+
+	// save handle for headset (from which poses are read)
+	hmd = headset->getHandle();
+
+	if(arEnabled)
+	{
+		// find and read camera calibration file
+		try {
+			char calibration_file_name_buffer[30];
+			sprintf(calibration_file_name_buffer, "camera%d_intrinsics.yml", deviceId);
+			videoCaptureParams.readFromXMLFile(std::string(calibration_file_name_buffer));
+		}
+		catch (std::exception &ex) {
+			cerr << ex.what() << endl;
+			throw std::runtime_error("File not found or error in loading camera parameters for .yml file");
+		}
+
+		// make the undistorted version of camera parameters (null distortion matrix)
+		videoCaptureParamsUndistorted = videoCaptureParams;
+		videoCaptureParamsUndistorted.Distorsion = cv::Mat::zeros(4, 1, CV_32F);		
+	}
+
+}
+
 // Spawn capture thread and return webcam aspect ratio (width over height)
 float FrameCaptureHandler::startCapture()
 {
@@ -92,15 +121,17 @@ float FrameCaptureHandler::startCapture()
 	initCuda();
 
 	// Init device for capture
-	videoCapture.open(deviceId);
-	if (!videoCapture.isOpened() || !videoCapture.read(frame.image.rgb))
+	if(fromFile)
 	{
-		std::cout << "Could not open video source! Could not capture first frame!";
-		opening_failed = true;
-		stopped = true;
+		videoCapture.open(filePath);
+		videoCapture.set(CV_CAP_PROP_FOCUS, 0);
+		videoCapture.set(CV_CAP_PROP_FRAME_WIDTH, 1800);
+		videoCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 900);
+		videoCapture.set(CV_CAP_PROP_FPS, 10);
 	}
 	else
 	{
+		videoCapture.open(deviceId);
 		std::cout << "Camera " << deviceId << " parameters: " << std::endl
 			<< "  K = " << videoCaptureParams.CameraMatrix << std::endl
 			<< "  D = " << videoCaptureParams.Distorsion.t() << std::endl;
@@ -113,14 +144,53 @@ float FrameCaptureHandler::startCapture()
 													// the variable "fps" will still be used to sync the grab() calls, even though in future releases grab() should be called repeatedly and then take from those a subset dependent on FPS
 		//videoCapture.set(CV_CAP_PROP_FOCUS, 0);
 		//videoCapture.set(CV_CAP_PROP_EXPOSURE, ??);
+	}
+	
+	if (!videoCapture.isOpened() || !videoCapture.read(frame.image.rgb))
+	{
+		std::cout << "Could not open video source! Could not retrieve first frame!";
+		opening_failed = true;
+		stopped = true;
+	}
+	else
+	{
 		aspectRatio = (float)frame.image.rgb.cols / (float)frame.image.rgb.rows;
+
 		stopped = false;
 		opening_failed = false;
-		captureThread = std::thread(&FrameCaptureHandler::captureLoop, this);
-		std::cout << "Capture loop for camera " << deviceId << " started." << std::endl;
+
+		if(fromFile)
+		{
+			captureThread = std::thread(&FrameCaptureHandler::fromFileLoop, this);
+			std::cout << "Capture loop for file "<< filePath <<" started." << std::endl;
+		}
+		else
+		{
+			captureThread = std::thread(&FrameCaptureHandler::captureLoop, this);
+			std::cout << "Capture loop for camera "<< deviceId <<" started." << std::endl;			
+		}
+
 	}
 	return aspectRatio;
 }
+
+/*
+if (!frame) 
+{
+    printf("!!! cvQueryFrame failed: no frame\n");
+    cvSetCaptureProperty(capture, CV_CAP_PROP_POS_AVI_RATIO , 0);
+    continue;
+} 
+
+cam = cv2.VideoCapture(sourceVideo)            
+while True:
+    ret, img = cam.read()                      
+    cv2.imshow('detection', img)
+    print ret
+    if (0xFF & cv2.waitKey(5) == 27) or img.size == 0:
+        break
+*/
+
 
 void FrameCaptureHandler::stopCapture() {
 	if (!stopped)
@@ -161,6 +231,28 @@ bool FrameCaptureHandler::get(FrameCaptureData & out) {
 	hasFrame = false;
 	return true;
 }
+
+bool FrameCaptureHandler::setCaptureSource(const unsigned int newDeviceNumber)
+{
+	if (stopped)
+	{	
+		deviceId = newDeviceNumber;
+		fromFile = false;
+		return true;
+	}
+	else return false;
+}
+bool FrameCaptureHandler::setCaptureSource(const string& newFilePath)
+{
+	if (stopped)
+	{	
+		filePath = newFilePath;
+		fromFile = true;
+		return true;
+	}
+	else return false;
+}
+
 /*
 void FrameCaptureHandler::getCameraParameters(aruco::CameraParameters& outParameters)
 {
@@ -183,7 +275,36 @@ double FrameCaptureHandler::adjustManualCaptureDelay(const short int adjustValue
 	return cameraCaptureManualDelayMs;
 }
 
+void FrameCaptureHandler::fromFileLoop() {
+
+	Ogre::Quaternion noRotation = Ogre::Quaternion::IDENTITY;
+	FrameCaptureData captured; // cpudst is the cv::Mat in FrameCaptureData struct
+
+	while (!stopped)
+	{
+		// grab a new frame
+		if (videoCapture.grab())	// grabs a frame without decoding it
+		{
+
+			cv::Mat distorted;
+			// if frame is valid, decode and save it
+			videoCapture.retrieve(distorted);
+			// No orientation info is saved for the image
+			captured.image.orientation[0] = noRotation.x;
+			captured.image.orientation[1] = noRotation.y;
+			captured.image.orientation[2] = noRotation.z;
+			captured.image.orientation[3] = noRotation.w;
+			captured.image.rgb = distorted;
+			cout<<"CAPTURED "<<videoCapture.get(CV_CAP_PROP_FPS)<<endl;
+			set(captured);
+		}
+
+
+	}
+}
+
 void FrameCaptureHandler::captureLoop() {
+
 	cv::gpu::CudaMem src_image_pagelocked_buffer(cv::Size(1024, 576), CV_8UC3);	//page locked buffer in RAM ready for asynchronous transfer to GPU (same color code and resolution as image!)
 	cv::gpu::CudaMem dst_image_pagelocked_buffer(cv::Size(1024, 576), CV_8UC3);
 	cv::Mat cpusrc = src_image_pagelocked_buffer;
@@ -259,7 +380,7 @@ void FrameCaptureHandler::captureLoop() {
 			currentCompensationMode = None;
 			break;
 		}
-
+				
 		// grab a new frame
 		if (videoCapture.grab())	// grabs a frame without decoding it
 		{
@@ -405,7 +526,7 @@ void FrameCaptureHandler::captureLoop() {
 		}
 		else
 		{
-			std::cout << "FAILED to retrieve frame from " << deviceId << "." << std::endl;
+			std::cout << "FAILED to retrieve frame from "<< deviceId <<"." << std::endl;
 		}
 
 

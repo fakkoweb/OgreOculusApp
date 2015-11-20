@@ -39,7 +39,8 @@ class FrameCaptureHandler
 		};
 
 	private:
-		const unsigned int deviceId = 0;
+		unsigned int deviceId = 0;
+		string filePath;
 		cv::VideoCapture videoCapture;
 		std::thread captureThread;
 		std::mutex mutex;
@@ -52,6 +53,7 @@ class FrameCaptureHandler
 		static void initCuda();
 		static void shutdownCuda();
 
+		bool fromFile = false;
 		bool hasFrame = false;
 		bool stopped = true;
 		bool opening_failed = false;
@@ -76,10 +78,12 @@ class FrameCaptureHandler
 		// Internal capture functions
 		void set(const FrameCaptureData & newFrame);
 		void captureLoop();
+		void fromFileLoop();
 
 	public:
 
-		FrameCaptureHandler(const unsigned int input_device, Rift* const input_headset, const bool enable_AR, const std::chrono::steady_clock::time_point syncStart_time, const unsigned short int desiredFps);
+		FrameCaptureHandler(const unsigned int 	input_device, 	Rift* const input_headset, const bool enable_AR = false,  const std::chrono::steady_clock::time_point syncStart_time = std::chrono::steady_clock::now(), const unsigned short int desiredFps = 30);
+		FrameCaptureHandler(const std::string& 	input_file, 	Rift* const input_headset, const bool enable_AR = false,  const std::chrono::steady_clock::time_point syncStart_time = std::chrono::steady_clock::now(), const unsigned short int desiredFps = 30);
 
 		// Spawn capture thread and return webcam aspect ratio (width over height)
 		float startCapture();
@@ -100,6 +104,8 @@ class FrameCaptureHandler
 		double adjustManualCaptureDelay(const short int adjustValue);
 
 		void setCompensationMode(const CompensationMode newMode){ currentCompensationMode = newMode; }
+		bool setCaptureSource(const unsigned int newDeviceId);		// sets fromFile to false and the new deviceId. Capture must be stopped in order to take effect! Returns false otherwise!
+		bool setCaptureSource(const std::string& newFilePath);			// sets fromFile to true and filePath. Capture must be stopped in order to take effect! Returns false otherwise!
 
 };
 
