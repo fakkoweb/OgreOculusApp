@@ -13,6 +13,8 @@ unsigned short int CAMERA_BUFFERING_DELAY = 0;		// delay between a grab() call a
 int CAMERA_ROLL_LEFT = 0;
 int CAMERA_ROLL_RIGHT = 0;
 
+bool undistort = false, toon = false;
+
 //Globals used from Camera.cpp and Scene.cpp
 std::chrono::steady_clock::time_point camera_last_frame_request_time = std::chrono::steady_clock::now();
 std::chrono::duration< int, std::milli > camera_last_frame_display_delay;

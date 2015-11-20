@@ -274,7 +274,7 @@ void App::start()
     std::chrono::duration< double, std::micro > wakeup_jitter = std::chrono::duration< double, std::micro >::zero();
     std::chrono::duration< double, std::micro > needed_sleep_delay = std::chrono::duration< double, std::micro >::zero();
     // Save this moment as the application start time (to sync other concurrent threads)
-	std::chrono::steady_clock::time_point loopStart_time = std::chrono::steady_clock::now();
+	loopStart_time = std::chrono::steady_clock::now();
 	// Initialize fps count
 	std::chrono::steady_clock::time_point currentSecondStart_time = loopStart_time;
 	unsigned int currentSecondNumFramesRendered = 0;
@@ -304,7 +304,7 @@ void App::start()
 				//cout<<"------"<<endl;
 		if(needed_sleep_delay.count()<0)	//no sleep is performed if the loop is late on time schedule
 		{
-			std::cout<<"Warning: last frame was late on schedule. It took more than "<<(1000000/fps)<<" microseconds to execute."<<std::endl;
+			//std::cout<<"Warning: last frame was late on schedule. It took more than "<<(1000000/fps)<<" microseconds to execute."<<std::endl;
 			needed_sleep_delay = std::chrono::duration< double, std::micro >::zero();
 		}
 		else
@@ -661,8 +661,8 @@ void App::quitRift()
 
 void App::initCameras()
 {
-	mCameraLeft = new FrameCaptureHandler(0, mRift, true);
-	mCameraRight = new FrameCaptureHandler(1, mRift, false);
+	mCameraLeft = new FrameCaptureHandler(0, mRift, true, loopStart_time, 30);	//device_id, mRift, ARenable, starttimereference, fps
+	mCameraRight = new FrameCaptureHandler(1, mRift, false, loopStart_time, 30);
 	/*
 	FrameCaptureData emptyFrame;
 	emptyFrame.image = cv::Mat(cv::Scalar(0.0f, 0.0f, 0.0f, 1.0f));
@@ -712,7 +712,6 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 	
 	// [CAMERA] UPDATE
 	// update real cameras information and sends it to Scene (Texture of pictures planes/shapes)
-	FrameCaptureData nextFrameLeft;
 	if (mCameraLeft && mCameraLeft->get(nextFrameLeft))		// if camera is initialized AND there is a new frame
 	{
 		//std::cout << "Set new left image..." << std::endl;
@@ -721,6 +720,25 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 			
 		//std::cout << "converting from cv::Mat to Ogre::PixelBox..." << std::endl;
 		mOgrePixelBoxLeft = Ogre::PixelBox(nextFrameLeft.image.rgb.cols, nextFrameLeft.image.rgb.rows, 1, Ogre::PF_R8G8B8, nextFrameLeft.image.rgb.ptr<uchar>(0));
+
+		// DO NOT SET ANYTHING IN THE SCENE YET!
+		imageLeftReady = true;
+	}
+	if (mCameraRight && mCameraRight->get(nextFrameRight))	// if camera is initialized AND there is a new frame
+	{
+		//std::cout << "Set new right image..." << std::endl;
+		//cv::imshow("CameraDebugRight", nextFrameRight.image);
+		//cv::waitKey(1);
+
+		//std::cout << "converting from cv::Mat to Ogre::PixelBox..." << std::endl;
+		mOgrePixelBoxRight = Ogre::PixelBox(nextFrameRight.image.rgb.cols, nextFrameRight.image.rgb.rows, 1, Ogre::PF_R8G8B8, nextFrameRight.image.rgb.ptr<uchar>(0));
+
+		// DO NOT SET ANYTHING IN THE SCENE YET!
+		imageRightReady = true;
+	}
+	// N.B. each camera will try to keep capturing in sync with specified startCapture_time, then they return the result as soon as possible, so only thing to do is wait that both frames are available
+	if (imageLeftReady && imageRightReady)
+	{
 		//std::cout << "sending new image to the scene..." << std::endl;
 		mScene->setVideoImagePoseLeft(mOgrePixelBoxLeft, Ogre::Quaternion(nextFrameLeft.image.orientation[0], nextFrameLeft.image.orientation[1], nextFrameLeft.image.orientation[2], nextFrameLeft.image.orientation[3]) );
 		//std::cout << "image sent!\nImage plane updated!" << std::endl;
@@ -732,18 +750,11 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 			mScene->setCubeOrientation(Ogre::Quaternion(nextFrameLeft.markers[i].orientation[0], nextFrameLeft.markers[i].orientation[1], nextFrameLeft.markers[i].orientation[2], nextFrameLeft.markers[i].orientation[3]));
 		}
 		cv::imshow("Video stream left", nextFrameLeft.image.rgb);
-		cv::waitKey(1);
-	}
 
-	FrameCaptureData nextFrameRight;
-	if (mCameraRight && mCameraRight->get(nextFrameRight))	// if camera is initialized AND there is a new frame
-	{
 		//std::cout << "Set new right image..." << std::endl;
 		//cv::imshow("CameraDebugRight", nextFrameRight.image);
 		//cv::waitKey(1);
 
-		//std::cout << "converting from cv::Mat to Ogre::PixelBox..." << std::endl;
-		mOgrePixelBoxRight = Ogre::PixelBox(nextFrameRight.image.rgb.cols, nextFrameRight.image.rgb.rows, 1, Ogre::PF_R8G8B8, nextFrameRight.image.rgb.ptr<uchar>(0));
 		//std::cout << "sending new image to the scene..." << std::endl;
 		mScene->setVideoImagePoseRight(mOgrePixelBoxRight, Ogre::Quaternion(nextFrameRight.image.orientation[0], nextFrameRight.image.orientation[1], nextFrameRight.image.orientation[2], nextFrameRight.image.orientation[3]));
 		//std::cout << "image sent!\nImage plane updated!" << std::endl;
@@ -1011,6 +1022,10 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		// SPACE Button (Stop): interrupts main scene rendering loop
 		mRift->pauseRender(true);
 
+		break;
+
+	case OIS::KC_P:
+		toon = !toon;
 		break;
 
 	default:

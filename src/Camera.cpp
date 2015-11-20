@@ -49,7 +49,7 @@ void FrameCaptureHandler::initCuda()
 {
 	if (!isInitialized)
 	{
-		cv::gpu::setDevice(0);		//set gpu device for cuda (n.b.: launch the app with gpu!)
+		cv::gpu::setDevice(0);			//set gpu device for cuda (n.b.: launch the app with gpu!)
 		isInitialized = true;
 	}
 	cuda_Users++;
@@ -64,7 +64,7 @@ void FrameCaptureHandler::shutdownCuda()
 	}
 }
 
-FrameCaptureHandler::FrameCaptureHandler(const unsigned int input_device, Rift* const input_headset, const bool enable_AR = false) : headset(input_headset), deviceId(input_device), arEnabled(enable_AR)
+FrameCaptureHandler::FrameCaptureHandler(const unsigned int input_device, Rift* const input_headset, const bool enable_AR = false,  const std::chrono::steady_clock::time_point syncStart_time = std::chrono::steady_clock::now(), const unsigned short int desiredFps = 30) : headset(input_headset), deviceId(input_device), arEnabled(enable_AR), captureStart_time(syncStart_time), fps(desiredFps)
 {
 	// save handle for headset (from which poses are read)
 	hmd = headset->getHandle();
@@ -109,8 +109,9 @@ float FrameCaptureHandler::startCapture()
 		//videoCapture.set(CV_CAP_PROP_FOURCC, CV_FOURCC('M', 'J', 'P', 'G'));
 		videoCapture.set(CV_CAP_PROP_FRAME_WIDTH, 1024);
 		videoCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 576);
-		videoCapture.set(CV_CAP_PROP_FPS, 30);
-		videoCapture.set(CV_CAP_PROP_FOCUS, 0);
+		videoCapture.set(CV_CAP_PROP_FPS, fps);		// in future: leave OpenCV to request to device frames as fast as he can (it minimizes delay and not support all range of FPSs)
+													// the variable "fps" will still be used to sync the grab() calls, even though in future releases grab() should be called repeatedly and then take from those a subset dependent on FPS
+		//videoCapture.set(CV_CAP_PROP_FOCUS, 0);
 		//videoCapture.set(CV_CAP_PROP_EXPOSURE, ??);
 		aspectRatio = (float)frame.image.rgb.cols / (float)frame.image.rgb.rows;
 		stopped = false;
@@ -146,10 +147,15 @@ void FrameCaptureHandler::set(const FrameCaptureData & newFrame) {
 	hasFrame = true;
 }
 
-bool FrameCaptureHandler::get(FrameCaptureData & out) {
+bool FrameCaptureHandler::hasNewFrame() {
 	if (!hasFrame) {
 		return false;
 	}
+	else return true;
+}
+
+bool FrameCaptureHandler::get(FrameCaptureData & out) {
+	if (!hasNewFrame()) return false;
 	std::lock_guard<std::mutex> guard(mutex);
 	out = frame;
 	hasFrame = false;
@@ -193,7 +199,22 @@ void FrameCaptureHandler::captureLoop() {
 	captured.image.orientation[1] = noRotation.y;
 	captured.image.orientation[2] = noRotation.z;
 	captured.image.orientation[3] = noRotation.w;
-	//double f = 0;
+
+	// TIME VARIABLES FOR MANUAL CAPTURING TIME
+	//int fps = 30;		// FPS is set in constructor
+	std::chrono::duration< double, std::micro > frame_delay;
+	if(fps<=0) frame_delay = std::chrono::duration< double, std::micro >::zero();
+	else frame_delay = std::chrono::microseconds(1000000/fps);
+    // Time structures for jitter/delay removal
+    std::chrono::steady_clock::time_point frameStart_time;
+    std::chrono::steady_clock::time_point frameEnd_time;
+    bool lateOnSchedule = false;			// flag to change behaviour when in need to sync the thread with captureStart_time
+    std::chrono::duration< double, std::micro > wakeup_jitter = std::chrono::duration< double, std::micro >::zero();
+    std::chrono::duration< double, std::micro > needed_sleep_delay = std::chrono::duration< double, std::micro >::zero();
+    std::chrono::duration< double, std::micro > computation_delay = std::chrono::duration< double, std::micro >::zero();
+
+	// START CAPTURE LOOP!
+	frameStart_time = captureStart_time;	// force start capture time (first loop won't make sense but the following loops will stay in sync)
 	while (!stopped) {
 
 		//if (videoCapture.set(CV_CAP_PROP_EXPOSURE, 0)) cout << f << endl;
@@ -201,8 +222,7 @@ void FrameCaptureHandler::captureLoop() {
 		//cout << videoCapture.get(CV_CAP_PROP_EXPOSURE) << endl;
 
 		//Save time point for request time of the frame (for camera frame rate calculation)
-		camera_last_frame_request_time = std::chrono::steady_clock::now();	//GLOBAL VARIABLE
-		
+		camera_last_frame_request_time = std::chrono::steady_clock::now();	//GLOBAL VARIABLE	
 		//std::cout << "Retrieving frame from " << deviceId << " ..." << std::endl;
 		
 		// save tracking state before grabbing a new frame
@@ -277,7 +297,7 @@ void FrameCaptureHandler::captureLoop() {
 				}
 			}
 			
-			bool undistort = false, toon = true;
+			
 
 			cv::Mat distorted, undistorted;
 			// if frame is valid, decode and save it
@@ -296,9 +316,12 @@ void FrameCaptureHandler::captureLoop() {
 			// GPU ASYNC OPERATIONS
 			// -------------------------------
 			// Load source image to pipeline
-			image_processing_pipeline.enqueueUpload(cpusrc, gpusrc);
-			// Other elaboration on image
-			// - - - PUT IT HERE! - - -
+			bool toonActive = toon;
+			if(toonActive)
+			{
+				image_processing_pipeline.enqueueUpload(cpusrc, gpusrc);
+				// Other elaboration on image
+				// - - - PUT IT HERE! - - -
 				// TOON in GPU - from: https://github.com/BloodAxe/OpenCV-Tutorial/blob/master/OpenCV%20Tutorial/CartoonFilter.cpp
 				
 				cv::gpu::GpuMat gpusrc_a, bgr, bgr_a, gray, edges, edgesBgr;
@@ -309,8 +332,9 @@ void FrameCaptureHandler::captureLoop() {
 			    cv::gpu::cvtColor(edges, edgesBgr, cv::COLOR_GRAY2BGR);
 			    cv::gpu::cvtColor(bgr_a, bgr, cv::COLOR_BGRA2BGR);			// hack: I need the BGR version from alpha result
 			    cv::gpu::subtract(bgr, edgesBgr, gpudst);					// gpudst = bgr - edgesBgr;
-			// Download final result image to ram
-			image_processing_pipeline.enqueueDownload(gpudst, fx);
+				// Download final result image to ram
+				image_processing_pipeline.enqueueDownload(gpudst, fx);
+			}
 
 			// CPU SYNC OPERATIONS
 			// -------------------------------		
@@ -348,7 +372,7 @@ void FrameCaptureHandler::captureLoop() {
 			}
 			// TEST FX on CPU
 			/*
-			if(toon)
+			if(toonActive)
 			{
 				// TOON - https://github.com/BloodAxe/OpenCV-Tutorial/blob/master/OpenCV%20Tutorial/CartoonFilter.cpp
 				cv::Mat bgr, gray, edges, edgesBgr;
@@ -368,7 +392,7 @@ void FrameCaptureHandler::captureLoop() {
 			// -------------------------------					
 
 			// show image with or without fx?
-			if(toon)
+			if(toonActive)
 				captured.image.rgb = fx;
 			else
 				captured.image.rgb = undistorted;
@@ -382,6 +406,66 @@ void FrameCaptureHandler::captureLoop() {
 		else
 		{
 			std::cout << "FAILED to retrieve frame from " << deviceId << "." << std::endl;
+		}
+
+
+
+		//JITTER AND DELAY CALCULATION+REMOVAL!
+		//-----------------------------------------
+		//END: save now() as last render loop ends
+		frameEnd_time = std::chrono::steady_clock::now();
+				//cout<< "computation time delay: "<<std::chrono::duration_cast<std::chrono::microseconds>(frameEnd_time - frameStart_time).count()<<endl;			
+		//SLEEP for the next frame_delay, reduced by the last wakeup_jitter and computation time this loop took
+		computation_delay = std::chrono::duration_cast<std::chrono::microseconds>(frameEnd_time - frameStart_time);
+		needed_sleep_delay = frame_delay - computation_delay - wakeup_jitter;
+				//cout<< "new nominal wake-up delay: "<<std::chrono::duration_cast<std::chrono::microseconds>(needed_sleep_delay).count()<<endl;
+				//cout<<"------"<<endl;
+		if(needed_sleep_delay.count()<0)	//the loop is late on time schedule -> change behaviour to keep in sync with captureStart_time: the closest frameStart_time on schedule will be chosen as the new one 
+		{
+			lateOnSchedule = true;
+			// Reset variables for sleep (thread will continue running with no sleep to help recover the time lost)
+			needed_sleep_delay = std::chrono::duration< double, std::micro >::zero();
+			wakeup_jitter = std::chrono::duration< double, std::micro >::zero();
+			std::cout<<"Warning: camera "<<deviceId<<" capture was late on schedule. It took more than "<<(1000000/fps)<<" microseconds to execute."<<std::endl;
+			// Compute run-out skew of the thread in respect to schedule frequency (it will be the difference between the last frameEnd_time and the closest oldest frameStart_time on the ideal schedule)
+			int skew_micros = std::chrono::duration_cast<std::chrono::milliseconds>(computation_delay).count() % std::chrono::duration_cast<std::chrono::milliseconds>(frame_delay).count();
+			std::chrono::duration< double, std::micro > skew = std::chrono::microseconds(skew_micros);
+			// Compute the two closest ideal frameStart_time (the previous and the next)
+			std::chrono::steady_clock::time_point frameStart_time_ideal_prev = frameEnd_time - std::chrono::duration_cast<std::chrono::microseconds>(skew);						// previous as current end time - skew
+			std::chrono::steady_clock::time_point frameStart_time_ideal_next = frameStart_time_ideal_prev + std::chrono::duration_cast<std::chrono::microseconds>(frame_delay);	// next as previous + ideal frame delay
+			// Check to which frameEnd_time is closest and use the result as next frameStart_time
+			int window_micros = std::chrono::duration_cast<std::chrono::milliseconds>(frame_delay).count();
+			if( skew_micros > (window_micros/16) )  			// RIGHT NOW IS BIASED TO CHOOSE THE NEXT! CHANGE THIS CHECK FORMULA TO CHANGE BEHAVIOUR!! (ex. skew_micros > (window_micros/2))
+			{
+				frameStart_time = frameStart_time_ideal_next;	// selected from 1/16 of of the frame_delay ideal window to its end
+			}
+			else
+			{
+				frameStart_time = frameStart_time_ideal_prev;	// selected when still in the first 1/16 of the frame_delay ideal window
+			}
+			// TO TWEAK CONSIDER THAT:
+			// If the previous time is selected, thread will still have less than a frame_delay to finish, it will take more converge to schedule, but will retrieve next frames as soon as possible with no pause.
+			// If next time is selected, thread will have more than a frame_delay to finish, so it will start on perfect schedule from the next loop. However it will have one pause of more than one frame.
+			// N.B. It does not matter if the two camera threads will choose differently: they will eventually converge in the same schedule.
+			// N.B. If a camera thread is ALWAYS exceeding the time, sync cannot converge with this algorithm!!
+		}
+		else
+		{
+			#if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
+	        	Sleep( std::chrono::duration_cast<std::chrono::milliseconds>(needed_sleep_delay).count() );
+			#else
+	        	usleep( std::chrono::duration_cast<std::chrono::microseconds>(needed_sleep_delay).count() );
+				//sleep(fps/1000000); // this would be ok if we ignored computation time and wakeup_jitter
+			#endif	
+			//BEGIN: save now() as the time loop begins
+			frameStart_time = std::chrono::steady_clock::now();
+			//compute the jitter as the time it took this thread to wake-up since the time it had to wake up (in ideal world, wake_jitter would be 0...)
+			//if no sleep is performed, wakeup_jitter can be very small or zero, but never negative
+			wakeup_jitter = std::chrono::duration_cast<std::chrono::microseconds>(frameStart_time - frameEnd_time) - needed_sleep_delay;
+				//cout<<"------"<<endl;
+				//cout<< "nominal wake-up delay was: "<<std::chrono::duration_cast<std::chrono::microseconds>(needed_sleep_delay).count()<<endl;			// declared sleep time
+				//cout<< "real wake-up delay: "<<std::chrono::duration_cast<std::chrono::microseconds>(frameStart_time - frameEnd_time).count()<<endl;		// effective slept time
+				//cout<< "there was a wakeup jitter of : "<<std::chrono::duration_cast<std::chrono::microseconds>(wakeup_jitter).count()<<endl;				// computed jitter	
 		}
 
 		//cv::flip(captured.image.clone(), captured.image, 0);

@@ -65,6 +65,8 @@ class FrameCaptureHandler
 		// Otherwise cameraCaptureManualDelayMs is used and can be adjusted manually with adjustManualCaptureDelay()
 		double cameraCaptureRealDelayMs = 0;		// Automatically computed.
 		double cameraCaptureManualDelayMs = 0;		// Clamped between 0 and 50.
+		short unsigned int fps;
+		std::chrono::steady_clock::time_point captureStart_time;
 
 		Rift* headset = nullptr;
 		ovrHmd hmd = nullptr;
@@ -77,13 +79,14 @@ class FrameCaptureHandler
 
 	public:
 
-		FrameCaptureHandler(const unsigned int input_device, Rift* const input_headset, const bool enable_AR);
+		FrameCaptureHandler(const unsigned int input_device, Rift* const input_headset, const bool enable_AR, const std::chrono::steady_clock::time_point syncStart_time, const unsigned short int desiredFps);
 
 		// Spawn capture thread and return webcam aspect ratio (width over height)
 		float startCapture();
 		void stopCapture();
 
 		// Get data
+		bool hasNewFrame();
 		bool get(FrameCaptureData & out);
 		float getAspectRatio(){ return aspectRatio; }
 		//void getCameraParameters(aruco::CameraParameters& outParameters);
