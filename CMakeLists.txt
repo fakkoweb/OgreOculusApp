@@ -411,6 +411,12 @@ if(UNIX)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")					# flags needed by arUco in linux
 endif()
 
+# Ogre video plugin
+#add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/OgreVideoPlugin")	# OgreVideoPlugin subproject src and config
+#list(APPEND LIBRARIES_TO_LINK OgreVideoPlugin)										# OgreVideoPlugin subproject lib link
+#list(APPEND HEADERS_TO_INCLUDE_PUBLIC												# OgreVideoPlugin subproject include
+#		"${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/OgreVideoPlugin/include"
+#	)
 
 ################################################################
 #                   EXE OUTPUT                                 #

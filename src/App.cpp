@@ -659,6 +659,8 @@ void App::quitRift()
 
 void App::initCameras()
 {
+	//std::string videoFile = "thcrossing1.mp4";
+	//mCameraLeft = new FrameCaptureHandler(videoFile, mRift, false);
 	mCameraLeft = new FrameCaptureHandler(0, mRift, true, loopStart_time, 25);	//device_id, mRift, ARenable, starttimereference, fps
 	mCameraRight = new FrameCaptureHandler(1, mRift, false, loopStart_time, 25);
 	/*
@@ -690,7 +692,6 @@ void App::quitCameras()
 bool App::frameRenderingQueued(const Ogre::FrameEvent& evt) 
 {
 
-
 	if (mShutdown) return false;
 
 	// [RIFT] UPDATE
@@ -710,7 +711,7 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 	
 	// [CAMERA] UPDATE
 	// update real cameras information and sends it to Scene (Texture of pictures planes/shapes)
-	if (mCameraLeft && mCameraLeft->get(nextFrameLeft))		// if camera is initialized AND there is a new frame
+	if (mCameraLeft && !imageLeftReady && mCameraLeft->get(nextFrameLeft))		// if camera is initialized AND there is a new frame
 	{
 		//std::cout << "Set new left image..." << std::endl;
 		//cv::imshow("CameraDebugLeft", nextFrameLeft.image);
@@ -722,7 +723,8 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 		// DO NOT SET ANYTHING IN THE SCENE YET!
 		imageLeftReady = true;
 	}
-	if (mCameraRight && mCameraRight->get(nextFrameRight))	// if camera is initialized AND there is a new frame
+	
+	if (mCameraRight && !imageRightReady && mCameraRight->get(nextFrameRight))	// if camera is initialized AND there is a new frame
 	{
 		//std::cout << "Set new right image..." << std::endl;
 		//cv::imshow("CameraDebugRight", nextFrameRight.image);
@@ -734,8 +736,9 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 		// DO NOT SET ANYTHING IN THE SCENE YET!
 		imageRightReady = true;
 	}
+	
 	// N.B. each camera will try to keep capturing in sync with specified startCapture_time, then they return the result as soon as possible, so only thing to do is wait that both frames are available
-	if (imageLeftReady && imageRightReady)
+	if (imageLeftReady)
 	{
 		//std::cout << "sending new image to the scene..." << std::endl;
 		mScene->setVideoImagePoseLeft(mOgrePixelBoxLeft, Ogre::Quaternion(nextFrameLeft.image.orientation[0], nextFrameLeft.image.orientation[1], nextFrameLeft.image.orientation[2], nextFrameLeft.image.orientation[3]) );
@@ -757,7 +760,10 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 		mScene->setVideoImagePoseRight(mOgrePixelBoxRight, Ogre::Quaternion(nextFrameRight.image.orientation[0], nextFrameRight.image.orientation[1], nextFrameRight.image.orientation[2], nextFrameRight.image.orientation[3]));
 		//std::cout << "image sent!\nImage plane updated!" << std::endl;
 		cv::imshow("Video stream right", nextFrameRight.image.rgb);
-		cv::waitKey(1);	
+		cv::waitKey(1);
+
+		imageLeftReady = false;
+		imageRightReady = false;
 	}
 	
 	/* KEPT FOR PERSONAL REFERENCE
@@ -1004,14 +1010,14 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		if (seethroughEnabled)
 		{
 			mScene->disableVideo();
-			mCameraLeft->stopCapture();
-			mCameraRight->stopCapture();
+			if (mCameraLeft) mCameraLeft->stopCapture();
+			if (mCameraRight) mCameraRight->stopCapture();
 			seethroughEnabled = false;
 		}
 		else
 		{
-			mCameraLeft->startCapture();
-			mCameraRight->startCapture();
+			if (mCameraLeft) mCameraLeft->startCapture();
+			if (mCameraRight) mCameraRight->startCapture();
 			mScene->enableVideo();
 			seethroughEnabled = true;
 		}
