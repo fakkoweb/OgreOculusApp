@@ -305,8 +305,8 @@ void FrameCaptureHandler::fromFileLoop() {
 
 void FrameCaptureHandler::captureLoop() {
 
-	cv::gpu::CudaMem src_image_pagelocked_buffer(cv::Size(FORCE_HEIGHT_RESOLUTION, FORCE_HEIGHT_RESOLUTION), CV_8UC3);	//page locked buffer in RAM ready for asynchronous transfer to GPU (same color code and resolution as image!)
-	cv::gpu::CudaMem dst_image_pagelocked_buffer(cv::Size(FORCE_HEIGHT_RESOLUTION, FORCE_HEIGHT_RESOLUTION), CV_8UC3);
+	cv::gpu::CudaMem src_image_pagelocked_buffer(cv::Size(FORCE_WIDTH_RESOLUTION, FORCE_HEIGHT_RESOLUTION), CV_8UC3);	//page locked buffer in RAM ready for asynchronous transfer to GPU (same color code and resolution as image!)
+	cv::gpu::CudaMem dst_image_pagelocked_buffer(cv::Size(FORCE_WIDTH_RESOLUTION, FORCE_HEIGHT_RESOLUTION), CV_8UC3);
 	cv::Mat cpusrc = src_image_pagelocked_buffer;
 	cv::Mat fx = dst_image_pagelocked_buffer;
 	cv::gpu::Stream image_processing_pipeline;

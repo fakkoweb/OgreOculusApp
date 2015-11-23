@@ -262,7 +262,7 @@ void App::start()
 
 
 	// TIME VARIABLES FOR MANUAL RENDERING TIME
-	int fps = 60;		// SET HERE desired fps
+	int fps = FORCE_3D_RENDERING_FPS;
 	std::chrono::duration< double, std::micro > frame_delay;
 	if(fps<=0) frame_delay = std::chrono::duration< double, std::micro >::zero();
 	else frame_delay = std::chrono::microseconds(1000000/fps);
@@ -743,13 +743,14 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 		//std::cout << "sending new image to the scene..." << std::endl;
 		mScene->setVideoImagePoseLeft(mOgrePixelBoxLeft, Ogre::Quaternion(nextFrameLeft.image.orientation[0], nextFrameLeft.image.orientation[1], nextFrameLeft.image.orientation[2], nextFrameLeft.image.orientation[3]) );
 		//std::cout << "image sent!\nImage plane updated!" << std::endl;
-		
+		/*
 		for (unsigned int i = 0; i < nextFrameLeft.markers.size(); i++)
 		{
 			cout << "cube position/orientation " << i << " set to " << -nextFrameLeft.markers[i].position[0] << "," << nextFrameLeft.markers[i].position[1] << "," << -nextFrameLeft.markers[i].position[2] << endl;
 			mScene->setCubePosition(Ogre::Vector3(nextFrameLeft.markers[i].position[0], nextFrameLeft.markers[i].position[1], nextFrameLeft.markers[i].position[2]));
 			mScene->setCubeOrientation(Ogre::Quaternion(nextFrameLeft.markers[i].orientation[0], nextFrameLeft.markers[i].orientation[1], nextFrameLeft.markers[i].orientation[2], nextFrameLeft.markers[i].orientation[3]));
 		}
+		*/
 		cv::imshow("Video stream left", nextFrameLeft.image.rgb);
 
 		//std::cout << "Set new right image..." << std::endl;
