@@ -531,7 +531,7 @@ void FrameCaptureHandler::captureLoop() {
 
 
 
-		//JITTER AND DELAY CALCULATION+REMOVAL!
+		//JITTER AND DELAY CALCULATION -- WARNING: REMOVAL IS DEACTIVATED (see below why)!
 		//-----------------------------------------
 		//END: save now() as last render loop ends
 		frameEnd_time = std::chrono::steady_clock::now();
@@ -572,12 +572,23 @@ void FrameCaptureHandler::captureLoop() {
 		}
 		else
 		{
+			// SLEEP COMMENTED OUT: WHY?
+			// Whenever we need the frames to not exceed the specified amount, it is ok to put thread to sleep (as we do for Ogre to crop to 60fps and spare CPU cycles).
+			// However, for camera thread, two considerations must be taken:
+			// -  OpenCV ALREADY controls FPS when opening device and ALREADY puts the current thread to sleep when calling grab() to get the right framerate
+			// -  This thread needs all the time possible: if we put it to sleep, it will never wake up at the exact time he should, so some time will always be wasted (wakeup_jitter)
+			// If the thread has free time, it will try to call the grab() again, which will return with the right frequency. This is different from Ogre, which will always try to 
+			// render more and more frames indefinitely, which is useless and consumpt a lot of cpu cycles!!
+			/*
 			#if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
 	        	Sleep( std::chrono::duration_cast<std::chrono::milliseconds>(needed_sleep_delay).count() );
 			#else
 	        	usleep( std::chrono::duration_cast<std::chrono::microseconds>(needed_sleep_delay).count() );
 				//sleep(fps/1000000); // this would be ok if we ignored computation time and wakeup_jitter
-			#endif	
+			#endif
+			*/
+
+
 			//BEGIN: save now() as the time loop begins
 			frameStart_time = std::chrono::steady_clock::now();
 			//compute the jitter as the time it took this thread to wake-up since the time it had to wake up (in ideal world, wake_jitter would be 0...)
