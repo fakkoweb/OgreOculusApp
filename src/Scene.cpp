@@ -46,13 +46,35 @@ void Scene::createRoom()
 	mCubeRed->setScale(0.1, 0.1, 0.1);
 	mCubeRed->attachObject( cubeEnt );
 
+	// Create the floor
+	// 	Create a plane class instance that describes floor plane (no position or orientation, just mathematical description)
+	Ogre::Plane videoPlane(Ogre::Vector3::UNIT_Y, 0);
+	// 	Create a static mesh out of the plane (as a REUSABLE "resource")
+	Ogre::MeshManager::getSingleton().createPlane(
+		"floorMesh",										// this is the name that our resource will have for the whole application!
+		Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+		videoPlane,											// this is the instance from which we build the mesh
+		30, 30, 1, 1,
+		true,
+		1, 1, 1,
+		Ogre::Vector3::UNIT_Z);								// this is the vector that will be used as mesh UP direction
+	//	Create an ogre Entity out of the resource we created (more Entities can be created out of a resource!)
+	Ogre::Entity* floorPlaneEntity = mSceneMgr->createEntity("floorMesh");
+	// 	Add texture
+	floorPlaneEntity->setMaterialName("floor");
+	//	Create an ogre SceneNode to which attach the plane entity
+	Ogre::SceneNode* mFloorNode = mRoomNode->createChildSceneNode();
+	mFloorNode->attachObject( floorPlaneEntity );
+	mFloorNode->setPosition( 0.0, 0.0, 0.0 );
+
+
 	// Other useless objects (temporary)
-	mCubeGreen = mRoomNode->createChildSceneNode();
-	Ogre::Entity* cubeEnt2 = mSceneMgr->createEntity( "Cube.mesh" );
-	cubeEnt2->getSubEntity(0)->setMaterialName( "CubeMaterialGreen" );
-	mCubeGreen->attachObject( cubeEnt2 );
-	mCubeGreen->setPosition( 0.0, 0.0, 0.0 );
-	mCubeGreen->setScale( 0.1, 0.1, 0.1 );
+	//mCubeGreen = mRoomNode->createChildSceneNode();
+	//Ogre::Entity* cubeEnt2 = mSceneMgr->createEntity( "Cube.mesh" );
+	//cubeEnt2->getSubEntity(0)->setMaterialName( "CubeMaterialGreen" );
+	//mCubeGreen->attachObject( cubeEnt2 );
+	//mCubeGreen->setPosition( 0.0, 0.0, 0.0 );
+	//mCubeGreen->setScale( 0.1, 0.1, 0.1 );
 	
 	Ogre::SceneNode* cubeNode3 = mRoomNode->createChildSceneNode();
 	Ogre::Entity* cubeEnt3 = mSceneMgr->createEntity( "Cube.mesh" );
@@ -77,9 +99,10 @@ void Scene::createRoom()
 */
 	//mRoomNode->attachObject( roomLight );
 
-Ogre::Light* light = mSceneMgr->createLight("tstLight");
+	Ogre::Light* light = mSceneMgr->createLight("tstLight");
     light->setType(Ogre::Light::LT_DIRECTIONAL);
-    Ogre::Vector3 lightdir(0.55, -0.3, 0.75);
+    Ogre::Vector3 lightdir(-0.55, -0.4, -0.75);
+    //Ogre::Vector3 lightdir(0, -1, 0);
     lightdir.normalise();
     light->setDirection(lightdir);
     light->setDiffuseColour(Ogre::ColourValue::White);
@@ -87,9 +110,10 @@ Ogre::Light* light = mSceneMgr->createLight("tstLight");
  
     mSceneMgr->setAmbientLight(Ogre::ColourValue(0.2, 0.2, 0.2));
 
-	mSceneMgr->setSkyBox(true, "skyrender", 25, true); //value is half of cube edge size
-											 // default should be 5000, AND NOT RENDER ALWAYS!!
-											 // see here: http://www.ogre3d.org/forums/viewtopic.php?f=2&t=40792&p=521011#p521011
+    // Add skybox (look at the skyrender.material script file for more details)
+	mSceneMgr->setSkyBox(true, "skyrender", 25, true);	//value is half of cube edge size
+											 			// default should be 5000, AND NOT RENDER ALWAYS!!
+											 			// see here: http://www.ogre3d.org/forums/viewtopic.php?f=2&t=40792&p=521011#p521011
 }
 void Scene::createCameras()
 {
@@ -165,7 +189,7 @@ void Scene::createCameras()
 	mHeadLight->setDiffuseColour( 1.0, 1.0, 1.0 );
 	mHeadNode->attachObject( mHeadLight );*/
 
-	mBodyNode->setPosition( 4.0, 1.5, 4.0 );
+	mBodyNode->setPosition( 0.0, 1.7, 0.0 );
 	//mBodyYawNode->lookAt( Ogre::Vector3::ZERO, Ogre::SceneNode::TS_WORLD );
 
 
@@ -372,8 +396,8 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 
 
 	//GREEN CUBE REFERENCE HERE (used for testing only)!
-	mCubeGreen->getParentSceneNode()->removeChild(mCubeGreen);
-	mCamLeftStabilizationNode->addChild(mCubeGreen);
+	//mCubeGreen->getParentSceneNode()->removeChild(mCubeGreen);
+	//mCamLeftStabilizationNode->addChild(mCubeGreen);
 
 	//Finally create and attach mVideo nodes to camera references (also apply roll from configuration)
 	mVideoLeft = mCamLeftStabilizationNode->createChildSceneNode("LeftVideo");
