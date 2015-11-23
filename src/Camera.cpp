@@ -579,6 +579,7 @@ void FrameCaptureHandler::captureLoop() {
 			// -  This thread needs all the time possible: if we put it to sleep, it will never wake up at the exact time he should, so some time will always be wasted (wakeup_jitter)
 			// If the thread has free time, it will try to call the grab() again, which will return with the right frequency. This is different from Ogre, which will always try to 
 			// render more and more frames indefinitely, which is useless and consumpt a lot of cpu cycles!!
+			
 			/*
 			#if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
 	        	Sleep( std::chrono::duration_cast<std::chrono::milliseconds>(needed_sleep_delay).count() );

@@ -1,8 +1,8 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-#define FORCE_WIDTH_RESOLUTION	640
-#define FORCE_HEIGHT_RESOLUTION	360
+#define FORCE_WIDTH_RESOLUTION	1024 //suggested max: 1024
+#define FORCE_HEIGHT_RESOLUTION	576	//suggested max: 576
 #define FORCE_3D_RENDERING_FPS	60
 
 #include <chrono>

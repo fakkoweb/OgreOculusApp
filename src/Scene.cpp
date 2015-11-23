@@ -66,7 +66,34 @@ void Scene::createRoom()
 	Ogre::SceneNode* mFloorNode = mRoomNode->createChildSceneNode();
 	mFloorNode->attachObject( floorPlaneEntity );
 	mFloorNode->setPosition( 0.0, 0.0, 0.0 );
-
+	//	Ask Ogre to render ALWAYS this plane AFTER the background (skybox) and BEFORE everything else (associating to a higher priority render queue)
+	//  This way the videoPlane can be set at any distance, it will only clip objects of the same renderqueue group!
+	floorPlaneEntity->getSubEntity(0)->getMaterial()->setDepthCheckEnabled(false); 
+    floorPlaneEntity->getSubEntity(0)->getMaterial()->setDepthWriteEnabled(false); 
+	floorPlaneEntity->setRenderQueueGroup( Ogre::RENDER_QUEUE_WORLD_GEOMETRY_1 );
+	/* HERE WE REPORT THE RENRERQUEUES GROUPS AVAILABLE FROM "OgreRenderQueue.h"
+	// Higher the value, later it is rendered!
+	/// Use this queue for objects which must be rendered first e.g. backgrounds
+        RENDER_QUEUE_BACKGROUND = 0,
+        /// First queue (after backgrounds), used for skyboxes if rendered first
+        RENDER_QUEUE_SKIES_EARLY = 5,
+        RENDER_QUEUE_1 = 10,
+        RENDER_QUEUE_2 = 20,
+		RENDER_QUEUE_WORLD_GEOMETRY_1 = 25,
+        RENDER_QUEUE_3 = 30,
+        RENDER_QUEUE_4 = 40,
+		/// The default render queue
+        RENDER_QUEUE_MAIN = 50,
+        RENDER_QUEUE_6 = 60,
+        RENDER_QUEUE_7 = 70,
+		RENDER_QUEUE_WORLD_GEOMETRY_2 = 75,
+        RENDER_QUEUE_8 = 80,
+        RENDER_QUEUE_9 = 90,
+        /// Penultimate queue(before overlays), used for skyboxes if rendered last
+        RENDER_QUEUE_SKIES_LATE = 95,
+        /// Use this queue for objects which must be rendered last e.g. overlays
+        RENDER_QUEUE_OVERLAY = 100
+	*/
 
 	// Other useless objects (temporary)
 	//mCubeGreen = mRoomNode->createChildSceneNode();
@@ -79,6 +106,7 @@ void Scene::createRoom()
 	Ogre::SceneNode* cubeNode3 = mRoomNode->createChildSceneNode();
 	Ogre::Entity* cubeEnt3 = mSceneMgr->createEntity( "Cube.mesh" );
 	cubeEnt3->getSubEntity(0)->setMaterialName( "CubeMaterialWhite" );
+	//cubeEnt3->setRenderQueueGroup( Ogre::RENDER_QUEUE_1 );
 	cubeNode3->attachObject( cubeEnt3 );
 	cubeNode3->setPosition( -1.0, 0.0, 0.0 );
 	cubeNode3->setScale( 0.5, 0.5, 0.5 );
@@ -189,7 +217,7 @@ void Scene::createCameras()
 	mHeadLight->setDiffuseColour( 1.0, 1.0, 1.0 );
 	mHeadNode->attachObject( mHeadLight );*/
 
-	mBodyNode->setPosition( 0.0, 1.7, 0.0 );
+	mBodyNode->setPosition( 0.0, 1.5, 0.0 );
 	//mBodyYawNode->lookAt( Ogre::Vector3::ZERO, Ogre::SceneNode::TS_WORLD );
 
 
@@ -438,7 +466,8 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 		Ogre::TEX_TYPE_2D, FORCE_WIDTH_RESOLUTION, FORCE_HEIGHT_RESOLUTION, 0, Ogre::PF_R8G8B8,
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);
 
-	/* OLD CODE - manual material
+	/*
+	// OLD CODE - manual material, kept for .material debug purposes
 	// Creare new materials and assign the two textures that can be used on the shapes created
 	// WARNING: apparently modifying these lines in another equivalent form will cause runtime crashes!! BE CAREFUL!!
 	mLeftCameraRenderMaterial = Ogre::MaterialManager::getSingleton().create("Scene/LeftCamera", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
@@ -467,7 +496,6 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 	// Assign materials to videoPlaneEntities
 	videoPlaneEntityLeft->setMaterial(mLeftCameraRenderMaterial);
 	videoPlaneEntityRight->setMaterial(mRightCameraRenderMaterial);
-	
 
 
 	// Retrieve the "render target pointer" from the two textures (so we can use it as a standard render target as a window)

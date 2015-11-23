@@ -90,6 +90,7 @@ class Scene : public Ogre::Camera::Listener
 		// - plane scaled with factor x, at distance x meters from the virtual camera
 		// - sphere scaled with factor x, radius x meters with center in virtual camera
 		// Warning: this only affects video mesh scale, keeping percieved FOV constant
+		// LATEST UPDATE: a fictional floor has been placed, so plane should be closer than that!
 		float videoClippingScaleFactor = 6.4f;
 		
 		// Default value is 1. This value means:

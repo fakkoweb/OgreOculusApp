@@ -19,9 +19,9 @@ material PinholeImageMappingMaterial/LeftEye
             alpha_to_coverage off
             colour_write on
             cull_hardware clockwise
-            depth_check on
+            depth_check off                         // also off for renderqueuegroup to work
             depth_func less_equal
-            depth_write off                         // kept off for alpha to work (see doc.)
+            depth_write off                         // kept off for alpha to work (see doc.) and also renderqueuegroup
             illumination_stage 
             light_clip_planes off
             light_scissor off
@@ -63,9 +63,9 @@ material PinholeImageMappingMaterial/RightEye
             alpha_to_coverage off
             colour_write on
             cull_hardware clockwise
-            depth_check on
+            depth_check off                         // also off for renderqueuegroup to work
             depth_func less_equal
-            depth_write off                         // kept off for alpha to work (see doc.)
+            depth_write off                         // kept off for alpha to work (see doc.) and also renderqueuegroup
             illumination_stage 
             light_clip_planes off
             light_scissor off
