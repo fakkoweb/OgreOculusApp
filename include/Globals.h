@@ -1,6 +1,9 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
+#define FORCE_WIDTH_RESOLUTION	1024
+#define FORCE_HEIGHT_RESOLUTION	576
+
 #include <chrono>
 
 extern bool ROTATE_VIEW;

@@ -138,8 +138,8 @@ float FrameCaptureHandler::startCapture()
 			//<< "  rms = " << rms << "\n\n";
 		videoCapture.set(CV_CAP_PROP_FOURCC, CV_FOURCC('H', '2', '6', '4'));
 		//videoCapture.set(CV_CAP_PROP_FOURCC, CV_FOURCC('M', 'J', 'P', 'G'));
-		videoCapture.set(CV_CAP_PROP_FRAME_WIDTH, 1024);
-		videoCapture.set(CV_CAP_PROP_FRAME_HEIGHT, 576);
+		videoCapture.set(CV_CAP_PROP_FRAME_WIDTH, FORCE_WIDTH_RESOLUTION);
+		videoCapture.set(CV_CAP_PROP_FRAME_HEIGHT, FORCE_HEIGHT_RESOLUTION);
 		videoCapture.set(CV_CAP_PROP_FPS, fps);		// in future: leave OpenCV to request to device frames as fast as he can (it minimizes delay and not support all range of FPSs)
 													// the variable "fps" will still be used to sync the grab() calls, even though in future releases grab() should be called repeatedly and then take from those a subset dependent on FPS
 		//videoCapture.set(CV_CAP_PROP_FOCUS, 0);
@@ -305,8 +305,8 @@ void FrameCaptureHandler::fromFileLoop() {
 
 void FrameCaptureHandler::captureLoop() {
 
-	cv::gpu::CudaMem src_image_pagelocked_buffer(cv::Size(1024, 576), CV_8UC3);	//page locked buffer in RAM ready for asynchronous transfer to GPU (same color code and resolution as image!)
-	cv::gpu::CudaMem dst_image_pagelocked_buffer(cv::Size(1024, 576), CV_8UC3);
+	cv::gpu::CudaMem src_image_pagelocked_buffer(cv::Size(FORCE_HEIGHT_RESOLUTION, FORCE_HEIGHT_RESOLUTION), CV_8UC3);	//page locked buffer in RAM ready for asynchronous transfer to GPU (same color code and resolution as image!)
+	cv::gpu::CudaMem dst_image_pagelocked_buffer(cv::Size(FORCE_HEIGHT_RESOLUTION, FORCE_HEIGHT_RESOLUTION), CV_8UC3);
 	cv::Mat cpusrc = src_image_pagelocked_buffer;
 	cv::Mat fx = dst_image_pagelocked_buffer;
 	cv::gpu::Stream image_processing_pipeline;
