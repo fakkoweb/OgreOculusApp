@@ -38,9 +38,12 @@ void Scene::createRoom()
 	mRoomNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("RoomNode");
 	
 	// Prepare mesh/entity for AR object
-	Ogre::Entity* cubeEnt = mSceneMgr->createEntity("Axis.mesh");
+	cubeEnt = mSceneMgr->createEntity("Axis.mesh");
 	cubeEnt->getSubEntity(0)->setMaterialName("BaseAxis");
-	
+	// Prepare alternative
+	ogreEnt = mSceneMgr->createEntity("ogrehead.mesh");
+	//cubeEnt->getSubEntity(0)->setMaterialName("BaseAxis");
+
 	// Create a node in WORLD coordinates to which attach AR object
 	mCubeRed = mRoomNode->createChildSceneNode("CubeRed");
 	mCubeRed->setScale(0.1, 0.1, 0.1);
@@ -705,6 +708,19 @@ void Scene::update(float dt)
 		mFloorNode->setVisible(true, false);
 		noStab = false;
 	}
+	/*
+	if (mKeyboard->isKeyDown(OIS::KC_8))
+	{
+		mCubeRed->setScale(0.1, 0.1, 0.1);
+		mCubeRed->attachObject( cubeEnt );
+	}
+	if (mKeyboard->isKeyDown(OIS::KC_9))
+	{
+		mCubeRed->detachObject( cubeEnt );
+		mCubeRed->setScale(0.002, 0.002, 0.002);
+		mCubeRed->attachObject( ogreEnt );
+	}
+	*/
 
 	// WARNING: THIS IS A HACK!!
 	// UPDATES ORIENTATION OF THE VIDEOPLANES SO THAT VIRTUAL AND REAL ALWAYS MATCH!!

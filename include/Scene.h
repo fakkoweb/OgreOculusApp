@@ -188,6 +188,10 @@ class Scene : public Ogre::Camera::Listener
 		
 		Ogre::Camera* mCamGod = nullptr;
 	
+
+		Ogre::Entity* cubeEnt = nullptr;
+		Ogre::Entity* ogreEnt = nullptr;
+
 		// This is the implementation of Enhanced Head Mode, with some additions:
 		// - there is an additional nodes: mHeadStabilizationNode, which can apply stabilization in respect to head (just to experiment)
 		// - pointers mLeftStabilizationNode and mRightStabilizationNode select if stabilization should be around eye (default) or head (to experiment)
