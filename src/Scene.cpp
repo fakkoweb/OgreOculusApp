@@ -670,6 +670,30 @@ void Scene::update(float dt)
 	}
 	*/
 
+	// WARNING: THIS IS A HACK!!
+	// UPDATES ORIENTATION OF THE VIDEOPLANES SO THAT VIRTUAL AND REAL ALWAYS MATCH!!
+	// WORKS ONLY WITHIN A CERTAIN DISTANCE AND IS HARDCODED FOR THE CURRENT SETUP with Oculus DK2 at Cvap in KTH
+	// For details contact fakkoweb@libero.it
+	// REMEMBER THAT WITH TOED-IN CAMERAS REALITY AND VIRTUALITY CAN MATCH ONLY AT A SPECIFIED DISTANCE OR (if well done) IT CAN DIFFER ALWAYS OF THE OFFSET BETWEEN CAMERAS AND EYES
+	// Since in our implementation such discrepancy is still perceived as high, we dynamically adjust video planes so that they always match, and will adapt from 20cm to 2meters from the marker!
+	
+	
+	float currentMarkerZ = mCubeRedReference->getPosition().z;
+	if(currentMarkerZ > 0.0f && currentMarkerZ < 1.74f) // the selected range for hack goes from 0.285f to 1.73f and correspond respectively to -0.8f deg and 0.9 deg of videoPlane toe-in rotation.
+	{
+		float videoToeInAngleAdjustFactor = (currentMarkerZ - 0.285)/(1.74f-0.285);
+		float videoToeInAdjustRange = 0.9f-(-0.3f);
+		// videoToeInAngle = 0 corresponds to optimal vieweing distance -> where camera optical axes converge!!
+		videoToeInAngle = -0.3f + videoToeInAngleAdjustFactor*videoToeInAdjustRange;	// JUST A LINEAR APPROXIMATION!!
+		
+		mToeInCorrectionLeft->resetOrientation();
+		mToeInCorrectionLeft->yaw(Ogre::Degree(-videoToeInAngle));
+		mToeInCorrectionRight->resetOrientation();
+		mToeInCorrectionRight->yaw(Ogre::Degree(videoToeInAngle));
+		//std::cout<<"New angle! "<<videoToeInAngle<<std::endl;
+	}
+	
+
 	// get full body absolute orientation (in world reference)
 	Ogre::Vector3 dirX = mBodyTiltNode->_getDerivedOrientation()*Ogre::Vector3::UNIT_X;
 	Ogre::Vector3 dirZ = mBodyTiltNode->_getDerivedOrientation()*Ogre::Vector3::UNIT_Z;
