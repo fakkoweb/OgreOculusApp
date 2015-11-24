@@ -120,6 +120,8 @@ void App::loadConfig(const std::string& configurationFilesPath)
 	CAMERA_BUFFERING_DELAY = mConfig->getValueAsInt("Camera/BufferingDelay");
 	ROTATE_VIEW = mConfig->getValueAsBool("Oculus/RotateView");
 	CAMERA_TOEIN_ANGLE = mConfig->getValueAsInt("Camera/CameraToeInAngle");
+	std::cout<<"ANGOLOOOO"<<CAMERA_TOEIN_ANGLE<<std::endl;
+	CAMERA_KEYSTONING_ANGLE = mConfig->getValueAsInt("Camera/CameraKeystoningAngle");
 	if (CAMERA_TOEIN_ANGLE < 0 || CAMERA_TOEIN_ANGLE >= 90) CAMERA_TOEIN_ANGLE = 0;
 
 }
@@ -843,8 +845,11 @@ bool App::keyPressed( const OIS::KeyEvent& e )
 	case OIS::KC_L:
 		keyLayout = LagAdjust;
 		break;
+	case OIS::KC_K:
+		keyLayout = KeystoningAdjust;
+		break;
 	case OIS::KC_Z:
-		keyLayout = ZPlaneAdjust;
+		keyLayout = ZPPlaneAdjust;
 		break;
 
 	// per eye setting selection
@@ -879,7 +884,8 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		e.key == OIS::KC_D ||
 		e.key == OIS::KC_F ||
 		e.key == OIS::KC_L ||
-		e.key == OIS::KC_Z
+		e.key == OIS::KC_K ||
+		e.key == OIS::KC_Z 
 		)
 	{
 		keyLayout = Idle;
@@ -892,104 +898,125 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		//Add Button
 		switch (keyLayout)
 		{
-		case AspectRatioAdjust:
-			switch (eyeSelected)
-			{
-			case Left:
-				mScene->adjustVideoLeftTextureCalibrationAspectRatio(+0.05f);
-				break;
-			case Right:
-				mScene->adjustVideoRightTextureCalibrationAspectRatio(+0.05f);
-				break;
-			default:
-				break;
-			}
+			case AspectRatioAdjust:
+				switch (eyeSelected)
+				{
+				case Left:
+					mScene->adjustVideoLeftTextureCalibrationAspectRatio(+0.05f);
+					break;
+				case Right:
+					mScene->adjustVideoRightTextureCalibrationAspectRatio(+0.05f);
+					break;
+				default:
+					break;
+				}
 
-			break;
-
-		case CalibrationAdjust:
-
-			switch (eyeSelected)
-			{
-			case Left:
-				mScene->adjustVideoLeftTextureCalibrationScale(+0.05f);
 				break;
-			case Right:
-				mScene->adjustVideoRightTextureCalibrationScale(+0.05f);
-				break;
-			default:
-				break;
-			}
 
-			break;
+			case CalibrationAdjust:
 
-		case DistanceAdjust:
-			mScene->adjustVideoDistance(+0.1f);				// +0.1 ogre units (here considered meters)
-			break;
-		case FovAdjust:
-			mScene->adjustVideoFov(+0.01f);
-			break;
-		case LagAdjust:
-			cout << mCameraLeft->adjustManualCaptureDelay(+1) <<endl;		// +1 msec
-			break;
-		
-		case ZPlaneAdjust:
-			cout<<mScene->adjustVideoToeInAngle(+0.5f);
-			break;
+				switch (eyeSelected)
+				{
+				case Left:
+					mScene->adjustVideoLeftTextureCalibrationScale(+0.05f);
+					break;
+				case Right:
+					mScene->adjustVideoRightTextureCalibrationScale(+0.05f);
+					break;
+				default:
+					break;
+				}
+
+				break;
+
+			case DistanceAdjust:
+				mScene->adjustVideoDistance(+0.1f);				// +0.1 ogre units (here considered meters)
+				break;
+			case FovAdjust:
+				mScene->adjustVideoFov(+0.01f);
+				break;
+			case LagAdjust:
+				cout << mCameraLeft->adjustManualCaptureDelay(+1) <<endl;		// +1 msec
+				break;
+			case KeystoningAdjust:
+				cout<<mScene->adjustVideoKeystoningAngle(+0.5f);
+				break;
+			case ZPPlaneAdjust:
+				cout<<mScene->adjustVideoToeInAngle(+0.1f);
+				break;
 
 		}
 
+
+
+
 		break;
+
+
+
+
 	case OIS::KC_SUBTRACT:
 
 		// Minus Button
 		switch (keyLayout)
 		{
-		case AspectRatioAdjust:
-			switch (eyeSelected)
-			{
-			case Left:
-				mScene->adjustVideoLeftTextureCalibrationAspectRatio(-0.05f);
-				break;
-			case Right:
-				mScene->adjustVideoRightTextureCalibrationAspectRatio(-0.05f);
-				break;
-			default:
-				break;
-			}
+			case AspectRatioAdjust:
+				switch (eyeSelected)
+				{
+				case Left:
+					mScene->adjustVideoLeftTextureCalibrationAspectRatio(-0.05f);
+					break;
+				case Right:
+					mScene->adjustVideoRightTextureCalibrationAspectRatio(-0.05f);
+					break;
+				default:
+					break;
+				}
 
-			break;
-
-		case CalibrationAdjust:
-
-			switch (eyeSelected)
-			{
-			case Left:
-				mScene->adjustVideoLeftTextureCalibrationScale(-0.05f);
 				break;
-			case Right:
-				mScene->adjustVideoRightTextureCalibrationScale(-0.05f);
-				break;
-			default:
-				break;
-			}
 
-			break;
-		case DistanceAdjust:
-			mScene->adjustVideoDistance(-0.1f);				// -0.1 ogre units (here considered meters)
-			break;
-		case FovAdjust:
-			mScene->adjustVideoFov(-0.01f);
-			break;
-		case LagAdjust:
-			cout << mCameraLeft->adjustManualCaptureDelay(-1) << endl;		// -1 msec
-			break;
+			case CalibrationAdjust:
+
+				switch (eyeSelected)
+				{
+				case Left:
+					mScene->adjustVideoLeftTextureCalibrationScale(-0.05f);
+					break;
+				case Right:
+					mScene->adjustVideoRightTextureCalibrationScale(-0.05f);
+					break;
+				default:
+					break;
+				}
+
+				break;
+			case DistanceAdjust:
+				mScene->adjustVideoDistance(-0.1f);				// -0.1 ogre units (here considered meters)
+				break;
+			case FovAdjust:
+				mScene->adjustVideoFov(-0.01f);
+				break;
+			case LagAdjust:
+				cout << mCameraLeft->adjustManualCaptureDelay(-1) << endl;		// -1 msec
+				break;
+			case KeystoningAdjust:
+				cout<<mScene->adjustVideoKeystoningAngle(-0.5f);
+				break;
+			case ZPPlaneAdjust:
+				cout<<mScene->adjustVideoToeInAngle(-0.1f);
+				break;
 		}
-		case ZPlaneAdjust:
-			cout<<mScene->adjustVideoToeInAngle(-0.5f);
-			break;
+
+
+
+
+
 
 		break;
+
+
+
+
 
 		// Directional toggles
 		// N.B.: Bottom-left pixel is (0,0) in UV mapping

@@ -51,6 +51,7 @@ class Scene : public Ogre::Camera::Listener
 		float adjustVideoLeftTextureCalibrationScale(const float incrementFactor);
 		float adjustVideoRightTextureCalibrationScale(const float incrementFactor);
 		float adjustVideoToeInAngle(const float incrementAngle);
+		float adjustVideoKeystoningAngle(const float incrementAngle);
 		void setVideoOffset(const Ogre::Vector3 newVideoOffset);
 
 		// Update functions
@@ -139,8 +140,14 @@ class Scene : public Ogre::Camera::Listener
 		// This value is both used to correct keystoning and achieve minimum discrepancy between virtual and real world with toe-in camera
 		// Apply to this the positive inward rotation of the camera in degrees. It will be automatically applied simmetrically to both planes.
 		// Used only for pinhole model.
+		// WARNING: TWO APPROACHES POSSIBLE!!
+		// Q: 	What does it do?
+		// A: 	As explained in the thesis, it will counter keystoning effect (by rotating videoPlane on itself) and keep the discrepancy between real and virtual
+		// 		to the minimum offset (which is the distance between camera and the eye) by rotating videoPlane around the virtual camera.
 		float videoToeInAngle = 0.0f;
 		// N.B. THIS VALUE IS SET BY CONFIGURATION FILE BY "CAMERA_TOEIN_ANGLE"
+
+		float videoKeystoningAngle = 0.0f;
 
 		// This vector is an offset added to to plane/sphere mesh relative position from the virtual
 		// camera. It was supposed to model the displacement between the real camera and the eye.
@@ -192,8 +199,10 @@ class Scene : public Ogre::Camera::Listener
 		// - pointers mLeftStabilizationNode and mRightStabilizationNode select if stabilization should be around eye (default) or head (to experiment)
 		// - since before render for each eye is rendered a new head pose is set, also delta of stabilization should be recalculated; to
 		//	 avoid this, setInheritOrientation(false) is set on the current used stabilization nodes (so the delta needs to be applied just once, just with a new frame)
-		Ogre::SceneNode* mVideoLeft = nullptr;
-		Ogre::SceneNode* mVideoRight = nullptr;
+		Ogre::SceneNode* mVideoLeft = nullptr;						// on this we apply video texture and keystoning correction (only with toed-in cameras)
+		Ogre::SceneNode* mVideoRight = nullptr;						// on this we apply video texture and keystoning correction (only with toed-in cameras)
+		Ogre::SceneNode* mToeInCorrectionLeft = nullptr;			// on this we apply depth discrepancy correction (only with toed-in cameras with 2nd approach)
+		Ogre::SceneNode* mToeInCorrectionRight = nullptr;			// on this we apply depth discrepancy correction (only with toed-in cameras with 2nd approach)
 		Ogre::SceneNode* mCamLeftStabilizationNode = nullptr;		// on this we apply Image EYE stabilization full Orientation delta (if active)
 		Ogre::SceneNode* mCamRightStabilizationNode = nullptr;		// on this we apply Image EYE stabilization full Orientation delta (if active)
 		Ogre::SceneNode* mCamLeftReference = nullptr;				// this node just keeps track of mCamLeft position

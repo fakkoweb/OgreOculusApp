@@ -12,6 +12,7 @@ extern bool ROTATE_VIEW;
 extern bool DEBUG_WINDOW;
 extern unsigned short int CAMERA_BUFFERING_DELAY;
 extern int CAMERA_TOEIN_ANGLE;
+extern int CAMERA_KEYSTONING_ANGLE;
 extern bool undistort, toon;
 //Globals used from Camera.cpp and App.cpp
 extern std::chrono::steady_clock::time_point camera_last_frame_request_time;

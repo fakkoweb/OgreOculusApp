@@ -11,6 +11,7 @@ unsigned short int CAMERA_BUFFERING_DELAY = 0;		// delay between a grab() call a
 													//		image moves then the plane moves -> increase delay value
 													// WARNING: this value depends from your OS/Camera setup!
 int CAMERA_TOEIN_ANGLE = 0;
+int CAMERA_KEYSTONING_ANGLE = 0;
 
 bool undistort = false, toon = false;
 

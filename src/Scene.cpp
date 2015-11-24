@@ -103,6 +103,7 @@ void Scene::createRoom()
 	//mCubeGreen->setPosition( 0.0, 0.0, 0.0 );
 	//mCubeGreen->setScale( 0.1, 0.1, 0.1 );
 	
+	/*
 	Ogre::SceneNode* cubeNode3 = mRoomNode->createChildSceneNode();
 	Ogre::Entity* cubeEnt3 = mSceneMgr->createEntity( "Cube.mesh" );
 	cubeEnt3->getSubEntity(0)->setMaterialName( "CubeMaterialWhite" );
@@ -110,6 +111,7 @@ void Scene::createRoom()
 	cubeNode3->attachObject( cubeEnt3 );
 	cubeNode3->setPosition( -1.0, 0.0, 0.0 );
 	cubeNode3->setScale( 0.5, 0.5, 0.5 );
+	*/
 
 	//Ogre::Entity* roomEnt = mSceneMgr->createEntity( "Room.mesh" );
 	//roomEnt->setCastShadows( false );
@@ -408,10 +410,15 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 	mCamLeftStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeLeft");
 	mCamRightStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeRight");
 
-
+	// Add nodes to which initial the rotational offset of planes is applied to correct toe-in discrepancy (if 2nd approach is enabled)
+	mToeInCorrectionLeft = mCamLeftStabilizationNode->createChildSceneNode("CameraToeInCorrectionNodeLeft");
+	mToeInCorrectionRight = mCamRightStabilizationNode->createChildSceneNode("CameraToeInCorrectionNodeRight");
+	mToeInCorrectionLeft->yaw(Ogre::Degree(-CAMERA_TOEIN_ANGLE));
+	mToeInCorrectionRight->yaw(Ogre::Degree(CAMERA_TOEIN_ANGLE));
+	
 	// AR REFERENCE: Create empty node to use as a relative reference of AR object respect to camera
 	// This is a program optimization (it is easier than calculating inverse transform manually)
-	Ogre::SceneNode* arreference = mCamLeftStabilizationNode->createChildSceneNode("ARreferenceAdjust");// node to apply needed transformation from arUco to Ogre reference
+	Ogre::SceneNode* arreference = mToeInCorrectionLeft->createChildSceneNode("ARreferenceAdjust");// node to apply needed transformation from arUco to Ogre reference
 	mCubeRedReference = arreference->createChildSceneNode("CubeRedReference");							// node to which marker position/orientation is applied
 	mCubeRedOffset = mCubeRedReference->createChildSceneNode("CubeRedOffset");							// node to which custom offset of entity in respect to marker is applied
 	mCubeRedReference->setPosition(0.0, 0.0, 0.0);	//just initial position , will be overwritten as soon as marker is detected
@@ -419,19 +426,18 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 	// Adjustments of coordinates between arUco and Ogre
 	// Applying automatically coordinates of arUco does not work, probably because arUco returns pose of the camera in respect to marker, not viceversa
 	// By using an intermediate node "ARreferenceAdjust" between stabilization node and mCubeRedReference we can do it easily and only once!
-	mCamLeftStabilizationNode->getChild("ARreferenceAdjust")->yaw(Ogre::Degree(180));
+	mToeInCorrectionLeft->getChild("ARreferenceAdjust")->yaw(Ogre::Degree(180));
 	//mCubeRedReference->roll(Ogre::Degree(90));
-
 
 	//GREEN CUBE REFERENCE HERE (used for testing only)!
 	//mCubeGreen->getParentSceneNode()->removeChild(mCubeGreen);
 	//mCamLeftStabilizationNode->addChild(mCubeGreen);
 
-	//Finally create and attach mVideo nodes to camera references (also apply roll from configuration)
-	mVideoLeft = mCamLeftStabilizationNode->createChildSceneNode("LeftVideo");
-	mVideoLeft->yaw(Ogre::Degree(CAMERA_TOEIN_ANGLE));
-	mVideoRight = mCamRightStabilizationNode->createChildSceneNode("RightVideo");
-	mVideoRight->yaw(Ogre::Degree(-CAMERA_TOEIN_ANGLE));
+	//Finally create and attach mVideo nodes to camera references (also apply initial configured roll to correct keystoning)
+	mVideoLeft = mToeInCorrectionLeft->createChildSceneNode("LeftVideo");
+	mVideoLeft->yaw(Ogre::Degree(CAMERA_KEYSTONING_ANGLE));
+	mVideoRight = mToeInCorrectionRight->createChildSceneNode("RightVideo");
+	mVideoRight->yaw(Ogre::Degree(-CAMERA_KEYSTONING_ANGLE));
 
 	//Attach videoPlaneEntityLeft to mVideoLeft SceneNode (now it will have a Position/Scale/Orientation)
 	mVideoLeft->attachObject(videoPlaneEntityLeft);
@@ -724,7 +730,9 @@ void Scene::updateVideos()
 			videoClippingScaleFactor
 			);
 		mVideoLeft->resetOrientation();
-		mVideoLeft->yaw(Ogre::Degree(videoToeInAngle));
+		mToeInCorrectionLeft->resetOrientation();
+		mVideoLeft->yaw(Ogre::Degree(videoKeystoningAngle));
+		mToeInCorrectionLeft->yaw(Ogre::Degree(-videoToeInAngle));
 		mVideoRight->setPosition
 			(
 			videoOffset.x,
@@ -738,7 +746,9 @@ void Scene::updateVideos()
 			videoClippingScaleFactor
 			);
 		mVideoRight->resetOrientation();
-		mVideoRight->yaw(Ogre::Degree(-videoToeInAngle));
+		mToeInCorrectionRight->resetOrientation();
+		mVideoRight->yaw(Ogre::Degree(-videoKeystoningAngle));
+		mToeInCorrectionRight->yaw(Ogre::Degree(videoToeInAngle));
 		break;
 
 	case Fisheye:
@@ -898,9 +908,22 @@ float Scene::adjustVideoRightTextureCalibrationScale(const float incrementFactor
 float Scene::adjustVideoToeInAngle(const float incrementAngle = 0)
 {
 	videoToeInAngle += incrementAngle;
+
+	// By rotating the plane around the virtual camera by the opposite of the angle of toe-in,
+	// one can virtually move the zero-parallax up to infinite, like in a parallel configuration.
+	// More than that MUST NOT BE ALLOWED!!
+	// DANGEROUS: causes STRABISM if violating this rule!!
+	if(videoToeInAngle<-CAMERA_TOEIN_ANGLE) videoToeInAngle = -CAMERA_TOEIN_ANGLE;
 	updateVideos();
 	return videoToeInAngle;
 }
+float Scene::adjustVideoKeystoningAngle(const float incrementAngle = 0)
+{
+	videoKeystoningAngle += incrementAngle;
+	updateVideos();
+	return videoKeystoningAngle;
+}
+
 void Scene::setVideoOffset(const Ogre::Vector3 newVideoOffset = Ogre::Vector3::ZERO)
 {
 	// Alter video mesh so that it models real camera distance from the eye
