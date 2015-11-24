@@ -2,9 +2,11 @@
 #define GLOBALS_H
 
 // LOWER RESOLUTION FOR THIS DEMO!!
-#define FORCE_WIDTH_RESOLUTION	640 //suggested max: 1024
-#define FORCE_HEIGHT_RESOLUTION	360	//suggested max: 576
+#define FORCE_WIDTH_RESOLUTION	1024 //suggested max: 1024
+#define FORCE_HEIGHT_RESOLUTION	576	//suggested max: 576
 #define FORCE_3D_RENDERING_FPS	60  //?? 640x360 for gooch
+#define FORCE_GPU_WIDTH_RESOLUTION 512
+#define FORCE_GPU_HEIGHT_RESOLUTION 288
 
 #include <chrono>
 

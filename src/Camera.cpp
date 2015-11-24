@@ -306,7 +306,7 @@ void FrameCaptureHandler::fromFileLoop() {
 void FrameCaptureHandler::captureLoop() {
 
 	cv::gpu::CudaMem src_image_pagelocked_buffer(cv::Size(FORCE_WIDTH_RESOLUTION, FORCE_HEIGHT_RESOLUTION), CV_8UC3);	//page locked buffer in RAM ready for asynchronous transfer to GPU (same color code and resolution as image!)
-	cv::gpu::CudaMem dst_image_pagelocked_buffer(cv::Size(FORCE_WIDTH_RESOLUTION, FORCE_HEIGHT_RESOLUTION), CV_8UC3);
+	cv::gpu::CudaMem dst_image_pagelocked_buffer(cv::Size(FORCE_GPU_WIDTH_RESOLUTION, FORCE_GPU_HEIGHT_RESOLUTION), CV_8UC3);
 	cv::Mat cpusrc = src_image_pagelocked_buffer;
 	cv::Mat fx = dst_image_pagelocked_buffer;
 	cv::gpu::Stream image_processing_pipeline;
@@ -444,9 +444,10 @@ void FrameCaptureHandler::captureLoop() {
 				// Other elaboration on image
 				// - - - PUT IT HERE! - - -
 				// TOON in GPU - from: https://github.com/BloodAxe/OpenCV-Tutorial/blob/master/OpenCV%20Tutorial/CartoonFilter.cpp
-				
-				cv::gpu::GpuMat gpusrc_a, bgr, bgr_a, gray, edges, edgesBgr;
-				cv::gpu::cvtColor(gpusrc,gpusrc_a, CV_BGR2BGRA );			// hack: meanShiftFiltering for now supports only CV_8UC4!
+				// RESIZED TO REDUCE CALCULATIONS IN DEMO 2!!
+				cv::gpu::GpuMat gpusrc_scaled, gpusrc_a, bgr, bgr_a, gray, edges, edgesBgr;
+				cv::gpu::resize(gpusrc, gpusrc_scaled, cv::Size(FORCE_GPU_WIDTH_RESOLUTION, FORCE_GPU_HEIGHT_RESOLUTION));
+				cv::gpu::cvtColor(gpusrc_scaled,gpusrc_a, CV_BGR2BGRA );	// hack: meanShiftFiltering for now supports only CV_8UC4!
 			    cv::gpu::meanShiftFiltering(gpusrc_a, bgr_a, 15, 40);
 			    cv::gpu::cvtColor(bgr_a, gray, cv::COLOR_BGRA2GRAY);		// hack: is BGRA2GRAY instead of BGR2GRAY for the same reason
 			    cv::gpu::Canny(gray, edges, 150, 150);
