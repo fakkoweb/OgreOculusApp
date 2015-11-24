@@ -140,7 +140,9 @@ void Scene::createRoom()
  
     mSceneMgr->setAmbientLight(Ogre::ColourValue(0.2, 0.2, 0.2));
 
+    // DEMO 2 also starting with nothing!!
     // Add skybox (look at the skyrender.material script file for more details)
+    mFloorNode->setVisible(false, false);
 	mSceneMgr->setSkyBox(true, "noskybox", 25, true);	//value is half of cube edge size
 											 			// default should be 5000, AND NOT RENDER ALWAYS!!
 											 			// see here: http://www.ogre3d.org/forums/viewtopic.php?f=2&t=40792&p=521011#p521011
