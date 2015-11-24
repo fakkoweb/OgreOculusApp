@@ -1,6 +1,6 @@
 // FisheyeImageMappingMaterial genrated by blender2ogre 0.6.0
 
-material FisheyeSampleImageMappingMaterial 
+material FisheyeSampleImageMappingMaterial
 {
     receive_shadows on 
 

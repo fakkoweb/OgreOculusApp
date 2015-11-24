@@ -174,7 +174,7 @@ void App::initScenes()
 	try
 	{
 		// try first to load HFOV/VFOV values (higher priority)
-		mScene->setupVideo(Scene::CameraModel::Pinhole, Scene::StabilizationModel::Eye, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/HFOV"), mConfig->getValueAsReal("Camera/VFOV"));
+		mScene->setupVideo(Scene::CameraModel::Fisheye, Scene::StabilizationModel::Eye, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/HFOV"), mConfig->getValueAsReal("Camera/VFOV"));
 	}
 	catch (Ogre::Exception &e)
 	{
@@ -184,7 +184,7 @@ void App::initScenes()
 			try
 			{
 				// ..try to load other parameters (these are preferred, but lower priority since not everyone know these)
-				mScene->setupVideo(Scene::CameraModel::Pinhole, Scene::StabilizationModel::Eye, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/SensorWidth"), mConfig->getValueAsReal("Camera/SensorHeight"), mConfig->getValueAsReal("Camera/FocalLenght"));
+				mScene->setupVideo(Scene::CameraModel::Fisheye, Scene::StabilizationModel::Eye, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/SensorWidth"), mConfig->getValueAsReal("Camera/SensorHeight"), mConfig->getValueAsReal("Camera/FocalLenght"));
 			}
 			catch (Ogre::Exception &e)
 			{
@@ -769,7 +769,7 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 		imageLeftReady = false;
 		imageRightReady = false;
 	}
-	
+
 	/* KEPT FOR PERSONAL REFERENCE
 	// [ARUCO] UPDATE
 	// undistort images from real cameras and use them for AR

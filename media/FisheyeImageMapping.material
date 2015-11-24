@@ -55,7 +55,7 @@ material FisheyeImageMappingMaterial/LeftEye
 
             texture_unit 
             {
-                //texture fisheye_sample.png        // field set at runtime
+                texture tt3d-fisheye-sm.jpg         // field set here for this demo (demo 3) - does not work why? set in code!
                 tex_address_mode border             // to extend image, can be set to mirror
                 tex_border_colour 0.0 0.0 0.0 0.0   // if border, make transparent (see doc.)
                 scale 1.0 1.0
@@ -103,7 +103,7 @@ material FisheyeImageMappingMaterial/RightEye
 
             texture_unit 
             {
-                //texture fisheye_sample.png        // field set at runtime
+                texture tt3d-fisheye-sm.jpg         // field set here for this demo (demo 3) - does not work why? set in code!
                 tex_address_mode border             // to extend image, can be set to mirror
                 tex_border_colour 0.0 0.0 0.0 0.0   // if border, make transparent (see doc.)
                 scale 1.0 1.0

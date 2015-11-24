@@ -580,11 +580,11 @@ void Scene::createFisheyeVideos(const Ogre::Vector3 offset = Ogre::Vector3::ZERO
 	// WARNING: apparently modifying these lines in another equivalent form will cause runtime crashes!! BE CAREFUL!!
 	// (Remember: UV mapping of the mesh loaded is independent from the texture loaded)
 	mLeftCameraRenderMaterial = Ogre::MaterialManager::getSingleton().getByName("FisheyeImageMappingMaterial/LeftEye");
-	mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
+	mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTextureName("tt3d-fisheye-sm.jpg");
 	//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTextureAddressingMode(Ogre::TextureUnitState::TAM_MIRROR);
 	//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
 	mRightCameraRenderMaterial = Ogre::MaterialManager::getSingleton().getByName("FisheyeImageMappingMaterial/RightEye");
-	mRightCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mRightCameraRenderTexture);
+	mRightCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTextureName("tt3d-fisheye-sm.jpg");
 	//mRightCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mRightCameraRenderTexture);
 
 	// Assign materials to videoPlaneEntities
@@ -685,26 +685,40 @@ void Scene::update(float dt)
 	{
 		mSceneMgr->setSkyBox(true, "noskybox", 25, true);
 		mFloorNode->setVisible(false, false);
-		noStab = true;
+		//noStab = true;
 	}
 	if (mKeyboard->isKeyDown(OIS::KC_2))
 	{
 		mSceneMgr->setSkyBox(true, "noskybox", 25, true);
 		mFloorNode->setVisible(false, false);
-		noStab = false;
+		//noStab = false;
 	}
 	if (mKeyboard->isKeyDown(OIS::KC_3))
 	{
 		mSceneMgr->setSkyBox(true, "skyrender", 25, true);
 		mFloorNode->setVisible(true, false);
-		noStab = true;
+		//noStab = true;
 	}
 	if (mKeyboard->isKeyDown(OIS::KC_4))
 	{
 		mSceneMgr->setSkyBox(true, "skyrender", 25, true);
 		mFloorNode->setVisible(true, false);
-		noStab = false;
+		//noStab = false;
 	}
+	if (mKeyboard->isKeyDown(OIS::KC_5))
+	{
+		noStab = !noStab;
+	}
+
+
+	// FAST HACK FOR DEMO 3!! - keep fisheye steady!
+	if(!noStab)
+	{
+		Ogre::Quaternion deltaHeadPose = mHeadNode->getOrientation().Inverse() * Ogre::Quaternion::IDENTITY;
+		mRightStabilizationNode->setOrientation(deltaHeadPose);
+		mLeftStabilizationNode->setOrientation(deltaHeadPose);		
+	}
+
 
 	// WARNING: THIS IS A HACK!!
 	// UPDATES ORIENTATION OF THE VIDEOPLANES SO THAT VIRTUAL AND REAL ALWAYS MATCH!!
@@ -713,7 +727,7 @@ void Scene::update(float dt)
 	// REMEMBER THAT WITH TOED-IN CAMERAS REALITY AND VIRTUALITY CAN MATCH ONLY AT A SPECIFIED DISTANCE OR (if well done) IT CAN DIFFER ALWAYS OF THE OFFSET BETWEEN CAMERAS AND EYES
 	// Since in our implementation such discrepancy is still perceived as high, we dynamically adjust video planes so that they always match, and will adapt from 20cm to 2meters from the marker!
 	
-	
+	/*
 	float currentMarkerZ = mCubeRedReference->getPosition().z;
 	if(currentMarkerZ > 0.0f && currentMarkerZ < 1.74f) // the selected range for hack goes from 0.285f to 1.73f and correspond respectively to -0.8f deg and 0.9 deg of videoPlane toe-in rotation.
 	{
@@ -728,6 +742,7 @@ void Scene::update(float dt)
 		mToeInCorrectionRight->yaw(Ogre::Degree(videoToeInAngle));
 		//std::cout<<"New angle! "<<videoToeInAngle<<std::endl;
 	}
+	*/
 	
 
 	// get full body absolute orientation (in world reference)
