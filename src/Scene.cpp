@@ -63,7 +63,7 @@ void Scene::createRoom()
 	// 	Add texture
 	floorPlaneEntity->setMaterialName("floor");
 	//	Create an ogre SceneNode to which attach the plane entity
-	Ogre::SceneNode* mFloorNode = mRoomNode->createChildSceneNode();
+	mFloorNode = mRoomNode->createChildSceneNode();
 	mFloorNode->attachObject( floorPlaneEntity );
 	mFloorNode->setPosition( 0.0, 0.0, 0.0 );
 	//	Ask Ogre to render ALWAYS this plane AFTER the background (skybox) and BEFORE everything else (associating to a higher priority render queue)
@@ -141,7 +141,7 @@ void Scene::createRoom()
     mSceneMgr->setAmbientLight(Ogre::ColourValue(0.2, 0.2, 0.2));
 
     // Add skybox (look at the skyrender.material script file for more details)
-	mSceneMgr->setSkyBox(true, "skyrender", 25, true);	//value is half of cube edge size
+	mSceneMgr->setSkyBox(true, "noskybox", 25, true);	//value is half of cube edge size
 											 			// default should be 5000, AND NOT RENDER ALWAYS!!
 											 			// see here: http://www.ogre3d.org/forums/viewtopic.php?f=2&t=40792&p=521011#p521011
 }
@@ -629,6 +629,10 @@ void Scene::setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion 
 		Ogre::Quaternion deltaHeadPose = mHeadNode->getOrientation().Inverse() * pose;
 		mLeftStabilizationNode->setOrientation(deltaHeadPose);
 	}
+	if(noStab)
+	{
+		mLeftStabilizationNode->resetOrientation();
+	}
 
 }
 void Scene::setVideoImagePoseRight(const Ogre::PixelBox &image, Ogre::Quaternion pose)
@@ -651,6 +655,11 @@ void Scene::setVideoImagePoseRight(const Ogre::PixelBox &image, Ogre::Quaternion
 		mRightStabilizationNode->setOrientation(deltaHeadPose);
 
 	}
+	if(noStab)
+	{
+		mRightStabilizationNode->resetOrientation();
+	}
+
 
 }
 
@@ -669,6 +678,31 @@ void Scene::update(float dt)
 		leftRight *= 3;
 	}
 	*/
+
+	if (mKeyboard->isKeyDown(OIS::KC_1))
+	{
+		mSceneMgr->setSkyBox(true, "noskybox", 25, true);
+		mFloorNode->setVisible(false, false);
+		noStab = true;
+	}
+	if (mKeyboard->isKeyDown(OIS::KC_2))
+	{
+		mSceneMgr->setSkyBox(true, "noskybox", 25, true);
+		mFloorNode->setVisible(false, false);
+		noStab = false;
+	}
+	if (mKeyboard->isKeyDown(OIS::KC_3))
+	{
+		mSceneMgr->setSkyBox(true, "skyrender", 25, true);
+		mFloorNode->setVisible(true, false);
+		noStab = true;
+	}
+	if (mKeyboard->isKeyDown(OIS::KC_4))
+	{
+		mSceneMgr->setSkyBox(true, "skyrender", 25, true);
+		mFloorNode->setVisible(true, false);
+		noStab = false;
+	}
 
 	// WARNING: THIS IS A HACK!!
 	// UPDATES ORIENTATION OF THE VIDEOPLANES SO THAT VIRTUAL AND REAL ALWAYS MATCH!!

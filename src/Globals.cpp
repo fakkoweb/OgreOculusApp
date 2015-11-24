@@ -14,6 +14,7 @@ int CAMERA_TOEIN_ANGLE = 0;
 int CAMERA_KEYSTONING_ANGLE = 0;
 
 bool undistort = false, toon = false;
+bool noStab = true;
 
 //Globals used from Camera.cpp and Scene.cpp
 std::chrono::steady_clock::time_point camera_last_frame_request_time = std::chrono::steady_clock::now();

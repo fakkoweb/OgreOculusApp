@@ -27,3 +27,33 @@ material skyrender
         }
     }
 }
+
+material noskybox
+{
+    technique
+    {
+        pass
+        {
+            lighting off
+            depth_write off
+            //fog_override true none
+
+            texture_unit
+            {
+                cubic_texture noskybox.bmp separateUV
+                //skyrender_fr.jpg skyrender_bk.jpg skyrender_lf.jpg skyrender_rt.jpg skyrender_up.jpg skyrender_dn.jpg separateUV
+                //tex_coord_set 0
+                tex_address_mode clamp
+
+				//texture skyboxes_work/just_stars/starcubemap.dds cubic combinedUVW
+				//texture examples/media/bitmap/sky_sunny_1024.dds cubic combinedUVW
+				//this works!!!!!!!!!!!!!!!111
+				//cubic_texture starskybox/stars_fr.bmp starskybox/stars_bk.bmp starskybox/stars_lf.bmp starskybox/stars_rt.bmp starskybox/stars_up.bmp starskybox/stars_dn.bmp separateUV
+				//texture skyboxes_work/just_stars/starsskydome.bmp
+				//tex_coord_set 0
+				//tex_address_mode clamp
+				
+            }
+        }
+    }
+}

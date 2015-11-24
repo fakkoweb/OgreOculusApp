@@ -215,6 +215,7 @@ class Scene : public Ogre::Camera::Listener
 		Ogre::SceneNode* mBodyNode = nullptr;						// on this we apply Body position transformation (=mBodyYawNode)
 
 		Ogre::SceneNode* mRoomNode = nullptr;
+		Ogre::SceneNode* mFloorNode = nullptr;
 		Ogre::SceneNode* mCubeRed = nullptr;
 		Ogre::SceneNode* mCubeRedReference = nullptr;
 		Ogre::SceneNode* mCubeRedOffset = nullptr;

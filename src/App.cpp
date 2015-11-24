@@ -120,7 +120,7 @@ void App::loadConfig(const std::string& configurationFilesPath)
 	CAMERA_BUFFERING_DELAY = mConfig->getValueAsInt("Camera/BufferingDelay");
 	ROTATE_VIEW = mConfig->getValueAsBool("Oculus/RotateView");
 	CAMERA_TOEIN_ANGLE = mConfig->getValueAsInt("Camera/CameraToeInAngle");
-	std::cout<<"ANGOLOOOO"<<CAMERA_TOEIN_ANGLE<<std::endl;
+	//std::cout<<"ANGOLOOOO"<<CAMERA_TOEIN_ANGLE<<std::endl;
 	CAMERA_KEYSTONING_ANGLE = mConfig->getValueAsInt("Camera/CameraKeystoningAngle");
 	if (CAMERA_TOEIN_ANGLE < 0 || CAMERA_TOEIN_ANGLE >= 90) CAMERA_TOEIN_ANGLE = 0;
 
