@@ -729,7 +729,7 @@ void Scene::update(float dt)
 	// REMEMBER THAT WITH TOED-IN CAMERAS REALITY AND VIRTUALITY CAN MATCH ONLY AT A SPECIFIED DISTANCE OR (if well done) IT CAN DIFFER ALWAYS OF THE OFFSET BETWEEN CAMERAS AND EYES
 	// Since in our implementation such discrepancy is still perceived as high, we dynamically adjust video planes so that they always match, and will adapt from 20cm to 2meters from the marker!
 	
-	
+	/*
 	float currentMarkerZ = mCubeRedReference->getPosition().z;
 	if(currentMarkerZ > 0.0f && currentMarkerZ < 1.74f) // the selected range for hack goes from 0.285f to 1.73f and correspond respectively to -0.8f deg and 0.9 deg of videoPlane toe-in rotation.
 	{
@@ -744,6 +744,7 @@ void Scene::update(float dt)
 		mToeInCorrectionRight->yaw(Ogre::Degree(videoToeInAngle));
 		//std::cout<<"New angle! "<<videoToeInAngle<<std::endl;
 	}
+	*/
 	
 
 	// get full body absolute orientation (in world reference)
