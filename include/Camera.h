@@ -1,6 +1,7 @@
 #pragma once
 
 #include <opencv2/opencv.hpp>
+#include <opencv2/gpu/gpu.hpp>
 #include <aruco.h>
 #include <thread>
 #include <mutex>
@@ -9,9 +10,21 @@
 #include "OGRE/Ogre.h"
 #include "Globals.h"
 
+struct ImageCaptureData
+{
+	cv::Mat rgb;
+	double orientation[4];
+};
+
+struct ARCaptureData
+{
+	double position[3];
+	double orientation[4];
+};
+
 struct FrameCaptureData {
-	Ogre::Quaternion pose;
-	cv::Mat image;
+	ImageCaptureData image;
+	std::vector<ARCaptureData> markers;
 };
 
 class FrameCaptureHandler
@@ -26,14 +39,23 @@ class FrameCaptureHandler
 		};
 
 	private:
-		const unsigned int deviceId = 0;
+		unsigned int deviceId = 0;
+		string filePath;
 		cv::VideoCapture videoCapture;
 		std::thread captureThread;
 		std::mutex mutex;
 		FrameCaptureData frame;
 		float aspectRatio = 0;
+		bool arEnabled = false;
+
+		static bool isInitialized;
+		static unsigned short int cuda_Users;
+		static void initCuda();
+		static void shutdownCuda();
+
+		bool fromFile = false;
 		bool hasFrame = false;
-		bool stopped = false;
+		bool stopped = true;
 		bool opening_failed = false;
 
 		// Explanation:
@@ -45,25 +67,30 @@ class FrameCaptureHandler
 		// Otherwise cameraCaptureManualDelayMs is used and can be adjusted manually with adjustManualCaptureDelay()
 		double cameraCaptureRealDelayMs = 0;		// Automatically computed.
 		double cameraCaptureManualDelayMs = 0;		// Clamped between 0 and 50.
+		short unsigned int fps;
+		std::chrono::steady_clock::time_point captureStart_time;
 
 		Rift* headset = nullptr;
 		ovrHmd hmd = nullptr;
 
-		CompensationMode currentCompensationMode = Approximate;
+		CompensationMode currentCompensationMode = Precise_manual;
 
 		// Internal capture functions
 		void set(const FrameCaptureData & newFrame);
 		void captureLoop();
+		void fromFileLoop();
 
 	public:
 
-		FrameCaptureHandler(const unsigned int input_device, Rift* input_headset);
+		FrameCaptureHandler(const unsigned int 	input_device, 	Rift* const input_headset, const bool enable_AR = false,  const std::chrono::steady_clock::time_point syncStart_time = std::chrono::steady_clock::now(), const unsigned short int desiredFps = 30);
+		FrameCaptureHandler(const std::string& 	input_file, 	Rift* const input_headset, const bool enable_AR = false,  const std::chrono::steady_clock::time_point syncStart_time = std::chrono::steady_clock::now(), const unsigned short int desiredFps = 30);
 
 		// Spawn capture thread and return webcam aspect ratio (width over height)
 		float startCapture();
 		void stopCapture();
 
 		// Get data
+		bool hasNewFrame();
 		bool get(FrameCaptureData & out);
 		float getAspectRatio(){ return aspectRatio; }
 		//void getCameraParameters(aruco::CameraParameters& outParameters);
@@ -74,9 +101,11 @@ class FrameCaptureHandler
 		// Value is not used if currentCompensationMode != Precise_manual
 		// adjustValue can be negative or positive.
 		// It returns the modified value. 0 returns the current value.
-		short int adjustManualCaptureDelay(const short int adjustValue);
+		double adjustManualCaptureDelay(const short int adjustValue);
 
 		void setCompensationMode(const CompensationMode newMode){ currentCompensationMode = newMode; }
+		bool setCaptureSource(const unsigned int newDeviceId);		// sets fromFile to false and the new deviceId. Capture must be stopped in order to take effect! Returns false otherwise!
+		bool setCaptureSource(const std::string& newFilePath);			// sets fromFile to true and filePath. Capture must be stopped in order to take effect! Returns false otherwise!
 
 };
 

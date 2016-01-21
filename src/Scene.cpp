@@ -36,31 +36,87 @@ Scene::~Scene()
 void Scene::createRoom()
 {
 	mRoomNode = mSceneMgr->getRootSceneNode()->createChildSceneNode("RoomNode");
-	Ogre::Entity* cubeEnt = mSceneMgr->createEntity("Cube.mesh");
-	cubeEnt->getSubEntity(0)->setMaterialName("CubeMaterialRed");
-	mCubeRed = mRoomNode->createChildSceneNode("CubeRed");								// node to which marker position/orientation is applied
-	Ogre::SceneNode* mCubeRedOffset = mCubeRed->createChildSceneNode("CubeRedOffset");	// offset to place cube as you wish around marker reference
-	mCubeRedOffset->attachObject( cubeEnt );
-	mCubeRed->setPosition(1.0, 0.0, 0.0);	//initial position in the Scene
-	mCubeRedOffset->setScale(0.5, 0.5, 0.5);
-	Ogre::SceneNode* cubeNode2 = mRoomNode->createChildSceneNode();
-	Ogre::Entity* cubeEnt2 = mSceneMgr->createEntity( "Cube.mesh" );
-	cubeEnt2->getSubEntity(0)->setMaterialName( "CubeMaterialGreen" );
-	cubeNode2->attachObject( cubeEnt2 );
-	cubeNode2->setPosition( 3.0, 0.0, 0.0 );
-	cubeNode2->setScale( 0.5, 0.5, 0.5 );
 	
+	// Prepare mesh/entity for AR object
+	Ogre::Entity* cubeEnt = mSceneMgr->createEntity("Axis.mesh");
+	cubeEnt->getSubEntity(0)->setMaterialName("BaseAxis");
+	
+	// Create a node in WORLD coordinates to which attach AR object
+	mCubeRed = mRoomNode->createChildSceneNode("CubeRed");
+	mCubeRed->setScale(0.1, 0.1, 0.1);
+	mCubeRed->attachObject( cubeEnt );
+
+	// Create the floor
+	// 	Create a plane class instance that describes floor plane (no position or orientation, just mathematical description)
+	Ogre::Plane videoPlane(Ogre::Vector3::UNIT_Y, 0);
+	// 	Create a static mesh out of the plane (as a REUSABLE "resource")
+	Ogre::MeshManager::getSingleton().createPlane(
+		"floorMesh",										// this is the name that our resource will have for the whole application!
+		Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
+		videoPlane,											// this is the instance from which we build the mesh
+		30, 30, 1, 1,
+		true,
+		1, 1, 1,
+		Ogre::Vector3::UNIT_Z);								// this is the vector that will be used as mesh UP direction
+	//	Create an ogre Entity out of the resource we created (more Entities can be created out of a resource!)
+	Ogre::Entity* floorPlaneEntity = mSceneMgr->createEntity("floorMesh");
+	// 	Add texture
+	floorPlaneEntity->setMaterialName("floor");
+	//	Create an ogre SceneNode to which attach the plane entity
+	Ogre::SceneNode* mFloorNode = mRoomNode->createChildSceneNode();
+	mFloorNode->attachObject( floorPlaneEntity );
+	mFloorNode->setPosition( 0.0, 0.0, 0.0 );
+	//	Ask Ogre to render ALWAYS this plane AFTER the background (skybox) and BEFORE everything else (associating to a higher priority render queue)
+	//  This way the videoPlane can be set at any distance, it will only clip objects of the same renderqueue group!
+	floorPlaneEntity->getSubEntity(0)->getMaterial()->setDepthCheckEnabled(false); 
+    floorPlaneEntity->getSubEntity(0)->getMaterial()->setDepthWriteEnabled(false); 
+	floorPlaneEntity->setRenderQueueGroup( Ogre::RENDER_QUEUE_WORLD_GEOMETRY_1 );
+	/* HERE WE REPORT THE RENRERQUEUES GROUPS AVAILABLE FROM "OgreRenderQueue.h"
+	// Higher the value, later it is rendered!
+	/// Use this queue for objects which must be rendered first e.g. backgrounds
+        RENDER_QUEUE_BACKGROUND = 0,
+        /// First queue (after backgrounds), used for skyboxes if rendered first
+        RENDER_QUEUE_SKIES_EARLY = 5,
+        RENDER_QUEUE_1 = 10,
+        RENDER_QUEUE_2 = 20,
+		RENDER_QUEUE_WORLD_GEOMETRY_1 = 25,
+        RENDER_QUEUE_3 = 30,
+        RENDER_QUEUE_4 = 40,
+		/// The default render queue
+        RENDER_QUEUE_MAIN = 50,
+        RENDER_QUEUE_6 = 60,
+        RENDER_QUEUE_7 = 70,
+		RENDER_QUEUE_WORLD_GEOMETRY_2 = 75,
+        RENDER_QUEUE_8 = 80,
+        RENDER_QUEUE_9 = 90,
+        /// Penultimate queue(before overlays), used for skyboxes if rendered last
+        RENDER_QUEUE_SKIES_LATE = 95,
+        /// Use this queue for objects which must be rendered last e.g. overlays
+        RENDER_QUEUE_OVERLAY = 100
+	*/
+
+	// Other useless objects (temporary)
+	//mCubeGreen = mRoomNode->createChildSceneNode();
+	//Ogre::Entity* cubeEnt2 = mSceneMgr->createEntity( "Cube.mesh" );
+	//cubeEnt2->getSubEntity(0)->setMaterialName( "CubeMaterialGreen" );
+	//mCubeGreen->attachObject( cubeEnt2 );
+	//mCubeGreen->setPosition( 0.0, 0.0, 0.0 );
+	//mCubeGreen->setScale( 0.1, 0.1, 0.1 );
+	
+	/*
 	Ogre::SceneNode* cubeNode3 = mRoomNode->createChildSceneNode();
 	Ogre::Entity* cubeEnt3 = mSceneMgr->createEntity( "Cube.mesh" );
 	cubeEnt3->getSubEntity(0)->setMaterialName( "CubeMaterialWhite" );
+	//cubeEnt3->setRenderQueueGroup( Ogre::RENDER_QUEUE_1 );
 	cubeNode3->attachObject( cubeEnt3 );
 	cubeNode3->setPosition( -1.0, 0.0, 0.0 );
 	cubeNode3->setScale( 0.5, 0.5, 0.5 );
+	*/
 
-	Ogre::Entity* roomEnt = mSceneMgr->createEntity( "Room.mesh" );
-	roomEnt->setCastShadows( false );
-	mRoomNode->attachObject( roomEnt );
-
+	//Ogre::Entity* roomEnt = mSceneMgr->createEntity( "Room.mesh" );
+	//roomEnt->setCastShadows( false );
+	//mRoomNode->attachObject( roomEnt );
+/*
 	Ogre::Light* roomLight = mSceneMgr->createLight();
 	roomLight->setType(Ogre::Light::LT_POINT);
 	roomLight->setCastShadows( false );
@@ -70,8 +126,24 @@ void Scene::createRoom()
 	roomLight->setDiffuseColour( 0.85, 0.76, 0.7 );
 
 	roomLight->setPosition( 5, 5, 5 );
+*/
+	//mRoomNode->attachObject( roomLight );
 
-	mRoomNode->attachObject( roomLight );
+	Ogre::Light* light = mSceneMgr->createLight("tstLight");
+    light->setType(Ogre::Light::LT_DIRECTIONAL);
+    Ogre::Vector3 lightdir(-0.55, -0.4, -0.75);
+    //Ogre::Vector3 lightdir(0, -1, 0);
+    lightdir.normalise();
+    light->setDirection(lightdir);
+    light->setDiffuseColour(Ogre::ColourValue::White);
+    light->setSpecularColour(Ogre::ColourValue(0.4, 0.4, 0.4));
+ 
+    mSceneMgr->setAmbientLight(Ogre::ColourValue(0.2, 0.2, 0.2));
+
+    // Add skybox (look at the skyrender.material script file for more details)
+	mSceneMgr->setSkyBox(true, "skyrender", 25, true);	//value is half of cube edge size
+											 			// default should be 5000, AND NOT RENDER ALWAYS!!
+											 			// see here: http://www.ogre3d.org/forums/viewtopic.php?f=2&t=40792&p=521011#p521011
 }
 void Scene::createCameras()
 {
@@ -100,8 +172,8 @@ void Scene::createCameras()
 	// Camera projection matrices will be set later to SDK suggested values by calling setCameraMatrices()
 	mHeadNode->attachObject(mCamLeft);
 	mHeadNode->attachObject(mCamRight);
-	mCamLeft->setFarClipDistance(50);
-	mCamRight->setFarClipDistance(50);
+	mCamLeft->setFarClipDistance(10000);						// see here: http://www.ogre3d.org/forums/viewtopic.php?f=2&t=40792&p=521011#p521011
+	mCamRight->setFarClipDistance(10000);
 	mCamLeft->setNearClipDistance(0.001);
 	mCamRight->setNearClipDistance(0.001);
 
@@ -110,7 +182,7 @@ void Scene::createCameras()
 	float default_IPdist = 0.064f;			// distance between the eyes
 	float default_HorETNdist = 0.0805f;		// horizontal distance from the eye to the neck
 	float default_VerETNdist = 0.075f;		// vertical distance from the eye to the neck
-	mCamLeft->setPosition ( -default_IPdist / 2.0f , default_VerETNdist, -default_HorETNdist ); //x is side, y is up, z is towards the screen
+	mCamLeft->setPosition ( -default_IPdist / 2.0f , default_VerETNdist, -default_HorETNdist ); //x is right, y is up, z is towards the screen
 	mCamRight->setPosition( default_IPdist / 2.0f  , default_VerETNdist, -default_HorETNdist );
 
 	/*
@@ -147,7 +219,7 @@ void Scene::createCameras()
 	mHeadLight->setDiffuseColour( 1.0, 1.0, 1.0 );
 	mHeadNode->attachObject( mHeadLight );*/
 
-	mBodyNode->setPosition( 4.0, 1.5, 4.0 );
+	mBodyNode->setPosition( 0.0, 1.5, 0.0 );
 	//mBodyYawNode->lookAt( Ogre::Vector3::ZERO, Ogre::SceneNode::TS_WORLD );
 
 
@@ -186,9 +258,9 @@ void Scene::setupVideo(const CameraModel camModelToUse, const StabilizationModel
 			switch (camModelToUse)
 			{
 			case Pinhole:
-				planeWidth = std::tan(hFovRads / 2) * videoClippingScaleFactor * 2;
-				planeHeight = std::tan(vFovRads / 2) * videoClippingScaleFactor * 2;
-				createPinholeVideos(planeWidth, planeHeight, eyeToCameraOffset);
+				planeWidth = std::tan(hFovRads / 2) * 1.0f /**/ * 2;				// ** Plane mesh is created using videoClippingScaleFactor = 1 as a distance reference.
+				planeHeight = std::tan(vFovRads / 2) * 1.0f /**/ * 2;				//	  Then we only need to act on its scale and position multiplying custom user's value
+				createPinholeVideos(planeWidth, planeHeight, eyeToCameraOffset);	//    to resize plane accordingly: no need to recreate the mesh.
 				break;
 			case Fisheye:
 				createFisheyeVideos(eyeToCameraOffset);
@@ -198,24 +270,11 @@ void Scene::setupVideo(const CameraModel camModelToUse, const StabilizationModel
 				break;
 			}
 
-			switch (stabModelToUse)
-			{
-			case Head:
-				mLeftStabilizationNode = mHeadStabilizationNodeLeft;
-				mRightStabilizationNode = mHeadStabilizationNodeRight;
-				break;
-			case Eye:
-				mLeftStabilizationNode = mCamLeftStabilizationNode;
-				mRightStabilizationNode = mCamRightStabilizationNode;
-				break;
-			default:
-				throw Ogre::Exception(Ogre::Exception::ERR_INVALIDPARAMS, "Invalid Stabilization Model selection!", "Scene::setupVideo");
-				break;
-			}
+			//set stabilization model
+			setStabilizationMode(stabModelToUse);
 
 			// save current values for later adjustments
 			currentCameraModel = camModelToUse;
-			currentStabilizationModel = stabModelToUse;
 			videoHFov = cameraHFov;
 			videoVFov = cameraVFov;
 
@@ -246,12 +305,13 @@ void Scene::setupVideo(const CameraModel camModelToUse, const StabilizationModel
 			switch (camModelToUse)
 			{
 			case Pinhole:
-				planeWidth = (WSensor * videoClippingScaleFactor) / FL;
-				planeHeight = (HSensor * videoClippingScaleFactor) / FL;
-				createPinholeVideos(planeWidth, planeHeight, eyeToCameraOffset);
+				
+				planeWidth = (WSensor * 1.0f /**/) / FL;							// ** Plane mesh is created using videoClippingScaleFactor = 1 as a distance reference.
+				planeHeight = (HSensor * 1.0f /**/) / FL;							//	  Then we only need to act on its scale and position multiplying custom user's value
+				createPinholeVideos(planeWidth, planeHeight, eyeToCameraOffset);	//    to resize plane accordingly: no need to recreate the mesh.
 				// compute current fov values for later adjustments
-				cameraHFov = ((2 * std::atan(planeWidth / (2 * videoClippingScaleFactor))) * 180) / M_PI;
-				cameraVFov = ((2 * std::atan(planeHeight / (2 * videoClippingScaleFactor))) * 180) / M_PI;
+				cameraHFov = ((2 * std::atan(planeWidth / (2 * 1.0f /**/))) * 180) / M_PI;
+				cameraVFov = ((2 * std::atan(planeHeight / (2 * 1.0f /**/))) * 180) / M_PI;
 				break;
 			case Fisheye:
 				createFisheyeVideos(eyeToCameraOffset);
@@ -261,24 +321,11 @@ void Scene::setupVideo(const CameraModel camModelToUse, const StabilizationModel
 				break;
 			}
 
-			switch (stabModelToUse)
-			{
-			case Head:
-				mLeftStabilizationNode = mHeadStabilizationNodeLeft;
-				mRightStabilizationNode = mHeadStabilizationNodeRight;
-				break;
-			case Eye:
-				mLeftStabilizationNode = mCamLeftStabilizationNode;
-				mRightStabilizationNode = mCamRightStabilizationNode;
-				break;
-			default:
-				throw Ogre::Exception(Ogre::Exception::ERR_INVALIDPARAMS, "Invalid Stabilization Model selection!", "Scene::setupVideo");
-				break;
-			}
+			//set stabilization model
+			setStabilizationMode(stabModelToUse);
 
 			// save current values for later adjustments
 			currentCameraModel = camModelToUse;
-			currentStabilizationModel = stabModelToUse;
 			videoHFov = cameraHFov;
 			videoVFov = cameraVFov;
 		}
@@ -294,13 +341,17 @@ void Scene::setupVideo(const CameraModel camModelToUse, const StabilizationModel
 }
 void Scene::setStabilizationMode(StabilizationModel modelToUse)
 {
-	if (!mLeftStabilizationNode && !mRightStabilizationNode)
+	
+	if (mLeftStabilizationNode!=nullptr && mRightStabilizationNode!=nullptr)
 	{
-		// reset last stabilization poses to IDENTITY
+		// reset last stabilization poses to IDENTITY and their default behaviour
 		mLeftStabilizationNode->resetOrientation();
 		mRightStabilizationNode->resetOrientation();
-	}
+		mLeftStabilizationNode->setInheritOrientation(true);
+		mRightStabilizationNode->setInheritOrientation(true);
 
+	}
+	
 	// change stabilization node to use
 	switch (modelToUse)
 	{
@@ -316,6 +367,10 @@ void Scene::setStabilizationMode(StabilizationModel modelToUse)
 		throw Ogre::Exception(Ogre::Exception::ERR_INVALIDPARAMS, "Invalid Stabilization Model selection!", "Scene::setupVideo");
 		break;
 	}
+	// Set current stabilization node independent from parent (see why in Scene.h on Ehnanced Head Model comments)
+	// STILL TO TEST OUT!
+	//mLeftStabilizationNode->setInheritOrientation(false);
+	//mRightStabilizationNode->setInheritOrientation(false);
 
 	currentStabilizationModel = modelToUse;
 }
@@ -355,9 +410,34 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 	mCamLeftStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeLeft");
 	mCamRightStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeRight");
 
-	//Finally attach mVideo nodes to camera references
-	mVideoLeft = mCamLeftStabilizationNode->createChildSceneNode("LeftVideo");
-	mVideoRight = mCamRightStabilizationNode->createChildSceneNode("RightVideo");
+	// Add nodes to which initial the rotational offset of planes is applied to correct toe-in discrepancy (if 2nd approach is enabled)
+	mToeInCorrectionLeft = mCamLeftStabilizationNode->createChildSceneNode("CameraToeInCorrectionNodeLeft");
+	mToeInCorrectionRight = mCamRightStabilizationNode->createChildSceneNode("CameraToeInCorrectionNodeRight");
+	mToeInCorrectionLeft->yaw(Ogre::Degree(-CAMERA_TOEIN_ANGLE));
+	mToeInCorrectionRight->yaw(Ogre::Degree(CAMERA_TOEIN_ANGLE));
+	
+	// AR REFERENCE: Create empty node to use as a relative reference of AR object respect to camera
+	// This is a program optimization (it is easier than calculating inverse transform manually)
+	Ogre::SceneNode* arreference = mToeInCorrectionLeft->createChildSceneNode("ARreferenceAdjust");// node to apply needed transformation from arUco to Ogre reference
+	mCubeRedReference = arreference->createChildSceneNode("CubeRedReference");							// node to which marker position/orientation is applied
+	mCubeRedOffset = mCubeRedReference->createChildSceneNode("CubeRedOffset");							// node to which custom offset of entity in respect to marker is applied
+	mCubeRedReference->setPosition(0.0, 0.0, 0.0);	//just initial position , will be overwritten as soon as marker is detected
+	mCubeRedOffset->setPosition(0.0f, 0.0f, 0.0f);	//offset to place cube as you wish around marker reference	
+	// Adjustments of coordinates between arUco and Ogre
+	// Applying automatically coordinates of arUco does not work, probably because arUco returns pose of the camera in respect to marker, not viceversa
+	// By using an intermediate node "ARreferenceAdjust" between stabilization node and mCubeRedReference we can do it easily and only once!
+	mToeInCorrectionLeft->getChild("ARreferenceAdjust")->yaw(Ogre::Degree(180));
+	//mCubeRedReference->roll(Ogre::Degree(90));
+
+	//GREEN CUBE REFERENCE HERE (used for testing only)!
+	//mCubeGreen->getParentSceneNode()->removeChild(mCubeGreen);
+	//mCamLeftStabilizationNode->addChild(mCubeGreen);
+
+	//Finally create and attach mVideo nodes to camera references (also apply initial configured roll to correct keystoning)
+	mVideoLeft = mToeInCorrectionLeft->createChildSceneNode("LeftVideo");
+	mVideoLeft->yaw(Ogre::Degree(CAMERA_KEYSTONING_ANGLE));
+	mVideoRight = mToeInCorrectionRight->createChildSceneNode("RightVideo");
+	mVideoRight->yaw(Ogre::Degree(-CAMERA_KEYSTONING_ANGLE));
 
 	//Attach videoPlaneEntityLeft to mVideoLeft SceneNode (now it will have a Position/Scale/Orientation)
 	mVideoLeft->attachObject(videoPlaneEntityLeft);
@@ -385,13 +465,15 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 	//Create two special textures (TU_DYNAMIC_WRITE_ONLY_DISCARDABLE) that will be applied to the two videoPlaneEntities
 	mLeftCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
 		"RenderTextureCameraLeft", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8,
+		Ogre::TEX_TYPE_2D, FORCE_WIDTH_RESOLUTION, FORCE_HEIGHT_RESOLUTION, 0, Ogre::PF_R8G8B8,
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);
 	mRightCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
 		"RenderTextureCameraRight", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8,
+		Ogre::TEX_TYPE_2D, FORCE_WIDTH_RESOLUTION, FORCE_HEIGHT_RESOLUTION, 0, Ogre::PF_R8G8B8,
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);
 
+	/*
+	// OLD CODE - manual material, kept for .material debug purposes
 	// Creare new materials and assign the two textures that can be used on the shapes created
 	// WARNING: apparently modifying these lines in another equivalent form will cause runtime crashes!! BE CAREFUL!!
 	mLeftCameraRenderMaterial = Ogre::MaterialManager::getSingleton().create("Scene/LeftCamera", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME);
@@ -403,10 +485,24 @@ void Scene::createPinholeVideos(const float WPlane, const float HPlane, const Og
 	Ogre::Technique *technique2 = mRightCameraRenderMaterial->createTechnique();
 	technique2->createPass();
 	mRightCameraRenderMaterial->getTechnique(0)->getPass(0)->createTextureUnitState("RenderTextureCameraRight");
+	*/
+
+	// Load scripted materials and assign the two dynamic textures just created.
+	// ONLY the texture image is changed, other parameters are already set in .material file!
+	// WARNING: apparently modifying these lines in another equivalent form will cause runtime crashes!! BE CAREFUL!!
+	// (Remember: UV mapping of the mesh loaded is independent from the texture loaded)
+	mLeftCameraRenderMaterial = Ogre::MaterialManager::getSingleton().getByName("PinholeImageMappingMaterial/LeftEye");
+	mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
+	//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTextureAddressingMode(Ogre::TextureUnitState::TAM_MIRROR);
+	//mLeftCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mLeftCameraRenderTexture);
+	mRightCameraRenderMaterial = Ogre::MaterialManager::getSingleton().getByName("PinholeImageMappingMaterial/RightEye");
+	mRightCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mRightCameraRenderTexture);
+	//mRightCameraRenderMaterial->getTechnique(0)->getPass(0)->getTextureUnitState(0)->setTexture(mRightCameraRenderTexture);
 
 	// Assign materials to videoPlaneEntities
 	videoPlaneEntityLeft->setMaterial(mLeftCameraRenderMaterial);
 	videoPlaneEntityRight->setMaterial(mRightCameraRenderMaterial);
+
 
 	// Retrieve the "render target pointer" from the two textures (so we can use it as a standard render target as a window)
 	//Ogre::RenderTexture* mLeftCameraRenderTextureA = mLeftCameraRenderTexture->getBuffer()->getRenderTarget();
@@ -440,9 +536,11 @@ void Scene::createFisheyeVideos(const Ogre::Vector3 offset = Ogre::Vector3::ZERO
 	mCamLeftStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeLeft");
 	mCamRightStabilizationNode = mCamLeftReference->createChildSceneNode("CameraReferenceStabilizationNodeRight");
 
-	//Finally attach mVideo nodes to camera references
+	//Finally create and attach mVideo nodes to camera references (also apply roll from configuration)
 	mVideoLeft = mCamLeftStabilizationNode->createChildSceneNode("LeftVideo");
+	mVideoLeft->yaw(Ogre::Degree(CAMERA_TOEIN_ANGLE));
 	mVideoRight = mCamRightStabilizationNode->createChildSceneNode("RightVideo");
+	mVideoRight->yaw(Ogre::Degree(-CAMERA_TOEIN_ANGLE));
 
 	//Attach videoPlaneEntityLeft to mVideoLeft SceneNode (now shape will have a Position/Scale/Orientation)
 	mVideoLeft->attachObject(videoSphereEntityLeft);
@@ -468,11 +566,11 @@ void Scene::createFisheyeVideos(const Ogre::Vector3 offset = Ogre::Vector3::ZERO
 	//Create two special textures (TU_DYNAMIC_WRITE_ONLY_DISCARDABLE) that will be applied to the two videoPlaneEntities
 	mLeftCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
 		"RenderTextureCameraLeft", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8A8,	// A8 is added so Texture can be transparent outside the image!
+		Ogre::TEX_TYPE_2D, FORCE_WIDTH_RESOLUTION, FORCE_HEIGHT_RESOLUTION, 0, Ogre::PF_R8G8B8A8,	// A8 is added so Texture can be transparent outside the image!
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);				// see also here -> http://www.ogre3d.org/tikiwiki/-material
 	mRightCameraRenderTexture = Ogre::TextureManager::getSingleton().createManual(
 		"RenderTextureCameraRight", Ogre::ResourceGroupManager::DEFAULT_RESOURCE_GROUP_NAME,
-		Ogre::TEX_TYPE_2D, 1920, 1080, 0, Ogre::PF_R8G8B8A8,	// A8 is added so Texture can be transparent outside the image!
+		Ogre::TEX_TYPE_2D, FORCE_WIDTH_RESOLUTION, FORCE_HEIGHT_RESOLUTION, 0, Ogre::PF_R8G8B8A8,	// A8 is added so Texture can be transparent outside the image!
 		Ogre::TU_DYNAMIC_WRITE_ONLY_DISCARDABLE);				// see also here -> http://www.ogre3d.org/tikiwiki/-material
 	
 	// Load scripted materials and assign the two dynamic textures just created.
@@ -572,6 +670,30 @@ void Scene::update(float dt)
 	}
 	*/
 
+	// WARNING: THIS IS A HACK!!
+	// UPDATES ORIENTATION OF THE VIDEOPLANES SO THAT VIRTUAL AND REAL ALWAYS MATCH!!
+	// WORKS ONLY WITHIN A CERTAIN DISTANCE AND IS HARDCODED FOR THE CURRENT SETUP with Oculus DK2 at Cvap in KTH
+	// For details contact fakkoweb@libero.it
+	// REMEMBER THAT WITH TOED-IN CAMERAS REALITY AND VIRTUALITY CAN MATCH ONLY AT A SPECIFIED DISTANCE OR (if well done) IT CAN DIFFER ALWAYS OF THE OFFSET BETWEEN CAMERAS AND EYES
+	// Since in our implementation such discrepancy is still perceived as high, we dynamically adjust video planes so that they always match, and will adapt from 20cm to 2meters from the marker!
+	
+	
+	float currentMarkerZ = mCubeRedReference->getPosition().z;
+	if(currentMarkerZ > 0.0f && currentMarkerZ < 1.74f) // the selected range for hack goes from 0.285f to 1.73f and correspond respectively to -0.8f deg and 0.9 deg of videoPlane toe-in rotation.
+	{
+		float videoToeInAngleAdjustFactor = (currentMarkerZ - 0.285)/(1.74f-0.285);
+		float videoToeInAdjustRange = 0.9f-(-0.3f);
+		// videoToeInAngle = 0 corresponds to optimal vieweing distance -> where camera optical axes converge!!
+		videoToeInAngle = -0.3f + videoToeInAngleAdjustFactor*videoToeInAdjustRange;	// JUST A LINEAR APPROXIMATION!!
+		
+		mToeInCorrectionLeft->resetOrientation();
+		mToeInCorrectionLeft->yaw(Ogre::Degree(-videoToeInAngle));
+		mToeInCorrectionRight->resetOrientation();
+		mToeInCorrectionRight->yaw(Ogre::Degree(videoToeInAngle));
+		//std::cout<<"New angle! "<<videoToeInAngle<<std::endl;
+	}
+	
+
 	// get full body absolute orientation (in world reference)
 	Ogre::Vector3 dirX = mBodyTiltNode->_getDerivedOrientation()*Ogre::Vector3::UNIT_X;
 	Ogre::Vector3 dirZ = mBodyTiltNode->_getDerivedOrientation()*Ogre::Vector3::UNIT_Z;
@@ -631,6 +753,10 @@ void Scene::updateVideos()
 			inverse_scaling,
 			videoClippingScaleFactor
 			);
+		mVideoLeft->resetOrientation();
+		mToeInCorrectionLeft->resetOrientation();
+		mVideoLeft->yaw(Ogre::Degree(videoKeystoningAngle));
+		mToeInCorrectionLeft->yaw(Ogre::Degree(-videoToeInAngle));
 		mVideoRight->setPosition
 			(
 			videoOffset.x,
@@ -643,6 +769,10 @@ void Scene::updateVideos()
 			inverse_scaling,
 			videoClippingScaleFactor
 			);
+		mVideoRight->resetOrientation();
+		mToeInCorrectionRight->resetOrientation();
+		mVideoRight->yaw(Ogre::Degree(-videoKeystoningAngle));
+		mToeInCorrectionRight->yaw(Ogre::Degree(videoToeInAngle));
 		break;
 
 	case Fisheye:
@@ -688,7 +818,7 @@ void Scene::updateVideos()
 
 	std::cout << videoLeftTextureCalibrationAspectRatio << std::endl;
 
-	// Setup orientation (if needed) -- for now is constant
+	// Setup orientation (if needed) -- for now this is read from .cfg file and applied on mesh creation!
 	//mVideoLeft->roll(Ogre::Degree(-CAMERA_ROTATION));
 	//mVideoRight->roll(Ogre::Degree(CAMERA_ROTATION));
 
@@ -799,6 +929,25 @@ float Scene::adjustVideoRightTextureCalibrationScale(const float incrementFactor
 	updateVideos();
 	return videoRightTextureCalibrationScale;
 }
+float Scene::adjustVideoToeInAngle(const float incrementAngle = 0)
+{
+	videoToeInAngle += incrementAngle;
+
+	// By rotating the plane around the virtual camera by the opposite of the angle of toe-in,
+	// one can virtually move the zero-parallax up to infinite, like in a parallel configuration.
+	// More than that MUST NOT BE ALLOWED!!
+	// DANGEROUS: causes STRABISM if violating this rule!!
+	if(videoToeInAngle<-CAMERA_TOEIN_ANGLE) videoToeInAngle = -CAMERA_TOEIN_ANGLE;
+	updateVideos();
+	return videoToeInAngle;
+}
+float Scene::adjustVideoKeystoningAngle(const float incrementAngle = 0)
+{
+	videoKeystoningAngle += incrementAngle;
+	updateVideos();
+	return videoKeystoningAngle;
+}
+
 void Scene::setVideoOffset(const Ogre::Vector3 newVideoOffset = Ogre::Vector3::ZERO)
 {
 	// Alter video mesh so that it models real camera distance from the eye

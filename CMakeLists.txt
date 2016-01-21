@@ -382,6 +382,7 @@ file(GLOB_RECURSE header_files "${header_dir_name}/*.hpp" "${header_dir_name}/*.
 source_group("${header_dir_name}" FILES ${header_files})
 
 # add header files to included directories
+#include_directories(${PROJECT_INCLUDE_DIR})
 list(APPEND HEADERS_TO_INCLUDE_PUBLIC "${PROJECT_INCLUDE_DIR}")
 
 
@@ -401,13 +402,21 @@ if(USE_BUNDLED_OculusSDK AND COMPILE_OculusSDK)
 endif()
 
 # arUco lib - always compiled with the project
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/arUco") # arUco subproject src and config
-list(APPEND LIBRARIES_TO_LINK aruco)					# arUco subproject lib link
-	list(APPEND HEADERS_TO_INCLUDE_PUBLIC				# arUco subproject include
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/arUco")	# arUco subproject src and config
+list(APPEND LIBRARIES_TO_LINK aruco)									# arUco subproject lib link
+list(APPEND HEADERS_TO_INCLUDE_PUBLIC									# arUco subproject include
 		"${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/arUco/src"
 	)
+if(UNIX)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")					# flags needed by arUco in linux
+endif()
 
-
+# Ogre video plugin
+#add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/OgreVideoPlugin")	# OgreVideoPlugin subproject src and config
+#list(APPEND LIBRARIES_TO_LINK OgreVideoPlugin)										# OgreVideoPlugin subproject lib link
+#list(APPEND HEADERS_TO_INCLUDE_PUBLIC												# OgreVideoPlugin subproject include
+#		"${CMAKE_CURRENT_SOURCE_DIR}/${libs_dir_name}/OgreVideoPlugin/include"
+#	)
 
 ################################################################
 #                   EXE OUTPUT                                 #
@@ -470,7 +479,7 @@ elseif( UNIX )
 		librt.so
 		libXrandr.so
 		libGL.so
-		libXxf86vm.so
+		#libXxf86vm.so
 		libpthread.so
 		${XINERAMA_LIBRARY}
 		${X11_LIBRARIES}
@@ -486,14 +495,28 @@ endif()
 # set "_d" postfix for debug configurations
 set_target_properties(${OUTPUT_FILE_NAME} PROPERTIES DEBUG_POSTFIX _d)
 
-# /MP for multiple thread compiling
-# WIN32_LEAN_AND_MEAN to avoid conflicts between boost and Leap motion, which both seem to include winsock.h
+# add unix specific flags for the projects
+if(UNIX)
+	# set correct c++ flag according to compiler in use (no longer necessary in cmake 3.0!)
+	include(CheckCXXCompilerFlag)
+	CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
+	CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
+	if(COMPILER_SUPPORTS_CXX11)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+	elseif(COMPILER_SUPPORTS_CXX0X)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+	else()
+	        message(SEND_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++11 support. Please use a different C++ compiler.")
+	endif()
+endif()
+
+# further specific flags
 if( WIN32 )
+	# /MP for multiple thread compiling
+	# /DWIN32_LEAN_AND_MEAN to avoid conflicts between boost and Leap motion, which both seem to include winsock.h
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP /DWIN32_LEAN_AND_MEAN")
 endif()
-if( UNIX )
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-endif()
+
 
 ################################################################
 #                   OGRE RUNTIME FILES CONFIG                  #

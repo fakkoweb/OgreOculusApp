@@ -1,0 +1,37 @@
+material floor
+{
+
+	receive_shadows on
+
+	technique
+	{
+		pass floor
+		{
+            ambient 0.2 0.2 0.2 1.0
+            diffuse 0.843137255 0.803921569 0.68627451 1.0
+            specular 0.843137255 0.803921569 0.68627451 1.0
+            emissive 0.2 0.2 0.2 1.0
+      		scene_blend alpha_blend
+      		//depth_write off
+			cull_hardware clockwise
+			cull_software back
+			shading blinn
+
+			// Allows shadows with scene_blend = alpha_blend
+         	alpha_rejection greater 128
+
+			// Decide the color regardless of the light in the scene
+            //ambient 0.843137255 0.803921569 0.68627451 1.0
+            //diffuse 0.843137255 0.803921569 0.68627451 1.0
+            //specular 0.843137255 0.803921569 0.68627451 1.0
+            //emissive 0.843137255 0.803921569 0.68627451 1.0		// the actual color of the floor (matching the skybox)
+
+			// Don't really need a texture
+			texture_unit
+			{
+			//	lighting off
+				texture floor_alpha.png
+			}
+		}
+	}
+}

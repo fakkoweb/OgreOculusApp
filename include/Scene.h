@@ -50,6 +50,8 @@ class Scene : public Ogre::Camera::Listener
 		float adjustVideoRightTextureCalibrationAspectRatio(const float arIncrement);
 		float adjustVideoLeftTextureCalibrationScale(const float incrementFactor);
 		float adjustVideoRightTextureCalibrationScale(const float incrementFactor);
+		float adjustVideoToeInAngle(const float incrementAngle);
+		float adjustVideoKeystoningAngle(const float incrementAngle);
 		void setVideoOffset(const Ogre::Vector3 newVideoOffset);
 
 		// Update functions
@@ -57,8 +59,9 @@ class Scene : public Ogre::Camera::Listener
 		void setRiftPose( Ogre::Quaternion orientation, Ogre::Vector3 pos );
 		void setVideoImagePoseLeft(const Ogre::PixelBox &image, Ogre::Quaternion pose);
 		void setVideoImagePoseRight(const Ogre::PixelBox &image, Ogre::Quaternion pose);
-		void setCubePosition(Ogre::Vector3 pos){ mCubeRed->setPosition(pos); }
-		void setCubeOrientation(Ogre::Quaternion ori){ mCubeRed->setOrientation(ori); };
+		// Apply relative AR pose and save it as absolute in world coordinates
+		void setCubePosition(Ogre::Vector3 pos){ mCubeRedReference->setPosition(pos); mCubeRed->setPosition(mCubeRedReference->_getDerivedPosition()); }
+		void setCubeOrientation(Ogre::Quaternion ori){ mCubeRedReference->setOrientation(ori); mCubeRed->setOrientation(mCubeRedReference->_getDerivedOrientation()); };
 		//void setCameraTextureRight();
 	
 		// Keyboard and mouse events (forwarded by App)
@@ -72,6 +75,7 @@ class Scene : public Ogre::Camera::Listener
 		void cameraPostRenderScene(Ogre::Camera* cam);
 		void cameraPreRenderScene(Ogre::Camera* cam);
 
+		Ogre::SceneNode* mHeadNode = nullptr;
 	private:
 
 		CameraModel currentCameraModel = Fisheye;
@@ -83,14 +87,15 @@ class Scene : public Ogre::Camera::Listener
 		float videoHFov;
 		float videoVFov;
 
-		// Default value is 1. This value means:
+		// Default value is 6.4 (about 100*IPD). This value means:
 		// - plane scaled with factor x, at distance x meters from the virtual camera
 		// - sphere scaled with factor x, radius x meters with center in virtual camera
 		// Warning: this only affects video mesh scale, keeping percieved FOV constant
-		float videoClippingScaleFactor = 1.0f;
+		// LATEST UPDATE: a fictional floor has been placed, so plane should be closer than that!
+		float videoClippingScaleFactor = 6.4f;
 		
 		// Default value is 1. This value means:
-		// - plane is scaled along its XY axis by an additional x factor
+		// - plane is scaled along its XY axis by an additional 1/x factor
 		// - sphere is scaled along its Z axis by an additional x factor
 		// Increase in this value means increase in percieved fov of the video image.
 		// This value may be used to compensate the "too close" effect of real objects
@@ -100,17 +105,17 @@ class Scene : public Ogre::Camera::Listener
 
 		// This value is used to alter video mesh UV coordinates and calibrate projection (Fisheye model).
 		// Adjusting Offset, fisheye TEXTURE will move right/left or up/down.
-		// N.B. This is achieved by (in reality) subtracting this values from UV coordinates.
+		// N.B. This is achieved by actually subtracting this values from UV coordinates.
 		// This is very useful since sensor proportions and the center of fisheye circle on the sensor
 		// vary from user to user.
-		// User can find the best value (for his camera/lens setup) when the center of fisheye circle image
+		// User can find the best value (for his camera/lens setup) when the center of fisheye circle
 		// (the part of the image with less distortion) is in front of the eye.
-		// It is suggested to adjust this with small texture scale: when image is small enough, it will show
-		// as a small circle and not as an ellipsis.
-		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO THEY ARE USED SEPARATELY.
-		// Default value is UV map centered in the image. Since we assume UV map has original center in 0,0
-		// (which means bottom-left vertex of the image) we translate all UV points by 0.5, which means in
-		// the user's view to translate the image by -0.5
+		// It is suggested to adjust this while having small texture scale: when image is small enough, it will show
+		// as a small circle and therefore easier to position.
+		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO TWO DIFFERENT VARIABLES ARE USED.
+		// Default value is (-0.5,-0.5). For this project, UV coordinates of the sphere central vertex is 0,0
+		// (which corresponds to bottom-left edge of the texture). We want the center of the image in front of the user,
+		// therefore we translate all UV points by 0.5, which means to translate the image texture by -0.5.
 		Ogre::Vector2 videoLeftTextureCalibrationOffset = Ogre::Vector2(-0.5f,-0.5f);
 		Ogre::Vector2 videoRightTextureCalibrationOffset = Ogre::Vector2(-0.5f,-0.5f);
 
@@ -119,18 +124,30 @@ class Scene : public Ogre::Camera::Listener
 		// User will find the correct value (for his camera/lens setup) when image will appear as a perfect
 		// circle.
 		// This value is the exact aspect ratio of the image user is using (ex. 4:3 -> 1.333)
-		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO THEY ARE USED SEPARATELY.floa
+		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO THEY ARE USED SEPARATELY.
+		// Default value is 1.0, which means square image. For now this value must be setup manually..
 		float videoLeftTextureCalibrationAspectRatio = 1.0f;
 		float videoRightTextureCalibrationAspectRatio = 1.0f;
-
 
 		// This value is used to alter video mesh UV coordinates and calibrate projection (Fisheye model).
 		// Adjusting Scale, fisheye texture will get smaller or wider.
 		// User will find the correct value (for his camera/lens setup) when lines supposed to be straight
-		// will show as straight as seen in the headset.
-		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO THEY ARE USED SEPARATELY.floa
+		// will show as straight in the headset.
+		// VALUES CAN BE DIFFERENT BETWEEN THE TWO CAMERAS, SO THEY ARE USED SEPARATELY.
 		float videoLeftTextureCalibrationScale = 1.0f;
 		float videoRightTextureCalibrationScale = 1.0f;
+
+		// This value is both used to correct keystoning and achieve minimum discrepancy between virtual and real world with toe-in camera
+		// Apply to this the positive inward rotation of the camera in degrees. It will be automatically applied simmetrically to both planes.
+		// Used only for pinhole model.
+		// WARNING: TWO APPROACHES POSSIBLE!!
+		// Q: 	What does it do?
+		// A: 	As explained in the thesis, it will counter keystoning effect (by rotating videoPlane on itself) and keep the discrepancy between real and virtual
+		// 		to the minimum offset (which is the distance between camera and the eye) by rotating videoPlane around the virtual camera.
+		float videoToeInAngle = 0.0f;
+		// N.B. THIS VALUE IS SET BY CONFIGURATION FILE BY "CAMERA_TOEIN_ANGLE"
+
+		float videoKeystoningAngle = 0.0f;
 
 		// This vector is an offset added to to plane/sphere mesh relative position from the virtual
 		// camera. It was supposed to model the displacement between the real camera and the eye.
@@ -170,22 +187,38 @@ class Scene : public Ogre::Camera::Listener
 		Ogre::MaterialPtr mRightCameraRenderMaterial;
 		
 		Ogre::Camera* mCamGod = nullptr;
+	
+		// This is the implementation of Enhanced Head Mode, with some additions:
+		// - there is an additional nodes: mHeadStabilizationNode, which can apply stabilization in respect to head (just to experiment)
+		// - pointers mLeftStabilizationNode and mRightStabilizationNode select if stabilization should be around eye (default) or head (to experiment)
+		// - since before render for each eye is rendered a new head pose is set, also delta of stabilization should be recalculated; to
+		//	 avoid this, setInheritOrientation(false) is set on the current used stabilization nodes (so the delta needs to be applied just once, just with a new frame)
 
-		Ogre::SceneNode* mVideoLeft = nullptr;
-		Ogre::SceneNode* mVideoRight = nullptr;
+		// This is the implementation of Enhanced Head Mode, with some additions:
+		// - there is an additional nodes: mHeadStabilizationNode, which can apply stabilization in respect to head (just to experiment)
+		// - pointers mLeftStabilizationNode and mRightStabilizationNode select if stabilization should be around eye (default) or head (to experiment)
+		// - since before render for each eye is rendered a new head pose is set, also delta of stabilization should be recalculated; to
+		//	 avoid this, setInheritOrientation(false) is set on the current used stabilization nodes (so the delta needs to be applied just once, just with a new frame)
+		Ogre::SceneNode* mVideoLeft = nullptr;						// on this we apply video texture and keystoning correction (only with toed-in cameras)
+		Ogre::SceneNode* mVideoRight = nullptr;						// on this we apply video texture and keystoning correction (only with toed-in cameras)
+		Ogre::SceneNode* mToeInCorrectionLeft = nullptr;			// on this we apply depth discrepancy correction (only with toed-in cameras with 2nd approach)
+		Ogre::SceneNode* mToeInCorrectionRight = nullptr;			// on this we apply depth discrepancy correction (only with toed-in cameras with 2nd approach)
 		Ogre::SceneNode* mCamLeftStabilizationNode = nullptr;		// on this we apply Image EYE stabilization full Orientation delta (if active)
 		Ogre::SceneNode* mCamRightStabilizationNode = nullptr;		// on this we apply Image EYE stabilization full Orientation delta (if active)
 		Ogre::SceneNode* mCamLeftReference = nullptr;				// this node just keeps track of mCamLeft position
 		Ogre::SceneNode* mCamRightReference = nullptr;				// this node just keeps track of mCamRight position
 		Ogre::SceneNode* mHeadStabilizationNodeLeft = nullptr;		// on this we apply Image NECK stabilization full Orientation delta (if active)
 		Ogre::SceneNode* mHeadStabilizationNodeRight = nullptr;		// on this we apply Image NECK stabilization full Orientation delta (if active)
-		Ogre::SceneNode* mHeadNode = nullptr;						// on this we apply Head full Orientation (Yaw/Pitch/Roll)
+		//Ogre::SceneNode* mHeadNode = nullptr;						// on this we apply Head full Orientation (Yaw/Pitch/Roll)
 		Ogre::SceneNode* mBodyTiltNode = nullptr;					// on this we apply Body Pitch transformation (up/down turn)
 		Ogre::SceneNode* mBodyYawNode = nullptr;					// on this we apply Body Yaw transformation (left/right turn)
 		Ogre::SceneNode* mBodyNode = nullptr;						// on this we apply Body position transformation (=mBodyYawNode)
 
 		Ogre::SceneNode* mRoomNode = nullptr;
 		Ogre::SceneNode* mCubeRed = nullptr;
+		Ogre::SceneNode* mCubeRedReference = nullptr;
+		Ogre::SceneNode* mCubeRedOffset = nullptr;
+		Ogre::SceneNode* mCubeGreen = nullptr;
 };
 
 #endif

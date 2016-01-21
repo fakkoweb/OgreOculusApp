@@ -82,7 +82,9 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 			CalibrationAdjust,
 			DistanceAdjust,
 			FovAdjust,
-			LagAdjust
+			LagAdjust,
+			KeystoningAdjust,
+			ZPPlaneAdjust
 		} keyLayout = Idle;
 		enum EyeCode
 		{
@@ -113,7 +115,8 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 
 		// If this is set to true, the app will close during the next frame:
 		bool mShutdown = false;
-
+		bool mPause = false;
+		std::chrono::steady_clock::time_point loopStart_time;
 		Scene* mScene = nullptr;
 
 		Rift* mRift = nullptr;
@@ -122,6 +125,10 @@ class App : public Ogre::FrameListener, public OIS::KeyListener, public OIS::Mou
 		FrameCaptureHandler* mCameraRight = nullptr;
 		Ogre::PixelBox mOgrePixelBoxLeft;	//Ogre containers for opencv Mat image raw data
 		Ogre::PixelBox mOgrePixelBoxRight;	//Ogre containers for opencv Mat image raw data
+		FrameCaptureData nextFrameLeft;
+		FrameCaptureData nextFrameRight;
+		bool imageLeftReady = false;
+		bool imageRightReady = false;
 };
 
 #endif

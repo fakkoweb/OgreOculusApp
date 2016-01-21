@@ -1,5 +1,5 @@
 // ----------------------------------------------------------------------
-// Visualization of Patient data (Dicoms and surface models) using the
+// Visualization of Patient data (Dicoms and surface models) using the 
 // Oculus Rift.
 // ---------------------------------------------------------------------
 // August 2014, Micha Pfeiffer
@@ -10,16 +10,19 @@
 #include <iostream>
 #include "Globals.h"
 #include "App.h"
-
-extern "C" {
+#include "OGRE/Ogre.h"
 
     int main(int argc, char *argv[])
     {
-		std::cout << "Hello world." << std::endl;
-
+		//std::cout << "Hello world." << std::endl;
 		for ( int i = 0; i < argc; i++ )
 		{
 			std::string arg( argv[i] );
+
+			if (arg == "-cbd" && i<argc-1)
+			{
+				CAMERA_BUFFERING_DELAY = atoi(argv[++i]);
+			}
 
 			// This flag triggers the DK1/DK2 view rotation (set this up as you need it)
 			if( arg == "--rotate-view" )
@@ -49,12 +52,43 @@ extern "C" {
 			}
 		}
 
+		// LOAD APP WITH MY CONFIGURATION VALUES
 		// Creates the main program and starts rendering. When a framelistener
 		// returns false, this will return.
-		App* app = new App();
+		std::string configFilePathPrefix = "cfg/";			// configuration files default location when app is installed
+		std::string paramsFileName = "parameters.cfg";		// parameters config file name
+		App* app;
 
+		// Try to load load up a valid config file (start the program with default values if none is found)
+		try
+		{
+			//This will work ONLY when application is installed (only Release application)!
+			std::cout << "Launching Application..." << std::endl;
+			app = new App(configFilePathPrefix, paramsFileName);
+		}
+		catch (Ogre::FileNotFoundException& e)
+		{
+			std::cout << "Launch Aborted.\n" << std::endl;
+			try
+			{
+				// if no existing config, or could not restore it, try to load from a different location
+				std::cout << "Changing configuration directory path." << std::endl;
+				configFilePathPrefix = "../cfg/";
+
+				// This will work ONLY when application is in development (Debug/Release configuration)
+				std::cout << "Launching Application..." << std::endl;
+				app = new App(configFilePathPrefix, paramsFileName);
+			}
+			catch (Ogre::FileNotFoundException& e)
+			{
+				// critical failure
+				std::cout << "Launch Aborted.\n" << std::endl;
+				throw e;
+			}
+		}
+
+		// App construction has finished = App has finished its job :)
 		delete app;
 
         return 0;
     }
-}

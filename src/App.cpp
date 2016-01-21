@@ -2,13 +2,14 @@
 #include <chrono>
 #include <thread>
 
-void frames_per_second(int delay)
+void frames_per_second(double delay)
 {
 	static int num_frame = 0;
 	static int time = 0;
 
 	num_frame++;
 	time += delay;
+	std::cout<<delay<<std::endl;
 	if (time >= 1000)
 	{
 		std::cout << "\tFPS:" << num_frame << std::endl;
@@ -19,7 +20,7 @@ void frames_per_second(int delay)
 }
 
 //Globals used only in App.cpp
-std::chrono::steady_clock::time_point ogre_last_frame_displayed_time = std::chrono::system_clock::now();
+std::chrono::steady_clock::time_point ogre_last_frame_displayed_time = std::chrono::steady_clock::now();
 std::chrono::duration< int, std::milli > ogre_last_frame_delay;
 
 ////////////////////////////////////////////////////////////
@@ -66,13 +67,13 @@ App::App(const std::string& configurationFilesPath = "cfg/", const std::string& 
 	start();
 
 	//Rift Setup (creates Oculus rendering window and Oculus inner scene - user shouldn't care about it)
-	initRift();
+	//initRift();
 
 	//Stereo camera rig setup ()
 	//initCameras();
 
 	//Input/Output setup (associate I/O to Oculus window)
-	initOIS();
+	//initOIS();
 
 
 	// when setup has finished successfully, enable Video into scene
@@ -82,7 +83,7 @@ App::App(const std::string& configurationFilesPath = "cfg/", const std::string& 
 	//initTray();
 
 	//Viewport setup (link scene cameras to Ogre/Oculus windows)
-	createViewports();
+	//createViewports();
 
 
 
@@ -118,9 +119,10 @@ void App::loadConfig(const std::string& configurationFilesPath)
 	// Overwrite default parameters values
 	CAMERA_BUFFERING_DELAY = mConfig->getValueAsInt("Camera/BufferingDelay");
 	ROTATE_VIEW = mConfig->getValueAsBool("Oculus/RotateView");
-	CAMERA_ROTATION = mConfig->getValueAsInt("Camera/Rotation");
-	if (CAMERA_ROTATION <= -180 || CAMERA_ROTATION > 180)
-		CAMERA_ROTATION = 180;
+	CAMERA_TOEIN_ANGLE = mConfig->getValueAsInt("Camera/CameraToeInAngle");
+	std::cout<<"ANGOLOOOO"<<CAMERA_TOEIN_ANGLE<<std::endl;
+	CAMERA_KEYSTONING_ANGLE = mConfig->getValueAsInt("Camera/CameraKeystoningAngle");
+	if (CAMERA_TOEIN_ANGLE < 0 || CAMERA_TOEIN_ANGLE >= 90) CAMERA_TOEIN_ANGLE = 0;
 
 }
 
@@ -172,7 +174,7 @@ void App::initScenes()
 	try
 	{
 		// try first to load HFOV/VFOV values (higher priority)
-		mScene->setupVideo(Scene::CameraModel::Fisheye, Scene::StabilizationModel::Head, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/HFOV"), mConfig->getValueAsReal("Camera/VFOV"));
+		mScene->setupVideo(Scene::CameraModel::Pinhole, Scene::StabilizationModel::Eye, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/HFOV"), mConfig->getValueAsReal("Camera/VFOV"));
 	}
 	catch (Ogre::Exception &e)
 	{
@@ -182,7 +184,7 @@ void App::initScenes()
 			try
 			{
 				// ..try to load other parameters (these are preferred, but lower priority since not everyone know these)
-				mScene->setupVideo(Scene::CameraModel::Fisheye, Scene::StabilizationModel::Head, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/SensorWidth"), mConfig->getValueAsReal("Camera/SensorHeight"), mConfig->getValueAsReal("Camera/FocalLenght"));
+				mScene->setupVideo(Scene::CameraModel::Pinhole, Scene::StabilizationModel::Eye, Ogre::Vector3::ZERO, mConfig->getValueAsReal("Camera/SensorWidth"), mConfig->getValueAsReal("Camera/SensorHeight"), mConfig->getValueAsReal("Camera/FocalLenght"));
 			}
 			catch (Ogre::Exception &e)
 			{
@@ -201,6 +203,10 @@ void App::initScenes()
 	mScene->setIPD(mRift->getIPD());												// adjust IPD
 	mRift->setCameraMatrices(mScene->getLeftCamera(), mScene->getRightCamera());	// adjust matrices
 	mScene->setVideoLeftTextureCalibrationAspectRatio(1.77778f);
+
+	// DEBUG
+	mRift->mHeadNode = mScene->mHeadNode;
+	std::cout << "Camera internal left virtual matrix:\n" << mScene->getLeftCamera()->getProjectionMatrix() << std::endl;
 
 }
 
@@ -252,9 +258,85 @@ void App::initViewports()
 
 void App::start()
 {
-	// START RENDERING!
+	// START AUTOMATIC RENDERING!
 	// WHO CREATES AN INSTANCE OF THIS CLASS WILL WAIT INDEFINITELY UNTIL THIS CALL RETURNS
-	mRoot->startRendering();
+	//mRoot->startRendering();
+
+
+	// TIME VARIABLES FOR MANUAL RENDERING TIME
+	int fps = FORCE_3D_RENDERING_FPS;
+	std::chrono::duration< double, std::micro > frame_delay;
+	if(fps<=0) frame_delay = std::chrono::duration< double, std::micro >::zero();
+	else frame_delay = std::chrono::microseconds(1000000/fps);
+    // Time structures for jitter/delay removal
+    std::chrono::steady_clock::time_point frameStart_time;
+    std::chrono::steady_clock::time_point frameEnd_time;
+    std::chrono::duration< double, std::micro > wakeup_jitter = std::chrono::duration< double, std::micro >::zero();
+    std::chrono::duration< double, std::micro > needed_sleep_delay = std::chrono::duration< double, std::micro >::zero();
+    // Save this moment as the application start time (to sync other concurrent threads)
+	loopStart_time = std::chrono::steady_clock::now();
+	// Initialize fps count
+	std::chrono::steady_clock::time_point currentSecondStart_time = loopStart_time;
+	unsigned int currentSecondNumFramesRendered = 0;
+
+	// START MANUAL RENDERING!
+	// This allows us to control when each frame is rendered (limiting frame rate)
+	frameStart_time = std::chrono::steady_clock::now();
+	while (!mShutdown)
+	{
+		Ogre::WindowEventUtilities::messagePump();
+
+    	//if (mWindow->isClosed()) return false;
+		if (!mRoot->renderOneFrame()) mShutdown = true;
+		currentSecondNumFramesRendered++;
+		//if (mPause)
+			//mScene->getSceneMgr()->_pauseRendering();
+
+
+		//JITTER AND DELAY CALCULATION+REMOVAL!
+		//-----------------------------------------
+		//END: save now() as last render loop ends
+		frameEnd_time = std::chrono::steady_clock::now();
+				//cout<< "computation time delay: "<<std::chrono::duration_cast<std::chrono::microseconds>(frameEnd_time - frameStart_time).count()<<endl;			
+		//SLEEP for the next frame_delay, reduced by the last wakeup_jitter and computation time this loop took
+		needed_sleep_delay = frame_delay - std::chrono::duration_cast<std::chrono::microseconds>(frameEnd_time - frameStart_time) - wakeup_jitter;
+				//cout<< "new nominal wake-up delay: "<<std::chrono::duration_cast<std::chrono::microseconds>(needed_sleep_delay).count()<<endl;
+				//cout<<"------"<<endl;
+		if(needed_sleep_delay.count()<0)	//no sleep is performed if the loop is late on time schedule
+		{
+			//std::cout<<"Warning: last frame was late on schedule. It took more than "<<(1000000/fps)<<" microseconds to execute."<<std::endl;
+			needed_sleep_delay = std::chrono::duration< double, std::micro >::zero();
+		}
+		else
+		{
+			#if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
+	        	Sleep( std::chrono::duration_cast<std::chrono::milliseconds>(needed_sleep_delay).count() );
+			#else
+	        	usleep( std::chrono::duration_cast<std::chrono::microseconds>(needed_sleep_delay).count() );
+				//sleep(fps/1000000); // this would be ok if we ignored computation time and wakeup_jitter
+			#endif			
+		}
+		//BEGIN: save now() as the time loop begins
+		frameStart_time = std::chrono::steady_clock::now();
+		//compute the jitter as the time it took this thread to wake-up since the time it had to wake up (in ideal world, wake_jitter would be 0...)
+		//if no sleep is performed, wakeup_jitter can be very small or zero, but never negative
+		wakeup_jitter = std::chrono::duration_cast<std::chrono::microseconds>(frameStart_time - frameEnd_time) - needed_sleep_delay;
+				//cout<<"------"<<endl;
+				//cout<< "nominal wake-up delay was: "<<std::chrono::duration_cast<std::chrono::microseconds>(needed_sleep_delay).count()<<endl;			// declared sleep time
+				//cout<< "real wake-up delay: "<<std::chrono::duration_cast<std::chrono::microseconds>(frameStart_time - frameEnd_time).count()<<endl;		// effective slept time
+				//cout<< "there was a wakeup jitter of : "<<std::chrono::duration_cast<std::chrono::microseconds>(wakeup_jitter).count()<<endl;				// computed jitter
+
+
+		// DISPLAY FPS
+		if(std::chrono::steady_clock::now() > currentSecondStart_time + std::chrono::seconds(1))
+		{
+			
+			std::cout << "\tFPS:" << currentSecondNumFramesRendered << std::endl;
+			currentSecondNumFramesRendered = 0;
+			currentSecondStart_time = currentSecondStart_time + std::chrono::seconds(1);
+		}
+		
+	}
 }
 
 /////////////////////////////////////////////////////////////////
@@ -408,8 +490,8 @@ void App::loadOgreWindows()
 	miscParams["monitorIndex"] = Ogre::StringConverter::toString(0);
 	if (DEBUG_WINDOW)
 	{
-		mLeftEyeViewWindow = mRoot->createRenderWindow("Ogre Left Eye Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
-		mRightEyeViewWindow = mRoot->createRenderWindow("Ogre Right Eye Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
+		//mLeftEyeViewWindow = mRoot->createRenderWindow("Ogre Left Eye Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
+		//mRightEyeViewWindow = mRoot->createRenderWindow("Ogre Right Eye Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
 		mEnvironmentViewWindow = mRoot->createRenderWindow("Ogre Environment Live Visualization", 1920 * debugWindowSize, 1080 * debugWindowSize, false, &miscParams);
 	}
 
@@ -579,20 +661,24 @@ void App::quitRift()
 
 void App::initCameras()
 {
-	mCameraLeft = new FrameCaptureHandler(0, mRift);
-	mCameraRight = new FrameCaptureHandler(1, mRift);
-
-	mCameraLeft->startCapture();
-	mCameraRight->startCapture();
-
-	cv::namedWindow("CameraDebugLeft", cv::WINDOW_NORMAL);
-	cv::resizeWindow("CameraDebugLeft", 1920 / 4, 1080 / 4);
-	cv::namedWindow("CameraDebugRight", cv::WINDOW_NORMAL);
-	cv::resizeWindow("CameraDebugRight", 1920 / 4, 1080 / 4);
+	//std::string videoFile = "thcrossing1.mp4";
+	//mCameraLeft = new FrameCaptureHandler(videoFile, mRift, false);
+	mCameraLeft = new FrameCaptureHandler(0, mRift, true, loopStart_time, 25);	//device_id, mRift, ARenable, starttimereference, fps
+	mCameraRight = new FrameCaptureHandler(1, mRift, false, loopStart_time, 25);
+	/*
+	FrameCaptureData emptyFrame;
+	emptyFrame.image = cv::Mat(cv::Scalar(0.0f, 0.0f, 0.0f, 1.0f));
+	emptyFrame.pose = Ogre::Quaternion::IDENTITY;
+	*/
+	std::string window_name_left = "Video stream left";
+	cv::namedWindow(window_name_left, CV_WINDOW_AUTOSIZE);
+	std::string window_name_right = "Video stream right";
+	cv::namedWindow(window_name_right, CV_WINDOW_AUTOSIZE);
 }
 
 void App::quitCameras()
 {
+	mScene->disableVideo();
 	mCameraLeft->stopCapture();
 	mCameraRight->stopCapture();
 	if (mCameraLeft) delete mCameraLeft;
@@ -607,58 +693,84 @@ void App::quitCameras()
 // Good time to update measurements and physics before rendering next frame!
 bool App::frameRenderingQueued(const Ogre::FrameEvent& evt) 
 {
-	// [TIME] FRAME RATE DISPLAY
-	//calculate delay from last frame and show
-	ogre_last_frame_delay = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - ogre_last_frame_displayed_time);
-	frames_per_second(ogre_last_frame_delay.count());
 
 	if (mShutdown) return false;
 
 	// [RIFT] UPDATE
 	// update Oculus information and sends it to Scene (Position/Orientation of character's head)
+	// NOT DONE HERE! OPTIMIZED: THIS IS DONE JUST BEFORE START RENDERING EACH EYE (SO TWO TIMES)!!
 	if(mRift)
 	{
-		if ( mRift->update( evt.timeSinceLastFrame ) )		// saves new orientation/position information
-		{
-			mScene->setRiftPose( mRift->getOrientation(), mRift->getPosition() );	// sets orientation/position to a SceneNode
-		} else {
-			delete mRift;
-			mRift = NULL;
-		}
+		//if ( mRift->update( evt.timeSinceLastFrame ) )		// saves new orientation/position information
+		//{
+		//	mScene->setRiftPose( mRift->getOrientation(), mRift->getPosition() );	// sets orientation/position to a SceneNode
+		//} else {
+		//	delete mRift;
+		//	mRift = NULL;
+		//}
 	}
-
+	//std::cout << "Updating frame..." << std::endl;
+	
 	// [CAMERA] UPDATE
 	// update real cameras information and sends it to Scene (Texture of pictures planes/shapes)
-	FrameCaptureData nextFrameLeft;
-	if (mCameraLeft && mCameraLeft->get(nextFrameLeft))		// if camera is initialized AND there is a new frame
+	if (mCameraLeft && !imageLeftReady && mCameraLeft->get(nextFrameLeft))		// if camera is initialized AND there is a new frame
 	{
-		//std::cout << "Drawing the frame in debug window..." << std::endl;
-		cv::imshow("CameraDebugLeft", nextFrameLeft.image);
-		cv::waitKey(1);
+		//std::cout << "Set new left image..." << std::endl;
+		//cv::imshow("CameraDebugLeft", nextFrameLeft.image);
+		//cv::waitKey(1);
 			
 		//std::cout << "converting from cv::Mat to Ogre::PixelBox..." << std::endl;
-		mOgrePixelBoxLeft = Ogre::PixelBox(1920, 1080, 1, Ogre::PF_R8G8B8, nextFrameLeft.image.ptr<uchar>(0));
-		//std::cout << "sending new image to the scene..." << std::endl;
-		mScene->setVideoImagePoseLeft(mOgrePixelBoxLeft,nextFrameLeft.pose);
-		//std::cout << "image sent!\nImage plane updated!" << std::endl;
+		mOgrePixelBoxLeft = Ogre::PixelBox(nextFrameLeft.image.rgb.cols, nextFrameLeft.image.rgb.rows, 1, Ogre::PF_R8G8B8, nextFrameLeft.image.rgb.ptr<uchar>(0));
 
-	}
-	FrameCaptureData nextFrameRight;
-	if (mCameraRight && mCameraRight->get(nextFrameRight))	// if camera is initialized AND there is a new frame
-	{
-
-		cv::imshow("CameraDebugRight", nextFrameRight.image);
-		cv::waitKey(1);
-
-		//std::cout << "converting from cv::Mat to Ogre::PixelBox..." << std::endl;
-		mOgrePixelBoxRight = Ogre::PixelBox(1920, 1080, 1, Ogre::PF_R8G8B8, nextFrameRight.image.ptr<uchar>(0));
-		//std::cout << "sending new image to the scene..." << std::endl;
-		mScene->setVideoImagePoseRight(mOgrePixelBoxRight, nextFrameRight.pose);
-		//std::cout << "image sent!\nImage plane updated!" << std::endl;
-			
+		// DO NOT SET ANYTHING IN THE SCENE YET!
+		imageLeftReady = true;
 	}
 	
-	/*
+	if (mCameraRight && !imageRightReady && mCameraRight->get(nextFrameRight))	// if camera is initialized AND there is a new frame
+	{
+		//std::cout << "Set new right image..." << std::endl;
+		//cv::imshow("CameraDebugRight", nextFrameRight.image);
+		//cv::waitKey(1);
+
+		//std::cout << "converting from cv::Mat to Ogre::PixelBox..." << std::endl;
+		mOgrePixelBoxRight = Ogre::PixelBox(nextFrameRight.image.rgb.cols, nextFrameRight.image.rgb.rows, 1, Ogre::PF_R8G8B8, nextFrameRight.image.rgb.ptr<uchar>(0));
+
+		// DO NOT SET ANYTHING IN THE SCENE YET!
+		imageRightReady = true;
+	}
+	
+	// N.B. each camera will try to keep capturing in sync with specified startCapture_time, then they return the result as soon as possible, so only thing to do is wait that both frames are available
+	if (imageLeftReady)
+	{
+		//std::cout << "sending new image to the scene..." << std::endl;
+		mScene->setVideoImagePoseLeft(mOgrePixelBoxLeft, Ogre::Quaternion(nextFrameLeft.image.orientation[0], nextFrameLeft.image.orientation[1], nextFrameLeft.image.orientation[2], nextFrameLeft.image.orientation[3]) );
+		//std::cout << "image sent!\nImage plane updated!" << std::endl;
+		
+		// MARKER DETECTED POSE SET!!
+		for (unsigned int i = 0; i < nextFrameLeft.markers.size(); i++)
+		{
+			cout << "cube position/orientation " << i << " set to " << -nextFrameLeft.markers[i].position[0] << "," << nextFrameLeft.markers[i].position[1] << "," << -nextFrameLeft.markers[i].position[2] << endl;
+			mScene->setCubePosition(Ogre::Vector3(nextFrameLeft.markers[i].position[0], nextFrameLeft.markers[i].position[1], nextFrameLeft.markers[i].position[2]));
+			mScene->setCubeOrientation(Ogre::Quaternion(nextFrameLeft.markers[i].orientation[0], nextFrameLeft.markers[i].orientation[1], nextFrameLeft.markers[i].orientation[2], nextFrameLeft.markers[i].orientation[3]));
+		}
+		
+		cv::imshow("Video stream left", nextFrameLeft.image.rgb);
+
+		//std::cout << "Set new right image..." << std::endl;
+		//cv::imshow("CameraDebugRight", nextFrameRight.image);
+		//cv::waitKey(1);
+
+		//std::cout << "sending new image to the scene..." << std::endl;
+		mScene->setVideoImagePoseRight(mOgrePixelBoxRight, Ogre::Quaternion(nextFrameRight.image.orientation[0], nextFrameRight.image.orientation[1], nextFrameRight.image.orientation[2], nextFrameRight.image.orientation[3]));
+		//std::cout << "image sent!\nImage plane updated!" << std::endl;
+		cv::imshow("Video stream right", nextFrameRight.image.rgb);
+		cv::waitKey(1);
+
+		imageLeftReady = false;
+		imageRightReady = false;
+	}
+	
+	/* KEPT FOR PERSONAL REFERENCE
 	// [ARUCO] UPDATE
 	// undistort images from real cameras and use them for AR
 	cv::Mat imageLeftUndistorted, imageRightUndistorted;
@@ -666,10 +778,10 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 	aruco::MarkerDetector videoMarkerDetector;
 	// perform undistortion (with parameters of each camera)
 	cv::undistort(nextFrameLeft.image, imageLeftUndistorted, mCameraLeft->videoCaptureParams.CameraMatrix, mCameraLeft->videoCaptureParams.Distorsion);
-	cv::undistort(nextFrameRight.image, imageRightUndistorted, mCameraRight->videoCaptureParams.CameraMatrix, mCameraRight->videoCaptureParams.Distorsion);
+	//cv::undistort(nextFrameRight.image, imageRightUndistorted, mCameraRight->videoCaptureParams.CameraMatrix, mCameraRight->videoCaptureParams.Distorsion);
 	// detect markers in the image
-	videoMarkerDetector.detect(imageLeftUndistorted, markersLeft, mCameraLeft->videoCaptureParamsUndistorted, 0.1f);	//need marker size in meters
-	videoMarkerDetector.detect(imageRightUndistorted, markersRight, mCameraRight->videoCaptureParamsUndistorted, 0.1f);
+	videoMarkerDetector.detect(imageLeftUndistorted, markersLeft, mCameraLeft->videoCaptureParamsUndistorted, 0.1f);		//need marker size in meters
+	//videoMarkerDetector.detect(imageRightUndistorted, markersRight, mCameraRight->videoCaptureParamsUndistorted, 0.1f);
 
 	double position[3], orientation[4];
 	// show nodes for detected markers
@@ -692,9 +804,6 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 	mScene->update( evt.timeSinceLastFrame );
 	//mTrayMgr->frameRenderingQueued(evt);
 
-	// [TIME] UPDATE
-	// save time point for this frame (for frame rate calculation)
-	ogre_last_frame_displayed_time = std::chrono::system_clock::now();
 
 
 	// [VALUE EXPERIMENTS]
@@ -703,8 +812,8 @@ bool App::frameRenderingQueued(const Ogre::FrameEvent& evt)
 
 
 
-	//exit if key ESCAPE pressed 
-	if(mKeyboard->isKeyDown(OIS::KC_ESCAPE)) 
+	//exit if key ESCAPE pressed
+	if(mKeyboard->isKeyDown(OIS::KC_ESCAPE))
 		return false;
 
 	return true; 
@@ -735,6 +844,12 @@ bool App::keyPressed( const OIS::KeyEvent& e )
 		break;
 	case OIS::KC_L:
 		keyLayout = LagAdjust;
+		break;
+	case OIS::KC_K:
+		keyLayout = KeystoningAdjust;
+		break;
+	case OIS::KC_Z:
+		keyLayout = ZPPlaneAdjust;
 		break;
 
 	// per eye setting selection
@@ -768,7 +883,9 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		e.key == OIS::KC_C ||
 		e.key == OIS::KC_D ||
 		e.key == OIS::KC_F ||
-		e.key == OIS::KC_L
+		e.key == OIS::KC_L ||
+		e.key == OIS::KC_K ||
+		e.key == OIS::KC_Z 
 		)
 	{
 		keyLayout = Idle;
@@ -781,95 +898,125 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		//Add Button
 		switch (keyLayout)
 		{
-		case AspectRatioAdjust:
-			switch (eyeSelected)
-			{
-			case Left:
-				mScene->adjustVideoLeftTextureCalibrationAspectRatio(+0.05f);
-				break;
-			case Right:
-				mScene->adjustVideoRightTextureCalibrationAspectRatio(+0.05f);
-				break;
-			default:
-				break;
-			}
+			case AspectRatioAdjust:
+				switch (eyeSelected)
+				{
+				case Left:
+					mScene->adjustVideoLeftTextureCalibrationAspectRatio(+0.05f);
+					break;
+				case Right:
+					mScene->adjustVideoRightTextureCalibrationAspectRatio(+0.05f);
+					break;
+				default:
+					break;
+				}
 
-			break;
-
-		case CalibrationAdjust:
-
-			switch (eyeSelected)
-			{
-			case Left:
-				mScene->adjustVideoLeftTextureCalibrationScale(+0.05f);
 				break;
-			case Right:
-				mScene->adjustVideoRightTextureCalibrationScale(+0.05f);
-				break;
-			default:
-				break;
-			}
 
-			break;
-		case DistanceAdjust:
-			mScene->adjustVideoDistance(+0.1f);				// +0.1 ogre units (here considered meters)
-			break;
-		case FovAdjust:
-			mScene->adjustVideoFov(+0.01f);
-			break;
-		case LagAdjust:
-			mCameraLeft->adjustManualCaptureDelay(+1);		// +1 msec
-			break;
+			case CalibrationAdjust:
+
+				switch (eyeSelected)
+				{
+				case Left:
+					mScene->adjustVideoLeftTextureCalibrationScale(+0.05f);
+					break;
+				case Right:
+					mScene->adjustVideoRightTextureCalibrationScale(+0.05f);
+					break;
+				default:
+					break;
+				}
+
+				break;
+
+			case DistanceAdjust:
+				mScene->adjustVideoDistance(+0.1f);				// +0.1 ogre units (here considered meters)
+				break;
+			case FovAdjust:
+				mScene->adjustVideoFov(+0.01f);
+				break;
+			case LagAdjust:
+				cout << mCameraLeft->adjustManualCaptureDelay(+1) <<endl;		// +1 msec
+				break;
+			case KeystoningAdjust:
+				cout<<mScene->adjustVideoKeystoningAngle(+0.5f);
+				break;
+			case ZPPlaneAdjust:
+				cout<<mScene->adjustVideoToeInAngle(+0.1f);
+				break;
+
 		}
 
+
+
+
 		break;
+
+
+
+
 	case OIS::KC_SUBTRACT:
 
 		// Minus Button
 		switch (keyLayout)
 		{
-		case AspectRatioAdjust:
-			switch (eyeSelected)
-			{
-			case Left:
-				mScene->adjustVideoLeftTextureCalibrationAspectRatio(-0.05f);
-				break;
-			case Right:
-				mScene->adjustVideoRightTextureCalibrationAspectRatio(-0.05f);
-				break;
-			default:
-				break;
-			}
+			case AspectRatioAdjust:
+				switch (eyeSelected)
+				{
+				case Left:
+					mScene->adjustVideoLeftTextureCalibrationAspectRatio(-0.05f);
+					break;
+				case Right:
+					mScene->adjustVideoRightTextureCalibrationAspectRatio(-0.05f);
+					break;
+				default:
+					break;
+				}
 
-			break;
-
-		case CalibrationAdjust:
-
-			switch (eyeSelected)
-			{
-			case Left:
-				mScene->adjustVideoLeftTextureCalibrationScale(-0.05f);
 				break;
-			case Right:
-				mScene->adjustVideoRightTextureCalibrationScale(-0.05f);
-				break;
-			default:
-				break;
-			}
 
-			break;
-		case DistanceAdjust:
-			mScene->adjustVideoDistance(-0.1f);				// -0.1 ogre units (here considered meters)
-			break;
-		case FovAdjust:
-			mScene->adjustVideoFov(-0.01f);
-			break;
-		case LagAdjust:
-			mCameraLeft->adjustManualCaptureDelay(-1);		// -1 msec
-			break;
+			case CalibrationAdjust:
+
+				switch (eyeSelected)
+				{
+				case Left:
+					mScene->adjustVideoLeftTextureCalibrationScale(-0.05f);
+					break;
+				case Right:
+					mScene->adjustVideoRightTextureCalibrationScale(-0.05f);
+					break;
+				default:
+					break;
+				}
+
+				break;
+			case DistanceAdjust:
+				mScene->adjustVideoDistance(-0.1f);				// -0.1 ogre units (here considered meters)
+				break;
+			case FovAdjust:
+				mScene->adjustVideoFov(-0.01f);
+				break;
+			case LagAdjust:
+				cout << mCameraLeft->adjustManualCaptureDelay(-1) << endl;		// -1 msec
+				break;
+			case KeystoningAdjust:
+				cout<<mScene->adjustVideoKeystoningAngle(-0.5f);
+				break;
+			case ZPPlaneAdjust:
+				cout<<mScene->adjustVideoToeInAngle(-0.1f);
+				break;
 		}
 
+
+
+
+
+
 		break;
+
+
+
+
 
 		// Directional toggles
 		// N.B.: Bottom-left pixel is (0,0) in UV mapping
@@ -892,10 +1039,14 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 		if (seethroughEnabled)
 		{
 			mScene->disableVideo();
+			if (mCameraLeft) mCameraLeft->stopCapture();
+			if (mCameraRight) mCameraRight->stopCapture();
 			seethroughEnabled = false;
 		}
 		else
 		{
+			if (mCameraLeft) mCameraLeft->startCapture();
+			if (mCameraRight) mCameraRight->startCapture();
 			mScene->enableVideo();
 			seethroughEnabled = true;
 		}
@@ -911,6 +1062,18 @@ bool App::keyReleased( const OIS::KeyEvent& e )
 			mScene->setStabilizationMode(Scene::StabilizationModel::Eye);
 
 		break;
+
+	case OIS::KC_SPACE:
+
+		// SPACE Button (Stop): interrupts main scene rendering loop
+		mRift->pauseRender(true);
+
+		break;
+
+	case OIS::KC_P:
+		toon = !toon;
+		break;
+
 	default:
 		// Do nothing
 		break;
