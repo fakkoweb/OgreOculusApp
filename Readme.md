@@ -150,8 +150,8 @@ git clone --recursive git://...
 
 ### Building
 
-1) Install cmake >2.8.12
-2) Setup OgreSDK
+1. Install cmake >2.8.12
+2. Setup OgreSDK
 	- WIN:
 		- create env variable OGRE_HOME and set to the place where you've installed or built OGRE
 		- add to env PATH the folders containing Release and Debug dlls (ex. OIS.dll and OIS_d.dll)
@@ -161,13 +161,13 @@ git clone --recursive git://...
 		- run script "install_system_dependenciesONLY_OGRE1.9_linux.sh" OR the "install_here.." counterpart to compile and install deps in system OR local folder
 		- run script "install_system_OGRE1.9_linux.sh" OR the "install_here.." counterpart to compile and install Ogre3D1.9 in system OR local folder.
 		- If process fails do not panic: read the script and do it manually, there can be an error on names or network.
-3) If your version of OGRE was built with boost (i.e. threadding was enabled) then you'll also need boost (get binaries online). Make sure to install a version for the Compiler you're using (for example: Visual C++ 2010 Express).
+3. If your version of OGRE was built with boost (i.e. threadding was enabled) then you'll also need boost (get binaries online). Make sure to install a version for the Compiler you're using (for example: Visual C++ 2010 Express).
 	- WIN: if using boost,
 		- set env var BOOST_ROOT to C:\local\boost_1_56_0 (or wherever you installed boost)
 		- set env var BOOST_INCLUDEDIR to C:\local\boost_1_56_0 (or wherever you installed boost)
 		- set env var BOOST_LIBRARYDIR to C:\local\boost_1_56_0\lib32-msvc-10.0 (or wherever you installed boost)
 	- LINUX: it should work like a charm if you installed it in system correctly, so I did not go deeper
-4) Setup OculusSDK
+4. Setup OculusSDK
 	- if you want to compile it with the project (DEFAULT)
 		- WIN:
 			1) Make sure you have pulled OculusSDK submodule, its source is in /libs folder
@@ -191,12 +191,12 @@ git clone --recursive git://...
                 - "install_here_OculusSDK0.5.0.1+dependencies_linux.sh"
                 - "install_here_OculusSDK0.5.0.1custom+dependencies_linux.sh"
              - If process fails do not panic: read the script and do it manually, there can be an error on names or network.
-5) Setup OpenCV
+5. Setup OpenCV
 	- WIN: follow tutorials to compile it with CUDA (depends on your graphic card and driver) and TBB, then add the needed env variables and PATH entries to use it right away (usually is done automatically by the installer in the default version)
 	- LINUX: do the same for your system or, alternatively if you are lazy like me:
 		-  run one of the scripts "install_here_opencv2.4_linux.sh" OR "install_here_opencv3_linux.sh".. quite clear on what they do, right?
 		- If process fails do not panic: read the script and do it manually, there can be an error on names or network.
-6) Run Cmake (possibly through CmakeGUI). **PLEASE FIRST learn how to use a cmake file, how to Configure and Generate a project**. Every lib should be found (in whatever form it is, to be compiled or not). Check the "USE_" flags to make sure what is used and what not. Possibly I will add screenshots in the future, since I want to make this Cmake file a template for future projects.
+6. Run Cmake (possibly through CmakeGUI). **PLEASE FIRST learn how to use a cmake file, how to Configure and Generate a project**. Every lib should be found (in whatever form it is, to be compiled or not). Check the "USE_" flags to make sure what is used and what not. Possibly I will add screenshots in the future, since I want to make this Cmake file a template for future projects.
 
 ### Installing
 
@@ -210,19 +210,19 @@ Have no fear, since my cmake file is responsible to do so. In the specific it wi
 
 ### Running
 
-1) Run Oculus Runtime
+1. Run Oculus Runtime
 	- WIN: make sure the right version of Oculus Runtime is installed and running
 	- LINUX: for more help, see [HERE](https://www.reddit.com/r/oculus/comments/2rjklz/ubuntu_i_got_an_oculus_but_where_do_i_get_started/) 
 		1) Run "ConfigureDebian.sh" from OculusSDK folder (needed to install dependencies and rules.d file for device)
 		2) Start service "ovrd", which is in some subfolder, or "oculusd -d" if it is installed in system
 		3) Run "RiftConfigUtil" (to set up profiles). It is embedded in OculusSDK, but I am not sure if in every version.
-2) Plug Oculus Rift and make sure it is correctly detected. This application uses Extended Mode, so a secondary desktop should appear. The orientation should be vertical if using Oculus DK2. Application should rotate accordingly the view without user intervention.
-3) Plug the camera(s) and make sure .yml calibration files are in /cfg directory (with names camera_0.yml and camera_1.yml)
+2. Plug Oculus Rift and make sure it is correctly detected. This application uses Extended Mode, so a secondary desktop should appear. The orientation should be vertical if using Oculus DK2. Application should rotate accordingly the view without user intervention.
+3. Plug the camera(s) and make sure .yml calibration files are in /cfg directory (with names camera_0.yml and camera_1.yml)
 	- camera0 will be used as LEFT camera. Usually 0 is assigned to the first camera plugged in. I had no way of controlling this behaviour nor associate the desired calibration file to the desired camera. Can be improved.
 	- we suggest to place the cameras in front of each eye, in:
 		- PARALLEL configuration, if you are using very wide angle lenses (or fisheye lenses)
 		- TOE-IN configuration in other cases (DEFAULT, there is still no option to switch to fisheye configuration yet!)
-4) Run the application/demo
+4. Run the application/demo
 	- A guide on how to use application as an external library for your projects has to be made.
 
 > More work and, possibly, some investments would push the project even further, improving and adding its capabilities for real uses.
@@ -279,14 +279,14 @@ I will write down what I did to make it work. Just because I lost plenty of time
 **If you are on a system running an older version of cmake, g++, boost and also you have no admin rights, follow this steps. Expect errors and TONS of retries.**
 
 TO COMPILE AND INSTALL OGRE 1.9
-1) Install locally 2.8.12 using script "install_here_cmake2.8.12_linux.sh"
-2) Make it the DEFAULT cmake by adding its variable (to run it)
-3) Open a new terminal (to detect the newly created variable) and run dependencies script
-4) Move temporarly the local cmake folder from its current position, then open a new terminal so will find your cmake 2.8.9
-5) If boost is too old:
+1. Install locally 2.8.12 using script "install_here_cmake2.8.12_linux.sh"
+2. Make it the DEFAULT cmake by adding its variable (to run it)
+3. Open a new terminal (to detect the newly created variable) and run dependencies script
+4. Move temporarly the local cmake folder from its current position, then open a new terminal so will find your cmake 2.8.9
+5. If boost is too old:
 	- open Ogre install script and remove boost support (change it to 0 in the script)
     - Open ANOTHER terminal (to detect 2.8.9) and run Ogre script
-6) If cmake 2.8.9 gives errors it is ok: check it found the needed libraries, which are now in cache, then:
+6. If cmake 2.8.9 gives errors it is ok: check it found the needed libraries, which are now in cache, then:
 	- move again the local version of cmake back to its position
 	- run the lines of Ogre script manually from a new terminal from cmake line (it is in the script)
 	- remove back again from the position the local cmake, so now 2.8.9 works again
