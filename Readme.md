@@ -2,6 +2,8 @@
 
 ## Overview
 
+This project is the result of a Master Thesis work. A very simplified presentation of this work is available [HERE][Prezipresentation] in Prezi, which embeds also videos of a working demo and showing implemented features. The thesis transcript itself has yet to be uploaded.
+
 The code provides an implementation of a 3D scene in Ogre3D (version 1.9) containing:
 - a very simple environment, with a sample Skybox and a floor
 - a virtual stereo camera, to explore the environment with Oculus Rift (at this point tested with Orientation and Timewarping)
@@ -10,12 +12,11 @@ The code provides an implementation of a 3D scene in Ogre3D (version 1.9) contai
 
 Moreover, a pipeline capable of synchronizing images from both cameras, performing augmented reality on one of them and applying some image filter with CUDA support is proposed (in the example, image is transformed in a comicbook-like version. In this version, undistort is not performed on each image since ArUco was capable to work well with raw images. We would suggest to implement all computer vision algorithms in pure CUDA, while as of now only OpenCV effects are.
 
-The goal of the project is to be able to show any image with any elaboration on it WITHOUT impacting on the 3D scene framerate: you can experiment with computer vision (or stereo computer vision, if you implement it) and its performance on video without reducing the fluency of head movements in the 3D scene. The code is set for wide-angle images (square-like) but can be easily altered for fish-eye images (circle-like).
+The challenge of the project is to be able to show any image with any elaboration on it WITHOUT impacting on the 3D scene framerate: you can experiment with computer vision (or stereo computer vision, if you implement it) and its performance on video without reducing the fluency of head movements in the 3D scene. The code is set for wide-angle images (square-like) but can be easily altered for fish-eye images (circle-like).
 
 Hardware used was both Oculus Rift DK1 and DK2 and a couple of Logitech C920-C cameras (autofocus and linux support, most stable 30fps framerate achievable by a 1080p consumer webcam), mounted in front of each eye and slightly toed-in (I know this should not be done, but the reason was to get stereo for very close objects in view).
 
 The project itself can be used as a SUBPROJECT (in cmake slang) meaning that in this case my cmake file will no longer compile main.cpp but create a static library instead. At this moment, methods and classes and interfaces should be improved to make it easier to understand and usable as an external library.
-
 
 ### Bit of history and acknowledgements
 
@@ -302,4 +303,7 @@ ARUCO and OPENCV:
 **JUST UPDATE YOUR SYSTEM!**
 
 
+[//]: # (These are reference links used in the body of this note and get stripped out when the markdown processor does its job. There is no need to format nicely because it shouldn't be seen. Thanks SO - http://stackoverflow.com/questions/4823468/store-comments-in-markdown-syntax)
 
+
+   [Prezipresentation]: <https://prezi.com/ugsijfgxn9bd>
