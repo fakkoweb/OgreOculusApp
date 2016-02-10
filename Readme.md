@@ -2,7 +2,9 @@
 
 ## Overview
 
-This project is the result of a Master Thesis work. A very simplified presentation of this work is available [HERE][Prezipresentation] in Prezi, which embeds also videos of a working demo and showing implemented features. The thesis transcript itself has yet to be uploaded.
+This project is the result of a Master Thesis work. A very simplified presentation of this work is publicly available in Prezi, which embeds also videos of implemented features on a working demo. The thesis transcript itself has yet to be uploaded.
+- **[Work presentation][prezipresentation]**
+- **[Some live impressions at CVAP lab in KTH][cvapvideo]**
 
 The code provides an implementation of a 3D scene in Ogre3D (version 1.9) containing:
 - a very simple environment, with a sample Skybox and a floor
@@ -24,7 +26,7 @@ The idea comes originally from (and was proposed as a Master Thesis by) Alessand
 
 The code starts from a fork of OgreOculusSample, available here: https://github.com/Germanunkol/OgreOculusSample. A more detailed explanation of which features where included and why can be found in its README. They were then extended in this project, by adding tons of features (most of them listed in the TODO list above). Also the code has been throughly commented, so hopefully you can easily understand what each non-trivial piece of code does.
 
-Thanks to Jherico, Nesh88, Germanunkol and Okreylos (VR guru) for helping me solving and understanding most of the problems I had to develop a solution to.
+Thanks also to Jherico, Nesh88, Germanunkol and Oliver Kreylos for helping me solving and understanding most of the problems I had to develop a solution to.
 
 
 
@@ -306,4 +308,5 @@ ARUCO and OPENCV:
 [//]: # (These are reference links used in the body of this note and get stripped out when the markdown processor does its job. There is no need to format nicely because it shouldn't be seen. Thanks SO - http://stackoverflow.com/questions/4823468/store-comments-in-markdown-syntax)
 
 
-   [Prezipresentation]: <https://prezi.com/ugsijfgxn9bd>
+   [prezipresentation]: <https://prezi.com/ugsijfgxn9bd>
+   [cvapvideo]: <https://www.youtube.com/watch?v=UDxcTXaMZpE>
